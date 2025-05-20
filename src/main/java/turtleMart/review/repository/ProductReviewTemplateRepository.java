@@ -4,11 +4,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import turtleMart.review.entity.ProductReviewTemplate;
-import turtleMart.review.entity.ReviewTemplate;
 
 import java.util.List;
 
-public interface ReviewTemplateRepository extends JpaRepository<ReviewTemplate, Long> {
+public interface ProductReviewTemplateRepository extends JpaRepository<ProductReviewTemplate, Long> {
+
     @Query("""
     SELECT p
     FROM ProductReviewTemplate p
