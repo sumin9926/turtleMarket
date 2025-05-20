@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.review.dto.request.CreateReviewTemplateRequest;
+import turtleMart.review.dto.request.UpdateReviewTemplateRequest;
 import turtleMart.review.dto.response.ReviewTemplateResponse;
 import turtleMart.review.service.ReviewTemplateService;
 
@@ -33,6 +34,13 @@ public class ReviewTemplateController {
     public ResponseEntity<List<ReviewTemplateResponse>> readByProductId(@PathVariable(name = "productId") Long productId){
         List<ReviewTemplateResponse> reviewTemplateResponseList = reviewTemplateService.readByProductId(productId);
         return ResponseEntity.status(HttpStatus.OK).body(reviewTemplateResponseList);
+    }
+
+    @PatchMapping("/review-templates/{reviewTemplateId}")
+    public ResponseEntity<ReviewTemplateResponse> updateReviewTemplate(@RequestBody UpdateReviewTemplateRequest request,
+                                                                       @PathVariable(name = "reviewTemplateId") Long reviewTemplateId){
+        ReviewTemplateResponse reviewTemplateResponse = reviewTemplateService.updateReviewTemplate(request, reviewTemplateId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(reviewTemplateResponse);
     }
 
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.review.dto.request.UpdateReviewTemplateRequest;
 
 @Getter
 @Table @Entity
@@ -36,5 +37,12 @@ public class ReviewTemplate {
 
     public static ReviewTemplate of(String question, String low, String medium, String high){
         return new ReviewTemplate(question, low, medium, high);
+    }
+
+    public void update(UpdateReviewTemplateRequest request){
+        this.question = request.question();
+        this.low = request.low();
+        this.medium = request.medium();
+        this.high = request.high();
     }
 }
