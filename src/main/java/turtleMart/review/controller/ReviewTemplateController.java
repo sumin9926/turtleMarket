@@ -13,19 +13,19 @@ import turtleMart.review.service.ReviewTemplateService;
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor //관리자 전용
+@RequiredArgsConstructor
 public class ReviewTemplateController {
 
     private final ReviewTemplateService reviewTemplateService;
 
-    @PostMapping("/review-templates")
+    @PostMapping("/review-templates")//관리자 전용
     public ResponseEntity<ReviewTemplateResponse> createReviewTemplate(@RequestBody @Valid CreateReviewTemplateRequest request){
         ReviewTemplateResponse reviewTemplateResponse = reviewTemplateService.createReviewTemplate(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewTemplateResponse);
     }
 
     @GetMapping("/review-templates")
-    public ResponseEntity<List<ReviewTemplateResponse>> readAll(){// 판매자만 열람 가능
+    public ResponseEntity<List<ReviewTemplateResponse>> readAll(){// 일반 유저 불가
         List<ReviewTemplateResponse> reviewTemplateResponseList = reviewTemplateService.readAllReviewTemplate();
         return ResponseEntity.status(HttpStatus.OK).body(reviewTemplateResponseList);
     }
@@ -36,11 +36,17 @@ public class ReviewTemplateController {
         return ResponseEntity.status(HttpStatus.OK).body(reviewTemplateResponseList);
     }
 
-    @PatchMapping("/review-templates/{reviewTemplateId}")
+    @PatchMapping("/review-templates/{reviewTemplateId}")//관리자 전용
     public ResponseEntity<ReviewTemplateResponse> updateReviewTemplate(@RequestBody UpdateReviewTemplateRequest request,
                                                                        @PathVariable(name = "reviewTemplateId") Long reviewTemplateId){
         ReviewTemplateResponse reviewTemplateResponse = reviewTemplateService.updateReviewTemplate(request, reviewTemplateId);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewTemplateResponse);
+    }
+
+    @DeleteMapping("/review-templates/{reviewTemplateId}")//관리자 전용
+    public ResponseEntity<Void> deleteReviewTemplate(@PathVariable(name = "reviewTemplateId")Long reviewTemplateId){
+        reviewTemplateService.deleteReviewTemplate(reviewTemplateId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
 }

@@ -30,7 +30,7 @@ public class ReviewTemplateService {
     }
 
     public List<ReviewTemplateResponse> readAllReviewTemplate(){
-        return reviewTemplateRepository.findAll().stream().map(ReviewTemplateResponse::from).toList();
+        return reviewTemplateRepository.findAllDeletedFalse().stream().map(ReviewTemplateResponse::from).toList();
     }
 
     public List<ReviewTemplateResponse> readByProductId(Long productId){
@@ -49,5 +49,14 @@ public class ReviewTemplateService {
         return ReviewTemplateResponse.from(reviewTemplate);
     }
 
+    @Transactional
+    public void deleteReviewTemplate(Long reviewTemplateId){
+        ReviewTemplate reviewTemplate = reviewTemplateRepository.findById(reviewTemplateId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰 템플릿입니다"));
 
+        List<ProductReviewTemplate> productReviewTemplateList = productReviewTemplateRepository.findByReviewTemplateId(reviewTemplateId);
+
+        productReviewTemplateList.forEach(ProductReviewTemplate::delete);
+        reviewTemplate.delete();
+    }
 }

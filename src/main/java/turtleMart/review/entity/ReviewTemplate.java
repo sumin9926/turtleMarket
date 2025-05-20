@@ -28,6 +28,8 @@ public class ReviewTemplate {
     @Column(length = 30, nullable = false)
     private String high;
 
+    private boolean isDeleted = false;
+
     private ReviewTemplate(String question, String low, String medium, String high){
         this.question = question;
         this.low = low;
@@ -44,5 +46,9 @@ public class ReviewTemplate {
         this.low = request.low();
         this.medium = request.medium();
         this.high = request.high();
+    }
+
+    public void delete(){
+        this.isDeleted = true;
     }
 }
