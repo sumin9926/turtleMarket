@@ -19,22 +19,22 @@ public class ReviewTemplate {
     private String question;
 
     @Column(length = 30, nullable = false)
-    private String bad;
+    private String low;
 
     @Column(length = 30, nullable = false)
-    private String normal;
+    private String medium;
 
     @Column(length = 30, nullable = false)
-    private String good;
+    private String high;
 
-    private ReviewTemplate(String question, String bad, String normal, String good){
+    private ReviewTemplate(String question, String low, String medium, String high){
         this.question = question;
-        this.bad = bad;
-        this.normal = normal;
-        this.good = good;
+        this.low = low;
+        this.medium = medium;
+        this.high = high;
     }
 
-    public static ReviewTemplate of(String question, String bad, String normal, String good){
-        return new ReviewTemplate(question, bad, normal, good);
+    public static ReviewTemplate of(String question, String low, String medium, String high){
+        return new ReviewTemplate(question, low, medium, high);
     }
 }
