@@ -4,13 +4,15 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.product.Product;
 
-@Entity
+import java.time.LocalDateTime;
 @Getter
-@Table
+@Entity @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Review {
 
@@ -26,17 +28,39 @@ public class Review {
     @JoinColumn
     private Product product;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn
     private OrderItem orderItem;
 
+    @Column(length = 20, nullable = false)
     private String title;
 
+    @Column(length = 255, nullable = false)
     private String content;
 
-    private Integer rating;
+    @Column(columnDefinition = "TINYINT", nullable = false)
+    private Short rating;
 
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 
+    @CreatedDate
+    private LocalDateTime createdAt;
 
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
+    private Review(Member member, Product product, OrderItem orderItem, String title, String content, Short rating, String imageUrl){
+        this.member = member;
+        this.product = product;
+        this.orderItem = orderItem;
+        this.title = title;
+        this.content = content;
+        this.rating = rating;
+        this.imageUrl = imageUrl;
+    }
+
+    public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Short rating, String imageUrl){
+        return new Review(member, product, orderItem, title, content, rating, imageUrl);
+    }
 }
