@@ -1,6 +1,5 @@
 package turtleMart.review.controller;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +23,31 @@ public class ReviewReportController {
     ) throws JsonProcessingException {
         ReviewReportResponse reviewReportResponse = reviewReportService.createReviewReport(1L, reviewId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewReportResponse);
+    }
+//
+//    @GetMapping("/review-reports")
+//    public ResponseEntity<Page<ReviewReportResponse>> readAll(@RequestParam(name = "size", defaultValue = "10", required = false)int size,
+//                                                        @RequestParam(name = "page", defaultValue = "1", required = false)int page){
+//        Pageable pageable = PageRequest.of(page - 1, size);
+//        Page<ReviewReportResponse> reviewReportResponsePage = reviewReportService.readAll();
+//        return ResponseEntity.status(HttpStatus.OK).body(reviewReportResponsePage);
+//    }
+
+    @GetMapping("/review-reports/{reviewReportId}")
+    public ResponseEntity<ReviewReportResponse> readById(@PathVariable(name = "reviewReportId") Long reviewReportId) throws JsonProcessingException {
+        ReviewReportResponse reviewReportResponse = reviewReportService.readById(reviewReportId);
+        return ResponseEntity.status(HttpStatus.OK).body(reviewReportResponse);
+    }
+
+    @PatchMapping("/review-reports/{reviewReportId}")
+    public ResponseEntity<ReviewReportResponse> updateReviewReport(@PathVariable(name = "reviewReportId") Long reviewReportId) throws JsonProcessingException {
+        ReviewReportResponse reviewReportResponse = reviewReportService.updateReviewReport( reviewReportId);
+        return ResponseEntity.status(HttpStatus.OK).body(reviewReportResponse);
+    }
+
+    @DeleteMapping("/review-reports/{reviewReportId}")
+    public ResponseEntity<Void> deleteReviewReport(@PathVariable(name = "reviewReportId")Long reviewReportId){
+        reviewReportService.deleteReviewReport(reviewReportId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

@@ -46,4 +46,8 @@ public class ReviewReport extends BaseEntity {
     public static ReviewReport of(Review review, Member member, ReasonCode reasonCode, String reasonDetail){
         return new ReviewReport(review, member, reasonCode, reasonDetail);
     }
+
+    public void update(){
+        this.isProcessed = true;
+    }
 }
