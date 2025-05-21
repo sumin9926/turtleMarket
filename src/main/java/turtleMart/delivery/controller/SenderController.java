@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.delivery.dto.reqeust.CreateSenderRequest;
+import turtleMart.delivery.dto.reqeust.UpdateSenderRequest;
 import turtleMart.delivery.dto.response.SenderResponse;
+import turtleMart.delivery.dto.response.UpdateSenderResponse;
 import turtleMart.delivery.service.SenderService;
 
 import java.util.List;
@@ -36,5 +38,15 @@ public class SenderController {
         SenderResponse senderResponse = senderService.readSender(senderId);
 
         return ResponseEntity.status(HttpStatus.OK).body(senderResponse);
+    }
+
+    @PatchMapping("/api/senders/{senderId}")
+    public ResponseEntity<UpdateSenderResponse> updateSender(
+        @RequestBody UpdateSenderRequest request,
+        @PathVariable(name = "senderId") Long senderId
+    ) {
+        UpdateSenderResponse updateSenderResponse = senderService.updateSender(request, senderId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(updateSenderResponse);
     }
 }

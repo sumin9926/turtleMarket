@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import turtleMart.delivery.dto.reqeust.UpdateSenderRequest;
 
 import java.time.LocalDateTime;
 
@@ -53,5 +54,20 @@ public class Sender {
 
     public static Sender of (Courier courier, String name, String phoneNumber, String address, String detailAddress) {
         return new Sender(courier, name, phoneNumber, address, detailAddress);
+    }
+
+    public void update(UpdateSenderRequest request) {
+        if (request.name() != null && !request.name().isBlank()) {
+            this.name = request.name();
+        }
+        if (request.phoneNumber() != null && !request.phoneNumber().isBlank()) {
+            this.phoneNumber = request.phoneNumber();
+        }
+        if (request.address() != null && !request.address().isBlank()) {
+            this.address = request.address();
+        }
+        if (request.detailAddress() != null && !request.detailAddress().isBlank()) {
+            this.detailAddress = request.detailAddress();
+        }
     }
 }

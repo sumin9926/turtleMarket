@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.dto.reqeust.CreateSenderRequest;
+import turtleMart.delivery.dto.reqeust.UpdateSenderRequest;
 import turtleMart.delivery.dto.response.SenderResponse;
+import turtleMart.delivery.dto.response.UpdateSenderResponse;
 import turtleMart.delivery.entity.Courier;
 import turtleMart.delivery.entity.Sender;
 import turtleMart.delivery.repository.CourierRepository;
@@ -46,8 +48,18 @@ public class SenderService {
 
     public SenderResponse readSender(Long senderId) {
         Sender sender = senderRepository.findById(senderId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 출고지입니다."));
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 출고지(물류센터)입니다."));
 
         return SenderResponse.from(sender);
+    }
+
+    @Transactional
+    public UpdateSenderResponse updateSender(UpdateSenderRequest request, Long senderId) {
+        Sender sender = senderRepository.findById(senderId)
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 출고지(물류센터)입니다."));
+
+        sender.update(request);
+
+        return UpdateSenderResponse.from(sender);
     }
 }
