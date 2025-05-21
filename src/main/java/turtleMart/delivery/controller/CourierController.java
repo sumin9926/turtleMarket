@@ -5,8 +5,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.delivery.dto.reqeust.CreateCourierRequest;
+import turtleMart.delivery.dto.reqeust.UpdateCourierRequest;
 import turtleMart.delivery.dto.response.CreateCourierResponse;
 import turtleMart.delivery.dto.response.ReadCourierResponse;
+import turtleMart.delivery.dto.response.UpdateCourierResponse;
 import turtleMart.delivery.service.CourierService;
 
 import java.util.List;
@@ -30,5 +32,15 @@ public class CourierController {
         List<ReadCourierResponse> readCourierResponseList = courierService.readAllCouriers();
 
         return ResponseEntity.status(HttpStatus.OK).body(readCourierResponseList);
+    }
+
+    @PatchMapping("/api/couriers/{courierId}")
+    public ResponseEntity<UpdateCourierResponse> updateCourier(
+        @RequestBody UpdateCourierRequest request,
+        @PathVariable(name = "courierId") Long courierId
+    ) {
+        UpdateCourierResponse updateCourierResponse = courierService.updateCourier(request, courierId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(updateCourierResponse);
     }
 }
