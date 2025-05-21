@@ -20,8 +20,8 @@ public class Sender {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "courier_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "courier_id", nullable = false)
     private Courier courier;
 
     private String name;
