@@ -12,35 +12,35 @@ import turtleMart.delivery.service.SenderService;
 
 import java.util.List;
 
-@RequestMapping
+@RequestMapping("/api/senders")
 @RestController
 @RequiredArgsConstructor
 public class SenderController {
 
     private final SenderService senderService;
 
-    @PostMapping("/api/senders")
+    @PostMapping
     public ResponseEntity<SenderResponse> createSender(@RequestBody CreateSenderRequest request) {
         SenderResponse senderResponse = senderService.createSender(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(senderResponse);
     }
 
-    @GetMapping("/api/senders")
+    @GetMapping
     public ResponseEntity<List<SenderResponse>> readAllSenders() {
         List<SenderResponse> senderResponseList = senderService.readAllSenders();
 
         return ResponseEntity.status(HttpStatus.OK).body(senderResponseList);
     }
 
-    @GetMapping("/api/senders/{senderId}")
+    @GetMapping("/{senderId}")
     public ResponseEntity<SenderResponse> readSender(@PathVariable(name = "senderId") Long senderId) {
         SenderResponse senderResponse = senderService.readSender(senderId);
 
         return ResponseEntity.status(HttpStatus.OK).body(senderResponse);
     }
 
-    @PatchMapping("/api/senders/{senderId}")
+    @PatchMapping("/{senderId}")
     public ResponseEntity<UpdateSenderResponse> updateSender(
         @RequestBody UpdateSenderRequest request,
         @PathVariable(name = "senderId") Long senderId
@@ -50,7 +50,7 @@ public class SenderController {
         return ResponseEntity.status(HttpStatus.OK).body(updateSenderResponse);
     }
 
-    @DeleteMapping("/api/senders/{senderId}")
+    @DeleteMapping("/{senderId}")
     public ResponseEntity<Void> deleteSender(@PathVariable(name = "senderId") Long senderId) {
         senderService.deleteSender(senderId);
 
