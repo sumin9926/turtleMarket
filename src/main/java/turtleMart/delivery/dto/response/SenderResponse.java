@@ -5,7 +5,7 @@ import turtleMart.delivery.entity.Sender;
 
 import java.time.LocalDateTime;
 
-public record CreateSenderResponse(
+public record SenderResponse(
     Long id,
     CourierInfo courier,
     String name,
@@ -14,8 +14,8 @@ public record CreateSenderResponse(
     String detailAddress,
     LocalDateTime createdAt
 ) {
-    public static CreateSenderResponse from(Sender sender) {
-        return new CreateSenderResponse(
+    public static SenderResponse from(Sender sender) {
+        return new SenderResponse(
             sender.getId(),
             CourierInfo.from(sender.getCourier()),
             sender.getName(),
