@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import turtleMart.review.dto.request.UpdateReviewTemplateRequest;
 
+import java.awt.*;
+
 @Getter
 @Table @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -50,5 +52,13 @@ public class ReviewTemplate {
 
     public void delete(){
         this.isDeleted = true;
+    }
+
+    public String getChoice(TemplateChoiceGrade choiceGrade){
+
+        if(TemplateChoiceGrade.LOW == choiceGrade){return this.low;}
+        if(TemplateChoiceGrade.MEDIUM == choiceGrade){return this.medium;}
+        if(TemplateChoiceGrade.HIGH == choiceGrade){return this.high;}
+        return null;
     }
 }

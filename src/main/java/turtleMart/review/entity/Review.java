@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.product.entity.Product;
+import turtleMart.review.dto.request.UpdateReviewRequest;
 
 import java.time.LocalDateTime;
 @Getter
@@ -64,5 +65,12 @@ public class Review {
 
     public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl){
         return new Review(member, product, orderItem, title, content, rating, imageUrl);
+    }
+
+    public void update(UpdateReviewRequest request, String imageUrl){
+        this.title = request.title();
+        this.content = request.content();
+        this.rating = request.rating();
+        this.imageUrl = imageUrl;
     }
 }
