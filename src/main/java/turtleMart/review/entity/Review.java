@@ -9,7 +9,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
-import turtleMart.product.Product;
+import turtleMart.product.entity.Product;
 
 import java.time.LocalDateTime;
 @Getter
