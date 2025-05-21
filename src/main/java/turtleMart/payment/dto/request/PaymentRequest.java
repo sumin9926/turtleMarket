@@ -1,4 +1,13 @@
 package turtleMart.payment.dto.request;
 
-public record PaymentRequest() {
+import turtleMart.payment.entity.PaymentMethod;
+
+public record PaymentRequest(
+        Long orderId,
+        Long memberId,
+        int amount,
+        PaymentMethod paymentMethod,
+        String cardCompany,
+        int installmentMonth
+) {
 }
