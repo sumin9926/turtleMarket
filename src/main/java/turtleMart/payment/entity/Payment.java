@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.Order;
 
@@ -11,7 +12,7 @@ import turtleMart.order.entity.Order;
 @Getter
 @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Payment {
+public class Payment extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,9 +25,9 @@ public class Payment {
     @JoinColumn
     private Member member;
 
-    private String amount;
+    private int amount;
 
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
 
     private String cardCompany;
 
