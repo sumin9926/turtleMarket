@@ -4,19 +4,14 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import turtleMart.delivery.dto.reqeust.UpdateCourierRequest;
-
-import java.time.LocalDateTime;
+import turtleMart.global.common.BaseEntity;
 
 @Entity
 @Getter
 @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(AuditingEntityListener.class)
-public class Courier {
+public class Courier extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,12 +24,6 @@ public class Courier {
     private String trackingUrlTemplate;
 
     private boolean isDeleted = false;
-
-    @CreatedDate
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 
     private Courier(String name, String code, String trackingUrlTemplate) {
         this.name = name;

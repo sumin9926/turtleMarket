@@ -4,19 +4,14 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import turtleMart.delivery.dto.reqeust.UpdateSenderRequest;
-
-import java.time.LocalDateTime;
+import turtleMart.global.common.BaseEntity;
 
 @Entity
 @Getter
 @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(AuditingEntityListener.class)
-public class Sender {
+public class Sender extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,12 +32,6 @@ public class Sender {
     private String detailAddress;
 
     private boolean isDeleted = false;
-
-    @CreatedDate
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 
     private Sender(Courier courier, String name, String phoneNumber, String address, String detailAddress) {
         this.courier = courier;
