@@ -11,6 +11,8 @@ import turtleMart.delivery.dto.response.ReadDeliveryResponse;
 import turtleMart.delivery.dto.response.UpdateDeliveryResponse;
 import turtleMart.delivery.service.DeliveryService;
 
+import java.util.List;
+
 @RequestMapping("/api/deliveries")
 @RestController
 @RequiredArgsConstructor
@@ -40,5 +42,14 @@ public class DeliveryController {
         ReadDeliveryResponse readDeliveryResponse = deliveryService.readDelivery(deliveryId);
 
         return ResponseEntity.status(HttpStatus.OK).body(readDeliveryResponse);
+    }
+
+    @GetMapping("/members/{memberId}")
+    public ResponseEntity<List<ReadDeliveryResponse>> readAllDeliveriesByMember(
+        @PathVariable(name = "memberId") Long memberId
+    ){
+        List<ReadDeliveryResponse> readDeliveryResponseList = deliveryService.readAllDeliveriesByMember(memberId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(readDeliveryResponseList);
     }
 }

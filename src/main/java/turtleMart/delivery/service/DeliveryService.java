@@ -21,6 +21,8 @@ import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.entity.Order;
 import turtleMart.order.repository.OrderRepository;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -74,5 +76,13 @@ public class DeliveryService {
             .orElseThrow(() -> new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND));
 
         return ReadDeliveryResponse.from(delivery);
+    }
+
+    public List<ReadDeliveryResponse> readAllDeliveriesByMember(Long memberId) {
+        List<Delivery> deliveryList = deliveryRepository.findAllByMemberId(memberId);
+
+        return deliveryList.stream()
+            .map(ReadDeliveryResponse::from)
+            .toList();
     }
 }
