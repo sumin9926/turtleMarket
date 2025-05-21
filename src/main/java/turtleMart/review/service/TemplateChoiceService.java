@@ -11,7 +11,6 @@ import turtleMart.review.repository.TemplateChoiceRepository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -73,5 +72,9 @@ public class TemplateChoiceService {
        });
 
         return readTemplateChoice(templateChoiceList.get(0).getReview().getId());
+    }
+
+    public void deleteByReviewId(Long reviewId){
+        templateChoiceRepository.deleteAllByReviewId(reviewId);
     }
 }

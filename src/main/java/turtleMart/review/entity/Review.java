@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.product.entity.Product;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @Getter
 @Entity @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Review {
+public class Review extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,13 +46,6 @@ public class Review {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
-
-    @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 
     private Review(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl){
         this.member = member;

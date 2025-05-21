@@ -1,6 +1,7 @@
 package turtleMart.review.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -65,6 +66,23 @@ public class ReviewService {
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }
 
+    public ReviewResponse readReview(Long reviewId) throws JsonProcessingException{
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
+
+        List<String> imageUrlList = objectMapper.readValue(review.getImageUrl(),  new TypeReference<List<String>>() {});
+
+       List<TemplateChoiceResponse> choiceResponseList = templateChoiceService.readTemplateChoice(reviewId);
+       return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+    }
+
+//    public Page<ReviewResponse> readByMemberId(Long memberId, Pageable pageable){
+//        Page<Review> reviewPage = templateChoiceRepository.findByMemberId(memberId, pageable).map(TemplateChoice::getReview);
+//        templateChoiceService.readTemplateChoice(reviewPage.stream().map(Review::getId));
+//    }
+
+
+
     @Transactional
     public ReviewResponse updateReview(Long memberId, Long reviewId, UpdateReviewRequest request)throws JsonProcessingException{
         Member member = memberRepository
@@ -82,5 +100,19 @@ public class ReviewService {
                 templateChoiceService.updateTemplateChoice(request.templateChoiceList());
 
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
+    }
+
+    @Transactional
+    public void deleteReview(Long memberId, Long reviewId){
+        Member member = memberRepository
+                .findById(memberId).orElseThrow(() -> new RuntimeException("존재하지 않는 회원입니다"));
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
+
+        if(!member.getId().equals(review.getMember().getId())){throw new RuntimeException("본인이 작성한 리뷰만 삭제가능합니다");}
+
+        templateChoiceService.deleteByReviewId(reviewId);
+        reviewRepository.deleteById(reviewId);
     }
 }
