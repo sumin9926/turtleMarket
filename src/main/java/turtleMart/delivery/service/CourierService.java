@@ -10,6 +10,7 @@ import turtleMart.delivery.dto.response.ReadCourierResponse;
 import turtleMart.delivery.dto.response.UpdateCourierResponse;
 import turtleMart.delivery.entity.Courier;
 import turtleMart.delivery.repository.CourierRepository;
+import turtleMart.delivery.repository.SenderRepository;
 
 import java.util.List;
 
@@ -19,11 +20,12 @@ import java.util.List;
 public class CourierService {
 
     private final CourierRepository courierRepository;
+    private final SenderRepository senderRepository;
 
     @Transactional
     public CreateCourierResponse createCourier(CreateCourierRequest request) {
         if (courierRepository.existsByNameAndCode(request.name(), request.code())) {
-            throw new IllegalArgumentException("이미 존재하는 택배사입니다.");
+            throw new RuntimeException("이미 존재하는 택배사입니다.");
         }
 
         Courier courier = Courier.of(request.name(), request.code(), request.trackingUrlTemplate());
@@ -44,7 +46,7 @@ public class CourierService {
     @Transactional
     public UpdateCourierResponse updateCourier(UpdateCourierRequest request, Long courierId) {
         Courier courier = courierRepository.findById(courierId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 택배사입니다."));
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 택배사입니다."));
 
         courier.update(request);
 
@@ -55,6 +57,12 @@ public class CourierService {
     public void deleteCourier(Long courierId) {
         Courier courier = courierRepository.findById(courierId)
             .orElseThrow(() -> new RuntimeException("존재하지 않는 택배사입니다."));
+
+        long senderCount = senderRepository.countByCourierId(courier);
+
+        if (senderCount != 0) {
+            throw new RuntimeException("계약된 출고지(물류센터)가 존재하기 때문에 삭제할 수 없습니다.");
+        }
 
         courier.delete();
     }
