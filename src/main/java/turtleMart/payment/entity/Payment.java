@@ -36,4 +36,22 @@ public class Payment extends BaseEntity {
     private PaymentStatus paymentStatus;
 
     private FailReason failReason;
+
+    public Payment(
+            Order order, Member member, int amount, PaymentMethod paymentMethod,
+            String cardCompany, Integer installmentMonth) {
+        this.order = order;
+        this.member = member;
+        this.amount = amount;
+        this.paymentMethod = paymentMethod;
+        this.cardCompany = cardCompany;
+        this.installmentMonth = installmentMonth;
+        this.paymentStatus = PaymentStatus.PENDING;
+    }
+
+    public static Payment of(
+            Order order, Member member, int amount, PaymentMethod paymentMethod,
+            String cardCompany, Integer installmentMonth) {
+        return new Payment(order, member, amount, paymentMethod, cardCompany, installmentMonth);
+    }
 }
