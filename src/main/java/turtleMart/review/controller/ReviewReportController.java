@@ -1,5 +1,7 @@
 package turtleMart.review.controller;
 
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,7 +21,7 @@ public class ReviewReportController {
     public ResponseEntity<ReviewReportResponse> createReviewReport(//@RequestAttribute("memberId") Long memberId,
                                                                    @PathVariable(name = "reviewId") Long reviewId,
                                                                    @RequestBody @Valid CreateReviewReportRequest request
-    ){
+    ) throws JsonProcessingException {
         ReviewReportResponse reviewReportResponse = reviewReportService.createReviewReport(1L, reviewId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewReportResponse);
     }
