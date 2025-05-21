@@ -13,28 +13,28 @@ import turtleMart.delivery.service.CourierService;
 
 import java.util.List;
 
-@RequestMapping
+@RequestMapping("/api/couriers")
 @RestController
 @RequiredArgsConstructor
 public class CourierController {
 
     private final CourierService courierService;
 
-    @PostMapping("/api/couriers")
+    @PostMapping
     public ResponseEntity<CreateCourierResponse> createCourier(@RequestBody CreateCourierRequest request) {
         CreateCourierResponse createCourierResponse = courierService.createCourier(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createCourierResponse);
     }
 
-    @GetMapping("/api/couriers")
+    @GetMapping
     public ResponseEntity<List<ReadCourierResponse>> readAllCouriers() {
         List<ReadCourierResponse> readCourierResponseList = courierService.readAllCouriers();
 
         return ResponseEntity.status(HttpStatus.OK).body(readCourierResponseList);
     }
 
-    @PatchMapping("/api/couriers/{courierId}")
+    @PatchMapping("/{courierId}")
     public ResponseEntity<UpdateCourierResponse> updateCourier(
         @RequestBody UpdateCourierRequest request,
         @PathVariable(name = "courierId") Long courierId
@@ -42,5 +42,12 @@ public class CourierController {
         UpdateCourierResponse updateCourierResponse = courierService.updateCourier(request, courierId);
 
         return ResponseEntity.status(HttpStatus.OK).body(updateCourierResponse);
+    }
+
+    @DeleteMapping("/{courierId}")
+    public ResponseEntity<Void> deleteCourier(@PathVariable(name = "courierId") Long courierId) {
+        courierService.deleteCourier(courierId);
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

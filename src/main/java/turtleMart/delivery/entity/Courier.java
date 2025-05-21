@@ -28,6 +28,8 @@ public class Courier {
 
     private String trackingUrlTemplate;
 
+    private boolean isDeleted = false;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -54,5 +56,9 @@ public class Courier {
         if (request.trackingUrlTemplate() != null && !request.trackingUrlTemplate().isBlank()) {
             this.trackingUrlTemplate = request.trackingUrlTemplate();
         }
+    }
+
+    public void delete() {
+        this.isDeleted = true;
     }
 }

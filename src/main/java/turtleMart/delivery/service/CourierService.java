@@ -34,7 +34,7 @@ public class CourierService {
     }
 
     public List<ReadCourierResponse> readAllCouriers() {
-        List<Courier> courierList = courierRepository.findAll();
+        List<Courier> courierList = courierRepository.findAllByIsDeletedFalse();
 
         return courierList.stream()
             .map(ReadCourierResponse::from)
@@ -49,5 +49,13 @@ public class CourierService {
         courier.update(request);
 
         return UpdateCourierResponse.from(courier);
+    }
+
+    @Transactional
+    public void deleteCourier(Long courierId) {
+        Courier courier = courierRepository.findById(courierId)
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 택배사입니다."));
+
+        courier.delete();
     }
 }
