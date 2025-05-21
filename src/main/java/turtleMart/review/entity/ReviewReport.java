@@ -4,15 +4,13 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
-import java.time.LocalDateTime;
 
 @Getter
 @Entity @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ReviewReport {
+public class ReviewReport extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,12 +35,6 @@ public class ReviewReport {
 
     @Column(length = 50, nullable = true)
     private String cancelReason;
-
-    @CreatedDate
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 
     private ReviewReport(Review review, Member member, ReasonCode reasonCode, String reasonDetail){
         this.review = review;
