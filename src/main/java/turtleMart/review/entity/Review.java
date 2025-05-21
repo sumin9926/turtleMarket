@@ -8,7 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
-import turtleMart.product.Product;
+import turtleMart.product.entity.Product;
 
 import java.time.LocalDateTime;
 @Getter

@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import turtleMart.product.Product;
+import turtleMart.product.entity.Product;
 
 
 @Getter
