@@ -25,6 +25,7 @@ public class Address {
 
     private String detailAddress;
 
+    private String receiverName;
 
-
+    private String receiverPhone;
 }
