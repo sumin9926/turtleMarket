@@ -24,7 +24,7 @@ public class SenderService {
 
     @Transactional
     public SenderResponse createSender(CreateSenderRequest request) {
-        if (senderRepository.existsByName(request.name())) {
+        if (senderRepository.existsByAddressAndDetailAddress(request.address(), request.detailAddress())) {
             throw new RuntimeException("이미 존재하는 출고지(물류센터)입니다.");
         }
 
