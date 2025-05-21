@@ -28,7 +28,7 @@ public class SenderService {
             throw new RuntimeException("이미 존재하는 출고지(물류센터)입니다.");
         }
 
-        if (courierRepository.existsByIdAndIsDeletedFalse(request.courierId())) {
+        if (!courierRepository.existsByIdAndIsDeletedFalse(request.courierId())) {
             throw new RuntimeException("존재하지 않는 택배사입니다.");
         }
 
