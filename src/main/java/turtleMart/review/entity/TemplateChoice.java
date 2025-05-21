@@ -34,4 +34,6 @@ public class TemplateChoice {
     public static TemplateChoice of(Review review, ProductReviewTemplate productReviewTemplate, TemplateChoiceGrade choseAnswer){
         return new TemplateChoice(review, productReviewTemplate, choseAnswer);
     }
+
+    public void update(TemplateChoiceGrade choseAnswer){this.choseAnswer = choseAnswer;}
 }
