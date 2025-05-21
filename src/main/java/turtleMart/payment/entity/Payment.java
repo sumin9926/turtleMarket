@@ -54,4 +54,12 @@ public class Payment extends BaseEntity {
             String cardCompany, Integer installmentMonth) {
         return new Payment(order, member, amount, paymentMethod, cardCompany, installmentMonth);
     }
+
+    public void addFailReason(FailReason failReason) {
+        this.failReason = failReason;
+    }
+
+    public void changePaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
 }
