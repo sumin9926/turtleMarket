@@ -17,11 +17,21 @@ public class ReasonCode {
     @Column(length = 50, nullable = false)
     private String reason;
 
+    private boolean isDeleted = false;
+
     private ReasonCode(String reason){
         this.reason = reason;
     }
 
     public static ReasonCode of(String reason){
         return new ReasonCode(reason);
+    }
+
+    public void update(String reason){
+        this.reason = reason;
+    }
+
+    public void delete(){
+        this.isDeleted = true;
     }
 }
