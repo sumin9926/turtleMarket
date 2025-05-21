@@ -49,4 +49,11 @@ public class SenderController {
 
         return ResponseEntity.status(HttpStatus.OK).body(updateSenderResponse);
     }
+
+    @DeleteMapping("/api/senders/{senderId}")
+    public ResponseEntity<Void> deleteSender(@PathVariable(name = "senderId") Long senderId) {
+        senderService.deleteSender(senderId);
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
 }

@@ -62,4 +62,12 @@ public class SenderService {
 
         return UpdateSenderResponse.from(sender);
     }
+
+    @Transactional
+    public void deleteSender(Long senderId) {
+        Sender sender = senderRepository.findById(senderId)
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 출고지(물류센터)입니다."));
+
+        sender.delete();
+    }
 }

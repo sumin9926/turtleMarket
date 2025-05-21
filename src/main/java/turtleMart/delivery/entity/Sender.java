@@ -70,4 +70,8 @@ public class Sender {
             this.detailAddress = request.detailAddress();
         }
     }
+
+    public void delete() {
+        this.isDeleted = true;
+    }
 }
