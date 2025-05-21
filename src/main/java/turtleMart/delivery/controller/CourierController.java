@@ -3,13 +3,13 @@ package turtleMart.delivery.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import turtleMart.delivery.dto.reqeust.CreateCourierRequest;
 import turtleMart.delivery.dto.response.CreateCourierResponse;
+import turtleMart.delivery.dto.response.ReadCourierResponse;
 import turtleMart.delivery.service.CourierService;
+
+import java.util.List;
 
 @RequestMapping
 @RestController
@@ -23,5 +23,12 @@ public class CourierController {
         CreateCourierResponse createCourierResponse = courierService.createCourier(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createCourierResponse);
+    }
+
+    @GetMapping("/api/couriers")
+    public ResponseEntity<List<ReadCourierResponse>> readAllCouriers() {
+        List<ReadCourierResponse> readCourierResponseList = courierService.readAllCouriers();
+
+        return ResponseEntity.status(HttpStatus.OK).body(readCourierResponseList);
     }
 }
