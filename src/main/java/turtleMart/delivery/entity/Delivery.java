@@ -78,4 +78,10 @@ public class Delivery extends BaseEntity {
     public static Delivery of(Order order, Seller seller, Sender sender, Address address, String deliveryRequest) {
         return new Delivery(order, seller, sender, address, deliveryRequest);
     }
+
+    public void updateTrackingNumber(String trackingNumber) {
+        this.trackingNumber = trackingNumber;
+        this.deliveryStatus = DeliveryStatus.SHIPPED;
+        this.shippedAt = LocalDateTime.now();
+    }
 }

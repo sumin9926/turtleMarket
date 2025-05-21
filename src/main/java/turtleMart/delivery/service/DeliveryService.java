@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
+import turtleMart.delivery.dto.reqeust.UpdateDeliveryRequest;
 import turtleMart.delivery.dto.response.CreateDeliveryResponse;
+import turtleMart.delivery.dto.response.UpdateDeliveryResponse;
 import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.entity.Sender;
 import turtleMart.delivery.repository.DeliveryRepository;
@@ -54,5 +56,15 @@ public class DeliveryService {
         deliveryRepository.save(delivery);
 
         return CreateDeliveryResponse.from(delivery);
+    }
+
+    @Transactional
+    public UpdateDeliveryResponse updateTrackingNumber(Long deliveryId, UpdateDeliveryRequest request) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND));
+
+        delivery.updateTrackingNumber(request.trackingNumber());
+
+        return UpdateDeliveryResponse.from(delivery);
     }
 }
