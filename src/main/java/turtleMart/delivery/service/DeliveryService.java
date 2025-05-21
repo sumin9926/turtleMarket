@@ -20,6 +20,7 @@ import turtleMart.order.repository.OrderRepository;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
@@ -46,7 +47,7 @@ public class DeliveryService {
         Sender sender = senderRepository.getReferenceById(request.senderId());
 
         Address address = addressRepository.findById(request.addressId())
-            .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_SENDER));
+            .orElseThrow(() -> new NotFoundException(ErrorCode.SENDER_NOT_FOUND));
 
         Delivery delivery = Delivery.of(order, seller, sender, address, request.deliveryRequest());
 
