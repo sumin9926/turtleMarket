@@ -12,7 +12,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomRuntimeException.class)
     protected ResponseEntity<ErrorResponse> handleCustomException(final CustomRuntimeException e) {
-        ErrorResponse response = new ErrorResponse(e.getErrorCode());
+        ErrorResponse response = ErrorResponse.from(e.getErrorCode());
         return createResponseEntity(response);
     }
 
