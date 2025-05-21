@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.delivery.dto.reqeust.UpdateDeliveryRequest;
 import turtleMart.delivery.dto.response.CreateDeliveryResponse;
+import turtleMart.delivery.dto.response.ReadDeliveryResponse;
 import turtleMart.delivery.dto.response.UpdateDeliveryResponse;
 import turtleMart.delivery.service.DeliveryService;
 
@@ -32,5 +33,12 @@ public class DeliveryController {
         UpdateDeliveryResponse updateDeliveryResponse = deliveryService.updateTrackingNumber(deliveryId, request);
 
         return ResponseEntity.status(HttpStatus.OK).body(updateDeliveryResponse);
+    }
+
+    @GetMapping("/{deliveryId}")
+    public ResponseEntity<ReadDeliveryResponse> readDelivery(@PathVariable(name = "deliveryId") Long deliveryId) {
+        ReadDeliveryResponse readDeliveryResponse = deliveryService.readDelivery(deliveryId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(readDeliveryResponse);
     }
 }

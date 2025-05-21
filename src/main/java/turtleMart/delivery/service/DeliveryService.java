@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.delivery.dto.reqeust.UpdateDeliveryRequest;
 import turtleMart.delivery.dto.response.CreateDeliveryResponse;
+import turtleMart.delivery.dto.response.ReadDeliveryResponse;
 import turtleMart.delivery.dto.response.UpdateDeliveryResponse;
 import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.entity.Sender;
@@ -66,5 +67,12 @@ public class DeliveryService {
         delivery.updateTrackingNumber(request.trackingNumber());
 
         return UpdateDeliveryResponse.from(delivery);
+    }
+
+    public ReadDeliveryResponse readDelivery(Long deliveryId) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND));
+
+        return ReadDeliveryResponse.from(delivery);
     }
 }
