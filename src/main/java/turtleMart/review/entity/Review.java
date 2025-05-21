@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.product.Product;
@@ -39,18 +40,19 @@ public class Review {
     private String content;
 
     @Column(columnDefinition = "TINYINT", nullable = false)
-    private Short rating;
+    private Integer rating;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 
     @CreatedDate
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    private Review(Member member, Product product, OrderItem orderItem, String title, String content, Short rating, String imageUrl){
+    private Review(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl){
         this.member = member;
         this.product = product;
         this.orderItem = orderItem;
@@ -60,7 +62,7 @@ public class Review {
         this.imageUrl = imageUrl;
     }
 
-    public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Short rating, String imageUrl){
+    public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl){
         return new Review(member, product, orderItem, title, content, rating, imageUrl);
     }
 }

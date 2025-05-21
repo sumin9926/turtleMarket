@@ -12,4 +12,6 @@ public interface ReviewTemplateRepository extends JpaRepository<ReviewTemplate, 
 
     @Query("SELECT r FROM ReviewTemplate r WHERE r.isDeleted = FALSE ")
     List<ReviewTemplate> findAllDeletedFalse();
+
+
 }
