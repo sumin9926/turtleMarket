@@ -12,4 +12,6 @@ public interface CourierRepository extends JpaRepository<Courier, Long> {
 
     @Query("SELECT c FROM Courier c WHERE c.isDeleted = false")
     List<Courier> findAllByIsDeletedFalse();
+
+    boolean existsByIdAndIsDeletedFalse(Long courierId);
 }

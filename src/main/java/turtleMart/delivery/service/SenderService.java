@@ -28,8 +28,11 @@ public class SenderService {
             throw new RuntimeException("이미 존재하는 출고지(물류센터)입니다.");
         }
 
-        Courier courier = courierRepository.findById(request.courierId())
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 택배사입니다."));
+        if (courierRepository.existsByIdAndIsDeletedFalse(request.courierId())) {
+            throw new RuntimeException("존재하지 않는 택배사입니다.");
+        }
+
+        Courier courier = courierRepository.getReferenceById(request.courierId());
 
         Sender sender = Sender.of(courier, request.name(), request.phoneNumber(), request.address(), request.detailAddress());
 
