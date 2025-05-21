@@ -10,4 +10,8 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
 
     @Query("SELECT d FROM Delivery d WHERE d.address.member.id = :memberId")
     List<Delivery> findAllByMemberId(Long memberId);
+
+    @Query("SELECT d FROM Delivery d WHERE d.seller.id = :sellerId")
+    List<Delivery> findAllBySeller(Long sellerId);
+
 }

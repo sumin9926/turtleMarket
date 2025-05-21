@@ -52,4 +52,13 @@ public class DeliveryController {
 
         return ResponseEntity.status(HttpStatus.OK).body(readDeliveryResponseList);
     }
+
+    @GetMapping("/sellers/{sellerId}")
+    public ResponseEntity<List<ReadDeliveryResponse>> readAllDeliveriesBySeller(
+        @PathVariable(name = "sellerId") Long sellerId
+    ) {
+        List<ReadDeliveryResponse> readDeliveryResponseList = deliveryService.readAllDeliveriesBySeller(sellerId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(readDeliveryResponseList);
+    }
 }

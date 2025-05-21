@@ -85,4 +85,12 @@ public class DeliveryService {
             .map(ReadDeliveryResponse::from)
             .toList();
     }
+
+    public List<ReadDeliveryResponse> readAllDeliveriesBySeller(Long sellerId) {
+        List<Delivery> deliveryList = deliveryRepository.findAllBySeller(sellerId);
+
+        return deliveryList.stream()
+            .map(ReadDeliveryResponse::from)
+            .toList();
+    }
 }
