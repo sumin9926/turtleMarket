@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
-import turtleMart.product.Product;
+import turtleMart.product.entity.Product;
 
 @Entity
 @Getter
