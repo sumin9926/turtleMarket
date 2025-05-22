@@ -1,5 +1,6 @@
 package turtleMart.order.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,18 +25,18 @@ public class CartController {
 
     @PostMapping()
     public ResponseEntity<AddCartItemResponse> addCartItem(
-        @Valid @RequestBody AddCartItemRequest request
-        /*TODO JWT 통해서 회원 ID 가져오기*/
-    ){
+            @Valid @RequestBody AddCartItemRequest request
+            /*TODO JWT 통해서 회원 ID 가져오기*/
+    ) throws JsonProcessingException {
         AddCartItemResponse response = cartService.addItemsToCart(1L, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<CartItemResponse>> addCartItem(
+    public ResponseEntity<List<CartItemResponse>> getMyCartItem(
             /*TODO JWT 통해서 회원 ID 가져오기*/
-    ){
+    ) {
         List<CartItemResponse> responseList = cartService.getItemsFromCart(1L);
 
         return ResponseEntity.status(HttpStatus.OK).body(responseList);
@@ -46,7 +47,7 @@ public class CartController {
             /*TODO JWT 통해서 회원 ID 가져오기*/
             @Valid @RequestBody CartItemQuantityRequest request,
             @PathVariable Long cartItemId
-    ){
+    ) {
         AddCartItemResponse response = cartService.updateCartItemQuantity(1L, request, cartItemId);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -56,7 +57,7 @@ public class CartController {
     public ResponseEntity<Void> deleteCartItemById(
             /*TODO JWT 통해서 회원 ID 가져오기*/
             @PathVariable Long cartItemId
-    ){
+    ) {
         cartService.deleteCartItem(1L, cartItemId);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -65,7 +66,7 @@ public class CartController {
     @DeleteMapping()
     public ResponseEntity<Void> clearCart(
             /*TODO JWT 통해서 회원 ID 가져오기*/
-    ){
+    ) {
         cartService.deleteAllCartItem(1L);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

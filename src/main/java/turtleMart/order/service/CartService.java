@@ -2,10 +2,11 @@ package turtleMart.order.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartItemQuantityRequest;
 import turtleMart.order.dto.response.AddCartItemResponse;
@@ -15,39 +16,61 @@ import turtleMart.product.repository.ProductRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CartService {
 
+    private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public AddCartItemResponse addItemsToCart(long memberId, @Valid AddCartItemRequest request) {
+    @Transactional
+    public AddCartItemResponse addItemsToCart(long memberId, AddCartItemRequest request) throws JsonProcessingException {
 
-        // TODO 회원 조회 및 존재하지 않을 경우 예외처리
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        }
+
+        if (!productRepository.existsById(request.productId())) {
+            throw new RuntimeException("존재하지 않는 상품입니다.");//TODO 커스텀 예외처리
+        }
 
         String key = "cart:" + memberId;
+
+        //key에 있는 모든 상품을 가져와서, productId 기준으로 비교 (장바구니에 상품이 20개 이상 담길 경우 productId → cartItemId 인덱스 Redis에 따로 두는 것 고려)
+        Map<Object, Object> cartEntries = redisTemplate.opsForHash().entries(key);
+
+        for (Map.Entry<Object, Object> entry : cartEntries.entrySet()) {
+            String cartItemJson = entry.getValue().toString();
+            AddCartItemResponse addCartItemResponse = objectMapper.readValue(cartItemJson, AddCartItemResponse.class);
+
+            if (request.productId().equals(addCartItemResponse.productId())) { //동일 상품 존재시 수량만 업데이트
+                Long updatedQuantity = addCartItemResponse.quantity() + request.quantity();
+
+                return updateCartItemQuantity(memberId, new CartItemQuantityRequest(updatedQuantity), addCartItemResponse.cartItemId());
+            }
+        }
+
+        //장바구니에 존재하지 않는 상품은 새로 Id를 생성해서 장바구니에 담는다.
         Long cartItemId = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
 
-        AddCartItemResponse cartItem = new AddCartItemResponse(
-                cartItemId, request.productId(), request.quantity(), true
-        );
+        AddCartItemResponse addCartItemResponse = new AddCartItemResponse(cartItemId, request.productId(), request.quantity(), true);
 
-        try {
-            String cartItemJson = objectMapper.writeValueAsString(cartItem);
-            redisTemplate.opsForHash().put(key, String.valueOf(cartItemId), cartItemJson);
+        String cartItemJson = objectMapper.writeValueAsString(addCartItemResponse);
+        redisTemplate.opsForHash().put(key, String.valueOf(cartItemId), cartItemJson);
 
-            return cartItem;
-
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Redis 장바구니 저장 실패", e);
-        }
+        return addCartItemResponse;
     }
 
+    @Transactional(readOnly = true)
     public List<CartItemResponse> getItemsFromCart(long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        }
 
         String key = "cart:" + memberId;
         List<Object> cartJsonList = redisTemplate.opsForHash().values(key); //key에 해당하는 모든 value 가져오기
@@ -75,7 +98,11 @@ public class CartService {
         return cartItemResponseList;
     }
 
+    @Transactional
     public AddCartItemResponse updateCartItemQuantity(long memberId, CartItemQuantityRequest request, Long cartItemId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        }
 
         String key = "cart:" + memberId;
 
@@ -101,18 +128,28 @@ public class CartService {
         }
     }
 
+    @Transactional
     public void deleteCartItem(long memberId, Long cartItemId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        }
+
         String key = "cart:" + memberId;
 
         Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));
-        if (Boolean.FALSE.equals(cartItemExist)){
+        if (Boolean.FALSE.equals(cartItemExist)) {
             throw new RuntimeException("장바구니에서 삭제하려는 상품이 존재하지 않음"); //TODO 커스텀 예외처리
         }
 
         redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));
     }
 
+    @Transactional
     public void deleteAllCartItem(long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        }
+
         String key = "cart:" + memberId;
 
         redisTemplate.delete(key);
