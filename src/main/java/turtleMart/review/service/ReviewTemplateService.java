@@ -54,9 +54,6 @@ public class ReviewTemplateService {
         ReviewTemplate reviewTemplate = reviewTemplateRepository.findById(reviewTemplateId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰 템플릿입니다"));
 
-        List<ProductReviewTemplate> productReviewTemplateList = productReviewTemplateRepository.findByReviewTemplateId(reviewTemplateId);
-
-        productReviewTemplateList.forEach(ProductReviewTemplate::delete);
         reviewTemplate.delete();
     }
 }
