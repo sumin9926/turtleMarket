@@ -2,14 +2,17 @@ package turtleMart.order.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
 import turtleMart.order.dto.response.MemberOrderListResponse;
 import turtleMart.order.dto.response.OrderDetailResponse;
+import turtleMart.order.dto.response.TotalOrderedQuantityResponse;
 import turtleMart.order.service.OrderService;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,6 +52,18 @@ public class OrderController {
             /*TODO JWT 통해서 회원 ID 가져오기*/
     ){
         MemberOrderListResponse response = orderService.getOrderList(1L);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/seller")
+    public ResponseEntity<TotalOrderedQuantityResponse> getTotalOrderedQuantity(
+            @RequestParam Long productId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, //2025-05-10 형식으로 입력(이하 동일)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+            /*TODO JWT 통해서 판매자 ID 가져오기*/
+    ){
+        TotalOrderedQuantityResponse response = orderService.getTotalOrderedQuantity(1L, productId, startDate, endDate);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }

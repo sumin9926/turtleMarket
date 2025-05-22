@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.member.repository.MemberRepository;
+import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartOrderSheetRequest;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
@@ -19,6 +20,7 @@ import turtleMart.order.repository.OrderRepository;
 import turtleMart.product.entity.Product;
 import turtleMart.product.repository.ProductRepository;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ public class OrderService {
     private final CartService cartService;
     private final OrderItemRepository orderItemRepository;
     private final DeliveryRepository deliveryRepository;
+    private final SellerRepository sellerRepository;
 
     @Transactional(readOnly = true)
     public List<OrderSheetResponse> getCartOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
@@ -179,5 +182,19 @@ public class OrderService {
         }
 
         return MemberOrderListResponse.from(memberId, simpleResponseList);
+    }
+
+    public TotalOrderedQuantityResponse getTotalOrderedQuantity(
+            Long sellerId, Long productId, LocalDate startDate, LocalDate endDate
+    ) {
+        if(!sellerRepository.existsById(sellerId)){
+            throw new RuntimeException("존재하지 않는 판매자입니다.");//TODO 커스텀 예외처리
+        }
+
+        Integer totalOrderedQuantity = orderItemRepository.countTotalOrderedBySellerAndProduct(
+                sellerId, productId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay()
+        );
+
+        return TotalOrderedQuantityResponse.from(productId, totalOrderedQuantity);
     }
 }
