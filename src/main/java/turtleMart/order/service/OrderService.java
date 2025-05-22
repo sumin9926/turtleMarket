@@ -7,7 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartOrderSheetRequest;
+import turtleMart.order.dto.response.OrderDetailResponse;
+import turtleMart.order.dto.response.OrderItemResponse;
 import turtleMart.order.dto.response.OrderSheetResponse;
+import turtleMart.order.entity.Order;
+import turtleMart.order.repository.OrderRepository;
 import turtleMart.product.entity.Product;
 import turtleMart.product.repository.ProductRepository;
 
@@ -19,6 +23,7 @@ import java.util.List;
 public class OrderService {
 
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
     private final CartService cartService;
 
@@ -70,5 +75,23 @@ public class OrderService {
         }
 
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDetailResponse getOrderDetail(Long memberId, Long orderId) {
+
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        }
+
+        Order order = orderRepository.findWithOrderItemsById(orderId).orElseThrow(
+                () -> new RuntimeException("존재하지 않는 주문 입니다.")//TODO 커스텀 예외처리
+        );
+
+        List<OrderItemResponse> orderItemResponseList = order.getOrderItems().stream()
+                .map(OrderItemResponse::from)
+                .toList();
+
+        return OrderDetailResponse.from(order, orderItemResponseList);
     }
 }
