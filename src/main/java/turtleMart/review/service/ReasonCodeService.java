@@ -31,7 +31,9 @@ public class ReasonCodeService {
     @Transactional
     public ReasonCodeResponse updateReasonCode(Long reasonCodeId, UpdateReasonCodeRequest request){
         ReasonCode reasonCode = reasonCodeRepository.findById(reasonCodeId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 신고이유입니다"));
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 신고코드입니다"));
+
+        if(reasonCode.isDeleted()){throw new RuntimeException("삭제된 신고코드입니다");}
 
         reasonCode.update(request.reason());
         return ReasonCodeResponse.from(reasonCode);
@@ -41,6 +43,8 @@ public class ReasonCodeService {
     public void delete(Long reasonCodeId){
         ReasonCode reasonCode = reasonCodeRepository.findById(reasonCodeId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 신고이유입니다"));
+
+        if(reasonCode.isDeleted()){throw new RuntimeException("삭제된 신고코드입니다");}
 
         reasonCode.delete();
     }
