@@ -47,7 +47,7 @@ public class CartService {
             AddCartItemResponse addCartItemResponse = objectMapper.readValue(cartItemJson, AddCartItemResponse.class);
 
             if (request.productId().equals(addCartItemResponse.productId())) { //동일 상품 존재시 수량만 업데이트
-                Long updatedQuantity = addCartItemResponse.quantity() + request.quantity();
+                Integer updatedQuantity = addCartItemResponse.quantity() + request.quantity();
 
                 return updateCartItemQuantity(memberId, new CartItemQuantityRequest(updatedQuantity), addCartItemResponse.cartItemId());
             }

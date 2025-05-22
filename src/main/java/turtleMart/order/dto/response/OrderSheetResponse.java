@@ -4,6 +4,6 @@ public record OrderSheetResponse(
         Long productId,
         String productName,
         Integer productPrice,
-        Long quantity
+        Integer quantity
 ) {
 }

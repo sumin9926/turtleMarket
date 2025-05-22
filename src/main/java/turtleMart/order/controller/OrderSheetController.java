@@ -29,7 +29,7 @@ public class OrderSheetController {
                 .map(entry -> {
                     String[] parts = entry.split(":");
                     Long productId = Long.parseLong(parts[0]);
-                    Long quantity = Long.parseLong(parts[1]);
+                    Integer quantity = Integer.parseInt(parts[1]);
                     return new CartOrderSheetRequest(productId, quantity);
                 })
                 .toList();
@@ -48,7 +48,7 @@ public class OrderSheetController {
                 .map(entry -> {
                     String[] parts = entry.split(":");
                     Long productId = Long.parseLong(parts[0]);
-                    Long quantity = Long.parseLong(parts[1]);
+                    Integer quantity = Integer.parseInt(parts[1]);
                     return new CartOrderSheetRequest(productId, quantity);
                 })
                 .toList().get(0);
