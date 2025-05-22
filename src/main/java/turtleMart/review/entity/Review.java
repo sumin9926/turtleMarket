@@ -4,16 +4,10 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.product.entity.Product;
-import turtleMart.review.dto.request.UpdateReviewRequest;
-
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +47,9 @@ public class Review extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 
-    private Review(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl, List<TemplateChoice> templateChoiceList) {
+    private boolean isDeleted = false;
+
+    private Review(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl) {
         this.member = member;
         this.product = product;
         this.orderItem = orderItem;
@@ -61,17 +57,18 @@ public class Review extends BaseEntity {
         this.content = content;
         this.rating = rating;
         this.imageUrl = imageUrl;
-        this.templateChoiceList = templateChoiceList;
     }
 
-    public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl, List<TemplateChoice> templateChoiceList) {
-        return new Review(member, product, orderItem, title, content, rating, imageUrl, templateChoiceList);
+    public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl) {
+        return new Review(member, product, orderItem, title, content, rating, imageUrl);
     }
 
-    public void update(UpdateReviewRequest request, String imageUrl) {
-        this.title = request.title();
-        this.content = request.content();
-        this.rating = request.rating();
+    public void update(String title, String content, Integer rating, String imageUrl) {
+        this.title = title;
+        this.content = content;
+        this.rating = rating;
         this.imageUrl = imageUrl;
     }
+
+    public void delete(){this.isDeleted = true;}
 }

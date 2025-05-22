@@ -25,14 +25,13 @@ public class TemplateChoice {
     @Enumerated(EnumType.STRING)
     private TemplateChoiceGrade choseAnswer; // 필드명 변경
 
-    private TemplateChoice(Review review, ProductReviewTemplate productReviewTemplate, TemplateChoiceGrade choseAnswer){
-        this.review = review;
+    private TemplateChoice(ProductReviewTemplate productReviewTemplate, TemplateChoiceGrade choseAnswer){
         this.productReviewTemplate = productReviewTemplate;
         this.choseAnswer = choseAnswer;
     }
 
-    public static TemplateChoice of(Review review, ProductReviewTemplate productReviewTemplate, TemplateChoiceGrade choseAnswer){
-        return new TemplateChoice(review, productReviewTemplate, choseAnswer);
+    public static TemplateChoice of(ProductReviewTemplate productReviewTemplate, TemplateChoiceGrade choseAnswer){
+        return new TemplateChoice(productReviewTemplate, choseAnswer);
     }
 
     public void setReview(Review review){

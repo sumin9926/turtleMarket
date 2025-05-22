@@ -30,7 +30,6 @@ public class ReviewTemplateService {
                 request.satisfaction_high()
         );
         reviewTemplateRepository.save(reviewTemplate);
-
         return ReviewTemplateResponse.from(reviewTemplate);
     }
 
