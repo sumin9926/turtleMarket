@@ -4,13 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.delivery.entity.Delivery;
+import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartOrderSheetRequest;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
-import turtleMart.order.dto.response.OrderDetailResponse;
-import turtleMart.order.dto.response.OrderItemResponse;
-import turtleMart.order.dto.response.OrderSheetResponse;
+import turtleMart.order.dto.response.*;
 import turtleMart.order.entity.Order;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.order.entity.OrderItemStatus;
@@ -21,6 +21,8 @@ import turtleMart.product.repository.ProductRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class OrderService {
     private final MemberRepository memberRepository;
     private final CartService cartService;
     private final OrderItemRepository orderItemRepository;
+    private final DeliveryRepository deliveryRepository;
 
     @Transactional(readOnly = true)
     public List<OrderSheetResponse> getCartOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
@@ -120,7 +123,7 @@ public class OrderService {
                     () -> new RuntimeException("존재하지 않는 상품 주문 내역입니다.")//TODO 커스텀 예외처리
             );
 
-            if(!order.getOrderItems().contains(orderItem)){
+            if (!order.getOrderItems().contains(orderItem)) {
                 throw new RuntimeException("해당 주문에 속하지 않은 상품입니다."); //TODO 커스텀 예외처리
             }
 
@@ -150,5 +153,31 @@ public class OrderService {
             case REFUNDING -> target == OrderItemStatus.REFUNDED;
             case REFUNDED, CONFIRMED -> false;
         };
+    }
+
+    @Transactional(readOnly = true)
+    public MemberOrderListResponse getOrderList(Long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        }
+
+        List<OrderSimpleResponse> simpleResponseList = new ArrayList<>();
+
+        List<Order> orderList = orderRepository.findWithOrderItemsByMemberId(memberId);
+        List<Long> orderIdList = orderList.stream().map(Order::getId).toList();
+        List<Delivery> deliveryList = deliveryRepository.findAllWithOrderIds(orderIdList);
+        Map<Long, Delivery> deliveryMap = deliveryList.stream().collect(Collectors.toMap(d -> d.getOrder().getId(), d -> d));
+
+        for (Order order : orderList) {
+            // orderId로 deliveryStatus 가져오기
+            Delivery delivery = deliveryMap.get(order.getId());
+            if (null==delivery) {
+                throw new RuntimeException("배송 내역이 존재하지 않습니다.");
+            }
+            List<Long> orderItemIdList = order.getOrderItems().stream().map(OrderItem::getId).toList();
+            simpleResponseList.add(OrderSimpleResponse.from(order, delivery, orderItemIdList));
+        }
+
+        return MemberOrderListResponse.from(memberId, simpleResponseList);
     }
 }

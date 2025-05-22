@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
+import turtleMart.order.dto.response.MemberOrderListResponse;
 import turtleMart.order.dto.response.OrderDetailResponse;
 import turtleMart.order.service.OrderService;
 
@@ -39,6 +40,15 @@ public class OrderController {
         List<Long> orderItemIdList = Arrays.stream(orderItemIds.split(",")).map(Long::parseLong).toList();
 
         OrderDetailResponse response = orderService.updateOrderItemStatus(orderId, orderItemIdList, request, 1L);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<MemberOrderListResponse> getMyOrderList(
+            /*TODO JWT 통해서 회원 ID 가져오기*/
+    ){
+        MemberOrderListResponse response = orderService.getOrderList(1L);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
