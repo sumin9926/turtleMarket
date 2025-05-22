@@ -1,6 +1,5 @@
 package turtleMart.review.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,15 +17,18 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping("/products/{productId}/reviews")
-    public ResponseEntity<ReviewResponse> createReview(//@RequestAttribute("memberId") Long memberId,
-                                                       @PathVariable(name = "productId") Long productId,
-                                                       @RequestBody @Valid CreateReviewRequest request) throws JsonProcessingException {
+    public ResponseEntity<ReviewResponse> createReview(
+            //@RequestAttribute("memberId") Long memberId,
+            @PathVariable(name = "productId") Long productId,
+            @RequestBody @Valid CreateReviewRequest request) {
+
         ReviewResponse reviewResponse = reviewService.createReview(1L, productId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewResponse);
     }
 
     @GetMapping("/reviews/{reviewId}")
-    public ResponseEntity<ReviewResponse> readReview(@PathVariable(name = "reviewId") Long reviewId) throws JsonProcessingException{
+    public ResponseEntity<ReviewResponse> readReview(
+            @PathVariable(name = "reviewId") Long reviewId) {
 
         ReviewResponse reviewResponse = reviewService.readReview(reviewId);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
@@ -53,16 +55,20 @@ public class ReviewController {
 //    }
 
     @PatchMapping("/reviews/{reviewId}")
-    public ResponseEntity<ReviewResponse> updateReview(//@RequestAttribute("memberId") Long memberId,
-                                                       @PathVariable(name = "reviewId") Long reviewId,
-                                                       @RequestBody UpdateReviewRequest request) throws JsonProcessingException {
+    public ResponseEntity<ReviewResponse> updateReview(
+            //@RequestAttribute("memberId") Long memberId,
+            @PathVariable(name = "reviewId") Long reviewId,
+            @RequestBody UpdateReviewRequest request){
+
         ReviewResponse reviewResponse = reviewService.updateReview(1L, reviewId, request);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 
     @DeleteMapping("/reviews/{reviewId}")
-    public ResponseEntity<Void> deleteReview(//@RequestAttribute("memberId") Long memberId,
-                                             @PathVariable(name = "reviewId") Long reviewId){
+    public ResponseEntity<Void> deleteReview(
+            //@RequestAttribute("memberId") Long memberId,
+            @PathVariable(name = "reviewId") Long reviewId) {
+
         reviewService.deleteReview(1L, reviewId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }

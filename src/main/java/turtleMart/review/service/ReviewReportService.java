@@ -2,15 +2,14 @@ package turtleMart.review.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.review.dto.request.CreateReviewReportRequest;
 import turtleMart.review.dto.response.ReviewReportResponse;
-import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.dto.response.TemplateChoiceResponse;
 import turtleMart.review.entity.ReasonCode;
 import turtleMart.review.entity.Review;
@@ -31,17 +30,17 @@ public class ReviewReportService {
     private final ReviewRepository reviewRepository;
     private final ReasonCodeRepository reasonCodeRepository;
     private final ReviewReportRepository reviewReportRepository;
-    private final ObjectMapper objectMapper;
+
 
     @Transactional
-    public ReviewReportResponse createReviewReport(Long memberId, Long reviewId, CreateReviewReportRequest request) throws JsonProcessingException {
+    public ReviewReportResponse createReviewReport(Long memberId, Long reviewId, CreateReviewReportRequest request){
 
         if(!memberRepository.existsById(memberId)){throw new RuntimeException("존재하지 않는 멤버입니다");}
         Member member = memberRepository.getReferenceById(memberId);
 
         if(!reviewRepository.existsById(reviewId)){throw new RuntimeException("존재하지 않는 리뷰입니다");}
         Review review = reviewRepository.getReferenceById(reviewId);
-        List<String> imageUrlList = objectMapper.readValue(review.getImageUrl(), new TypeReference<List<String>>() {});
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
 
         if(!reasonCodeRepository.existsById(request.reasonCodeId())){throw new RuntimeException("신고 코드입니다");}
         ReasonCode reasonCode = reasonCodeRepository.getReferenceById(request.reasonCodeId());
@@ -55,7 +54,7 @@ public class ReviewReportService {
                 })
                 .toList();
 
-        return ReviewReportResponse.of( ReviewResponse.of(review, imageUrlList, choiceResponseList), reviewReport);
+        return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
 //    public Page<ReviewReportResponse> readAll(Pageable pageable){
@@ -73,12 +72,12 @@ public class ReviewReportService {
 //                })
 //    }
 
-    public ReviewReportResponse readById(Long reviewReportId) throws JsonProcessingException {
+    public ReviewReportResponse readById(Long reviewReportId){
         ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
 
         Review review = reviewReport.getReview();
-        List<String> imageUrlList = objectMapper.readValue(review.getImageUrl(), new TypeReference<List<String>>() {});
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
 
         List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList().stream()
                 .map(t -> {
@@ -87,11 +86,11 @@ public class ReviewReportService {
                 })
                 .toList();
 
-        return ReviewReportResponse.of( ReviewResponse.of(review, imageUrlList, choiceResponseList), reviewReport);
+        return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
     @Transactional
-    public ReviewReportResponse updateReviewReport( Long reviewReportId) throws JsonProcessingException {
+    public ReviewReportResponse updateReviewReport( Long reviewReportId) {
 
         ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
@@ -100,7 +99,7 @@ public class ReviewReportService {
 
         Review review = reviewReport.getReview();
 
-        List<String> imageUrlList = objectMapper.readValue(review.getImageUrl(), new TypeReference<List<String>>() {});
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
 
         List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList().stream()
                 .map(t -> {
@@ -109,7 +108,7 @@ public class ReviewReportService {
                 })
                 .toList();
 
-        return ReviewReportResponse.of( ReviewResponse.of(review, imageUrlList, choiceResponseList), reviewReport);
+        return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
 
     }
 

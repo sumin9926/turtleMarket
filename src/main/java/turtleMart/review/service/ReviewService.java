@@ -1,11 +1,10 @@
 package turtleMart.review.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.entity.OrderItem;
@@ -33,11 +32,10 @@ public class ReviewService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
     private final ReviewRepository reviewRepository;
-    private final ObjectMapper objectMapper;
     private final ProductReviewTemplateRepository productReviewTemplateRepository;
 
     @Transactional
-    public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request) throws JsonProcessingException {
+    public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request){
         if(!memberRepository.existsById(memberId)){throw  new RuntimeException("존재하지 않는 회원입니다");}
         Member member = memberRepository.getReferenceById(memberId);
 
@@ -53,7 +51,7 @@ public class ReviewService {
             throw new RuntimeException("주문건에 대한 리뷰는 한번만 작성가능합니다");
         }
 
-        String dbImageList = objectMapper.writeValueAsString(request.imageUrlList());
+        String dbImageList = JsonHelper.toJson(request.imageUrlList());
 
         Review review = Review.of(
                 member,
@@ -89,20 +87,17 @@ public class ReviewService {
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }
 
-    public ReviewResponse readReview(Long reviewId) throws JsonProcessingException {
+    public ReviewResponse readReview(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));// 메서드 추출
 
-        List<String> imageUrlList = objectMapper.readValue(review.getImageUrl(), new TypeReference<List<String>>() {
-        });
-
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
         List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList().stream()
                 .map(t -> {
                     ReviewTemplate reviewTemplate = t.getProductReviewTemplate().getReviewTemplate();
                     return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(t.getChoseAnswer()));
                         })
                 .toList();
-
 
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
@@ -113,7 +108,7 @@ public class ReviewService {
 //    }
 
     @Transactional
-    public ReviewResponse updateReview(Long memberId, Long reviewId, UpdateReviewRequest request) throws JsonProcessingException {
+    public ReviewResponse updateReview(Long memberId, Long reviewId, UpdateReviewRequest request) {
         Member member = memberRepository
                 .findById(memberId).orElseThrow(() -> new RuntimeException("존재하지 않는 회원입니다"));
 
@@ -124,9 +119,9 @@ public class ReviewService {
             throw new RuntimeException("본인이 작성한 리뷰만 수정가능합니다");
         }
 
-        String dbImageUrl = objectMapper.writeValueAsString(request.imageUrlList());
+        String dbImageList = JsonHelper.toJson(request.imageUrlList());
 
-        review.update(request, dbImageUrl);
+        review.update(request, dbImageList);
         List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList().stream()
                 .map(c -> {
                     UpdateTemplateChoiceRequest updateRequest = request.templateChoiceList().stream()
@@ -154,7 +149,6 @@ public class ReviewService {
         if (!member.getId().equals(review.getMember().getId())) {
             throw new RuntimeException("본인이 작성한 리뷰만 삭제가능합니다");
         }
-
         reviewRepository.deleteById(reviewId);
     }
 }

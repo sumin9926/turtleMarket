@@ -17,10 +17,11 @@ public class ReviewReportController {
     private final ReviewReportService reviewReportService;
 
     @PostMapping("/reviews/{reviewId}/review-reports")
-    public ResponseEntity<ReviewReportResponse> createReviewReport(//@RequestAttribute("memberId") Long memberId,
-                                                                   @PathVariable(name = "reviewId") Long reviewId,
-                                                                   @RequestBody @Valid CreateReviewReportRequest request
-    ) throws JsonProcessingException {
+    public ResponseEntity<ReviewReportResponse> createReviewReport(
+            //@RequestAttribute("memberId") Long memberId,
+            @PathVariable(name = "reviewId") Long reviewId,
+            @RequestBody @Valid CreateReviewReportRequest request
+    ) {
         ReviewReportResponse reviewReportResponse = reviewReportService.createReviewReport(1L, reviewId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewReportResponse);
     }
@@ -34,19 +35,19 @@ public class ReviewReportController {
 //    }
 
     @GetMapping("/review-reports/{reviewReportId}")
-    public ResponseEntity<ReviewReportResponse> readById(@PathVariable(name = "reviewReportId") Long reviewReportId) throws JsonProcessingException {
+    public ResponseEntity<ReviewReportResponse> readById(@PathVariable(name = "reviewReportId") Long reviewReportId) {
         ReviewReportResponse reviewReportResponse = reviewReportService.readById(reviewReportId);
         return ResponseEntity.status(HttpStatus.OK).body(reviewReportResponse);
     }
 
     @PatchMapping("/review-reports/{reviewReportId}")
-    public ResponseEntity<ReviewReportResponse> updateReviewReport(@PathVariable(name = "reviewReportId") Long reviewReportId) throws JsonProcessingException {
-        ReviewReportResponse reviewReportResponse = reviewReportService.updateReviewReport( reviewReportId);
+    public ResponseEntity<ReviewReportResponse> updateReviewReport(@PathVariable(name = "reviewReportId") Long reviewReportId) {
+        ReviewReportResponse reviewReportResponse = reviewReportService.updateReviewReport(reviewReportId);
         return ResponseEntity.status(HttpStatus.OK).body(reviewReportResponse);
     }
 
     @DeleteMapping("/review-reports/{reviewReportId}")
-    public ResponseEntity<Void> deleteReviewReport(@PathVariable(name = "reviewReportId")Long reviewReportId){
+    public ResponseEntity<Void> deleteReviewReport(@PathVariable(name = "reviewReportId") Long reviewReportId) {
         reviewReportService.deleteReviewReport(reviewReportId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
