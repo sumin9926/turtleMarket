@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartItemQuantityRequest;
@@ -28,7 +27,6 @@ public class CartService {
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    @Transactional
     public AddCartItemResponse addItemsToCart(long memberId, AddCartItemRequest request) throws JsonProcessingException {
 
         if (!memberRepository.existsById(memberId)) {
@@ -66,7 +64,6 @@ public class CartService {
         return addCartItemResponse;
     }
 
-    @Transactional(readOnly = true)
     public List<CartItemResponse> getItemsFromCart(long memberId) {
         if (!memberRepository.existsById(memberId)) {
             throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
@@ -98,7 +95,6 @@ public class CartService {
         return cartItemResponseList;
     }
 
-    @Transactional
     public AddCartItemResponse updateCartItemQuantity(long memberId, CartItemQuantityRequest request, Long cartItemId) {
         if (!memberRepository.existsById(memberId)) {
             throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
@@ -128,7 +124,6 @@ public class CartService {
         }
     }
 
-    @Transactional
     public void deleteCartItem(long memberId, Long cartItemId) {
         if (!memberRepository.existsById(memberId)) {
             throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
@@ -144,7 +139,6 @@ public class CartService {
         redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));
     }
 
-    @Transactional
     public void deleteAllCartItem(long memberId) {
         if (!memberRepository.existsById(memberId)) {
             throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
