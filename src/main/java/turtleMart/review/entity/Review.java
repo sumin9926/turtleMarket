@@ -14,6 +14,9 @@ import turtleMart.product.entity.Product;
 import turtleMart.review.dto.request.UpdateReviewRequest;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Entity @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,6 +38,9 @@ public class Review extends BaseEntity {
     @JoinColumn
     private OrderItem orderItem;
 
+    @OneToMany(mappedBy = "review", cascade =  CascadeType.ALL)
+    List<TemplateChoice> templateChoiceList = new ArrayList<>();
+
     @Column(length = 20, nullable = false)
     private String title;
 
@@ -47,7 +53,7 @@ public class Review extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 
-    private Review(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl){
+    private Review(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl, List<TemplateChoice> templateChoiceList) {
         this.member = member;
         this.product = product;
         this.orderItem = orderItem;
@@ -55,13 +61,14 @@ public class Review extends BaseEntity {
         this.content = content;
         this.rating = rating;
         this.imageUrl = imageUrl;
+        this.templateChoiceList = templateChoiceList;
     }
 
-    public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl){
-        return new Review(member, product, orderItem, title, content, rating, imageUrl);
+    public static Review of(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl, List<TemplateChoice> templateChoiceList) {
+        return new Review(member, product, orderItem, title, content, rating, imageUrl, templateChoiceList);
     }
 
-    public void update(UpdateReviewRequest request, String imageUrl){
+    public void update(UpdateReviewRequest request, String imageUrl) {
         this.title = request.title();
         this.content = request.content();
         this.rating = request.rating();

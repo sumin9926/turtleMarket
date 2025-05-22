@@ -23,7 +23,7 @@ public class TemplateChoice {
     private ProductReviewTemplate productReviewTemplate;
 
     @Enumerated(EnumType.STRING)
-    private TemplateChoiceGrade choseAnswer;
+    private TemplateChoiceGrade choseAnswer; // 필드명 변경
 
     private TemplateChoice(Review review, ProductReviewTemplate productReviewTemplate, TemplateChoiceGrade choseAnswer){
         this.review = review;
@@ -33,6 +33,11 @@ public class TemplateChoice {
 
     public static TemplateChoice of(Review review, ProductReviewTemplate productReviewTemplate, TemplateChoiceGrade choseAnswer){
         return new TemplateChoice(review, productReviewTemplate, choseAnswer);
+    }
+
+    public void setReview(Review review){
+        this.review = review;
+        review.templateChoiceList.add(this);
     }
 
     public void update(TemplateChoiceGrade choseAnswer){this.choseAnswer = choseAnswer;}
