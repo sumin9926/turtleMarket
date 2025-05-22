@@ -30,4 +30,8 @@ public class OrderItem {
     private Integer quantity;
 
     private OrderItemStatus orderItemStatus;
+
+    public void updateStatus(OrderItemStatus status) {
+        this.orderItemStatus=status;
+    }
 }

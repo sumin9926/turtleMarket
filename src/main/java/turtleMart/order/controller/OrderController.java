@@ -1,11 +1,16 @@
 package turtleMart.order.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import turtleMart.order.dto.request.OrderItemStatusRequest;
 import turtleMart.order.dto.response.OrderDetailResponse;
 import turtleMart.order.service.OrderService;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/orders")
@@ -20,6 +25,20 @@ public class OrderController {
             /*TODO JWT 통해서 회원 ID 가져오기*/
     ) {
         OrderDetailResponse response = orderService.getOrderDetail(1L, orderId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PatchMapping("/{orderId}/order-items/{orderItemIds}")
+    public ResponseEntity<OrderDetailResponse> updateOrderItemStatus(
+            @PathVariable Long orderId,
+            @PathVariable String orderItemIds, // 1,2,3 형태로 입력
+            @Valid @RequestBody OrderItemStatusRequest request
+            /*TODO JWT 통해서 회원 ID 가져오기*/
+    ) {
+        List<Long> orderItemIdList = Arrays.stream(orderItemIds.split(",")).map(Long::parseLong).toList();
+
+        OrderDetailResponse response = orderService.updateOrderItemStatus(orderId, orderItemIdList, request, 1L);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
