@@ -15,7 +15,7 @@ public record UpdateDeliveryResponse(
     String receiverAddress,
     String receiverDetailAddress,
     LocalDateTime shippedAt,
-    LocalDateTime updatedAt
+    LocalDateTime deliveredAt
 ) {
     public static UpdateDeliveryResponse from(Delivery delivery) {
         return new UpdateDeliveryResponse(
@@ -28,7 +28,7 @@ public record UpdateDeliveryResponse(
             delivery.getReceiverAddress(),
             delivery.getReceiverDetailAddress(),
             delivery.getShippedAt(),
-            delivery.getUpdatedAt()
+            delivery.getDeliveredAt()
         );
     }
 }

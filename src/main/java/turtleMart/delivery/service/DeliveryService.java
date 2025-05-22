@@ -5,10 +5,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.delivery.dto.reqeust.UpdateDeliveryRequest;
+import turtleMart.delivery.dto.reqeust.UpdateDeliveryStatusRequest;
 import turtleMart.delivery.dto.response.CreateDeliveryResponse;
 import turtleMart.delivery.dto.response.ReadDeliveryResponse;
 import turtleMart.delivery.dto.response.UpdateDeliveryResponse;
 import turtleMart.delivery.entity.Delivery;
+import turtleMart.delivery.entity.DeliveryStatus;
 import turtleMart.delivery.entity.Sender;
 import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.delivery.repository.SenderRepository;
@@ -92,5 +94,23 @@ public class DeliveryService {
         return deliveryList.stream()
             .map(ReadDeliveryResponse::from)
             .toList();
+    }
+
+    @Transactional
+    public UpdateDeliveryResponse updateDeliveryStatus(Long deliveryId, UpdateDeliveryStatusRequest request) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND));
+
+        if (!delivery.getDeliveryStatus().canTransitionTo(request.deliveryStatus())) {
+            throw new RuntimeException("허용되지 않은 상태 변경입니다.");
+        }
+
+        if (request.deliveryStatus() == DeliveryStatus.DELIVERED) {
+            delivery.updateDelivered(request.deliveryStatus());
+        }
+
+        delivery.updateDeliveryStatus(request.deliveryStatus());
+
+        return UpdateDeliveryResponse.from(delivery);
     }
 }

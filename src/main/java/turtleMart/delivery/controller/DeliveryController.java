@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.delivery.dto.reqeust.UpdateDeliveryRequest;
+import turtleMart.delivery.dto.reqeust.UpdateDeliveryStatusRequest;
 import turtleMart.delivery.dto.response.CreateDeliveryResponse;
 import turtleMart.delivery.dto.response.ReadDeliveryResponse;
 import turtleMart.delivery.dto.response.UpdateDeliveryResponse;
@@ -27,7 +28,7 @@ public class DeliveryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createDeliveryResponse);
     }
 
-    @PatchMapping("/{deliveryId}")
+    @PatchMapping("/{deliveryId}/tracking-numbers")
     public ResponseEntity<UpdateDeliveryResponse> updateTrackingNumber(
         @PathVariable(name = "deliveryId") Long deliveryId,
         @RequestBody UpdateDeliveryRequest request
@@ -60,5 +61,15 @@ public class DeliveryController {
         List<ReadDeliveryResponse> readDeliveryResponseList = deliveryService.readAllDeliveriesBySeller(sellerId);
 
         return ResponseEntity.status(HttpStatus.OK).body(readDeliveryResponseList);
+    }
+
+    @PatchMapping("/{deliveryId}/status")
+    public ResponseEntity<UpdateDeliveryResponse> updateDeliveryStatus(
+        @PathVariable(name = "deliveryId") Long deliveryId,
+        @RequestBody UpdateDeliveryStatusRequest request
+    ) {
+        UpdateDeliveryResponse updateDeliveryResponse = deliveryService.updateDeliveryStatus(deliveryId, request);
+
+        return ResponseEntity.status(HttpStatus.OK).body(updateDeliveryResponse);
     }
 }
