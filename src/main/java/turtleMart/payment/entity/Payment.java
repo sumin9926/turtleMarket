@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.Order;
 
@@ -11,22 +12,22 @@ import turtleMart.order.entity.Order;
 @Getter
 @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Payment {
+public class Payment extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @ManyToOne
-    @JoinColumn
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    private String amount;
+    private int amount;
 
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
 
     private String cardCompany;
 
@@ -35,4 +36,30 @@ public class Payment {
     private PaymentStatus paymentStatus;
 
     private FailReason failReason;
+
+    public Payment(
+            Order order, Member member, int amount, PaymentMethod paymentMethod,
+            String cardCompany, Integer installmentMonth) {
+        this.order = order;
+        this.member = member;
+        this.amount = amount;
+        this.paymentMethod = paymentMethod;
+        this.cardCompany = cardCompany;
+        this.installmentMonth = installmentMonth;
+        this.paymentStatus = PaymentStatus.PENDING;
+    }
+
+    public static Payment of(
+            Order order, Member member, int amount, PaymentMethod paymentMethod,
+            String cardCompany, Integer installmentMonth) {
+        return new Payment(order, member, amount, paymentMethod, cardCompany, installmentMonth);
+    }
+
+    public void addFailReason(FailReason failReason) {
+        this.failReason = failReason;
+    }
+
+    public void changePaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
 }

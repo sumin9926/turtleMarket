@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  #  database:
+  #    image: 'mysql:8.0'
+  #    container_name: mysql-container
+  #    env_file:
+  #      - .env
+  #    environment:
+  #      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+  #      MYSQL_DATABASE: portalsite
+  #    ports:
+  #      - "3307:3306"
+  #    volumes:
+  #      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://host.docker.internal:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: portalsite
+#    ports:
+#      - "8080:8080"
+#      - "5005:5005"
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/portalsite
+#      SPRING_DATASOURCE_USERNAME: root
+#      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+#    depends_on:
+#      - database
+#      - redis
+#    command: >
+#      java
+#      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+#      -jar /app/app.jar
+
+volumes:
+  mysql_data:

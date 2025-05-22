@@ -13,12 +13,15 @@ import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.product.entity.Product;
 import turtleMart.product.repository.ProductRepository;
 import turtleMart.review.dto.request.CreateReviewRequest;
+import turtleMart.review.dto.request.CreateTemplateChoiceRequest;
 import turtleMart.review.dto.request.UpdateReviewRequest;
+import turtleMart.review.dto.request.UpdateTemplateChoiceRequest;
 import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.dto.response.TemplateChoiceResponse;
-import turtleMart.review.entity.Review;
+import turtleMart.review.entity.*;
+import turtleMart.review.repository.ProductReviewTemplateRepository;
 import turtleMart.review.repository.ReviewRepository;
-
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,16 +34,18 @@ public class ReviewService {
     private final OrderItemRepository orderItemRepository;
     private final ReviewRepository reviewRepository;
     private final ObjectMapper objectMapper;
-    private final TemplateChoiceService templateChoiceService;
+    private final ProductReviewTemplateRepository productReviewTemplateRepository;
 
     @Transactional
     public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request) throws JsonProcessingException {
-        Member member = memberRepository
-                .findById(memberId).orElseThrow(() -> new RuntimeException("존재하지 않는 회원입니다"));
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 상품입니다"));
-        OrderItem orderItem = orderItemRepository.findById(request.orderItemId())
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 주문상품입니다"));
+        if(!memberRepository.existsById(memberId)){throw  new RuntimeException("존재하지 않는 회원입니다");}
+        Member member = memberRepository.getReferenceById(memberId);
+
+        if(!productRepository.existsById(productId)){throw  new RuntimeException("존재하지 않는 상품입니다");}
+        Product product = productRepository.getReferenceById(productId);
+
+        if(!orderItemRepository.existsById(request.orderItemId())){throw  new RuntimeException("존재하지 않는 주문상품입니다");}
+        OrderItem orderItem = orderItemRepository.getReferenceById(request.orderItemId());
 
         //주문상품의 상태가 배송완료인지를 확인하는 로직 추가 예정
 
@@ -49,6 +54,7 @@ public class ReviewService {
         }
 
         String dbImageList = objectMapper.writeValueAsString(request.imageUrlList());
+
         Review review = Review.of(
                 member,
                 product,
@@ -56,24 +62,49 @@ public class ReviewService {
                 request.title(),
                 request.content(),
                 request.rating(),
-                dbImageList
+                dbImageList,
+                new ArrayList<>()
         );
+
+        List<TemplateChoice> templateChoiceList = new ArrayList<>();
+
+        for (CreateTemplateChoiceRequest choiceRequest : request.templateChoiceList()) {
+
+            ProductReviewTemplate productReviewTemplate = productReviewTemplateRepository.findById(choiceRequest.productReviewTemplateId())
+                    .orElseThrow(() -> new RuntimeException("존재하지 않는 상품 리뷰 템플릿입니다"));
+            templateChoiceList.add(TemplateChoice.of(review, productReviewTemplate, TemplateChoiceGrade.of(choiceRequest.answer())));
+        }
+
+        templateChoiceList.forEach(t -> t.setReview(review));
         reviewRepository.save(review);
 
         List<TemplateChoiceResponse> choiceResponseList =
-                templateChoiceService.createTemplateChoice(request.templateChoiceList(), review);
+                review.getTemplateChoiceList().stream()
+                        .map(r -> {
+                            ReviewTemplate reviewTemplate = r.getProductReviewTemplate().getReviewTemplate();
+                            return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(r.getChoseAnswer()));
+                        })
+                        .toList();
 
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }
 
-    public ReviewResponse readReview(Long reviewId) throws JsonProcessingException{
+    public ReviewResponse readReview(Long reviewId) throws JsonProcessingException {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));// 메서드 추출
 
-        List<String> imageUrlList = objectMapper.readValue(review.getImageUrl(),  new TypeReference<List<String>>() {});
+        List<String> imageUrlList = objectMapper.readValue(review.getImageUrl(), new TypeReference<List<String>>() {
+        });
 
-       List<TemplateChoiceResponse> choiceResponseList = templateChoiceService.readTemplateChoice(reviewId);
-       return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+        List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList().stream()
+                .map(t -> {
+                    ReviewTemplate reviewTemplate = t.getProductReviewTemplate().getReviewTemplate();
+                    return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(t.getChoseAnswer()));
+                        })
+                .toList();
+
+
+        return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
 
 //    public Page<ReviewResponse> readByMemberId(Long memberId, Pageable pageable){
@@ -81,38 +112,49 @@ public class ReviewService {
 //        templateChoiceService.readTemplateChoice(reviewPage.stream().map(Review::getId));
 //    }
 
-
-
     @Transactional
-    public ReviewResponse updateReview(Long memberId, Long reviewId, UpdateReviewRequest request)throws JsonProcessingException{
+    public ReviewResponse updateReview(Long memberId, Long reviewId, UpdateReviewRequest request) throws JsonProcessingException {
         Member member = memberRepository
                 .findById(memberId).orElseThrow(() -> new RuntimeException("존재하지 않는 회원입니다"));
 
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
 
-        if(!member.getId().equals(review.getMember().getId())){throw new RuntimeException("본인이 작성한 리뷰만 수정가능합니다");}
+        if (!member.getId().equals(review.getMember().getId())) {
+            throw new RuntimeException("본인이 작성한 리뷰만 수정가능합니다");
+        }
 
         String dbImageUrl = objectMapper.writeValueAsString(request.imageUrlList());
 
         review.update(request, dbImageUrl);
-        List<TemplateChoiceResponse> choiceResponseList =
-                templateChoiceService.updateTemplateChoice(request.templateChoiceList());
+        List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList().stream()
+                .map(c -> {
+                    UpdateTemplateChoiceRequest updateRequest = request.templateChoiceList().stream()
+                            .filter(r -> r.templateChoiceId().equals(c.getId()))
+                            .findFirst().get();
+
+                    c.update(TemplateChoiceGrade.of(updateRequest.answer()));
+                    ReviewTemplate reviewTemplate = c.getProductReviewTemplate().getReviewTemplate();
+                    return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(c.getChoseAnswer()));
+
+                })
+                .toList();
 
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }
 
     @Transactional
-    public void deleteReview(Long memberId, Long reviewId){
-        Member member = memberRepository
-                .findById(memberId).orElseThrow(() -> new RuntimeException("존재하지 않는 회원입니다"));
+    public void deleteReview(Long memberId, Long reviewId) {
+        if(!memberRepository.existsById(memberId)){throw  new RuntimeException("존재하지 않는 회원입니다");}
+        Member member = memberRepository.getReferenceById(memberId);
 
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
+        if(!reviewRepository.existsById(reviewId)){throw  new RuntimeException("존재하지 않는 리뷰입니다");}
+        Review review = reviewRepository.getReferenceById(reviewId);
 
-        if(!member.getId().equals(review.getMember().getId())){throw new RuntimeException("본인이 작성한 리뷰만 삭제가능합니다");}
+        if (!member.getId().equals(review.getMember().getId())) {
+            throw new RuntimeException("본인이 작성한 리뷰만 삭제가능합니다");
+        }
 
-        templateChoiceService.deleteByReviewId(reviewId);
         reviewRepository.deleteById(reviewId);
     }
 }
