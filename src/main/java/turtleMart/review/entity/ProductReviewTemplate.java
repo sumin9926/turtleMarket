@@ -20,11 +20,10 @@ public class ProductReviewTemplate {
     @JoinColumn
     private Product product;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn
     private ReviewTemplate reviewTemplate;
 
-    private boolean isDeleted = false;
 
     private ProductReviewTemplate(Product product, ReviewTemplate reviewTemplate){
         this.product = product;
@@ -33,9 +32,5 @@ public class ProductReviewTemplate {
 
     public static ProductReviewTemplate of(Product product, ReviewTemplate reviewTemplate){
         return new ProductReviewTemplate(product, reviewTemplate);
-    }
-
-    public void delete(){
-        this.isDeleted = true;
     }
 }
