@@ -9,6 +9,7 @@ public class JwtAuthenticationToken extends AbstractAuthenticationToken {
     public JwtAuthenticationToken(AuthUser authUser) {
         super(authUser.authority());
         this.authUser = authUser;
+        super.setAuthenticated(true);
     }
 
     @Override
@@ -18,6 +19,6 @@ public class JwtAuthenticationToken extends AbstractAuthenticationToken {
 
     @Override
     public Object getPrincipal() {
-        return null;
+        return authUser;
     }
 }
