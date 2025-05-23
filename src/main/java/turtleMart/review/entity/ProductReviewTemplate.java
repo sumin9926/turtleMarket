@@ -9,19 +9,21 @@ import turtleMart.product.entity.Product;
 
 
 @Getter
-@Table @Entity
+ @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "review_template_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+
 public class ProductReviewTemplate {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "product_id")
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "review_template_id")
     private ReviewTemplate reviewTemplate;
 
 

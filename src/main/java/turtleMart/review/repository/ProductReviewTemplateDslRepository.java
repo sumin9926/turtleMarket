@@ -12,4 +12,6 @@ public interface ProductReviewTemplateDslRepository {
     List<ProductReviewTemplate> findByIdInWithReviewTemplate(List<Long> productReviewTemplateIdList);
 
     Optional<ProductReviewTemplate> findByIdWithReviewTemplate(Long productReviewTemplateId);
+
+    boolean existsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList);
 }

@@ -8,7 +8,8 @@ import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
 
 @Getter
-@Entity @Table
+@Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "review_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReviewReport extends BaseEntity {
 
@@ -17,11 +18,11 @@ public class ReviewReport extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "review_id")
     private Review review;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "member_id")
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)

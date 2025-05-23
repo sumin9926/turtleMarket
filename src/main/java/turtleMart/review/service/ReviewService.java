@@ -49,7 +49,7 @@ public class ReviewService {
 
         //주문상품의 상태가 배송완료인지를 확인하는 로직 추가 예정
 
-        if (reviewRepository.existsByOrderItemId(orderItem.getId())) {throw new RuntimeException("주문건에 대한 리뷰는 한번만 작성가능합니다");}
+        if (reviewRepository.existsByOrderItemIdAndIsDeletedFalse(orderItem.getId())) {throw new RuntimeException("주문건에 대한 리뷰는 한번만 작성가능합니다");}
 
         String dbImageList = JsonHelper.toJson(request.imageUrlList());
         Review review = Review.of(member, product, orderItem, request.title(), request.content(), request.rating(), dbImageList);

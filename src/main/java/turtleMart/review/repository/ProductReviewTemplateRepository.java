@@ -17,4 +17,6 @@ public interface ProductReviewTemplateRepository extends JpaRepository<ProductRe
             """)
     List<ProductReviewTemplate> findByProductId(@Param("productId") Long productId);
 
+    boolean existsByProductIdAndReviewTemplateId(Long productId, Long reviewTemplateId);
+
 }

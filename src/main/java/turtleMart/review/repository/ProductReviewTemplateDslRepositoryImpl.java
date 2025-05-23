@@ -13,7 +13,7 @@ import static turtleMart.review.entity.QReviewTemplate.reviewTemplate;
 
 @Repository
 @RequiredArgsConstructor
-public class ProductReviewTemplateDslRepositoryImpl implements ProductReviewTemplateDslRepository{
+public class ProductReviewTemplateDslRepositoryImpl implements ProductReviewTemplateDslRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
@@ -34,5 +34,21 @@ public class ProductReviewTemplateDslRepositoryImpl implements ProductReviewTemp
                 .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
                 .where(productReviewTemplate.id.eq(productReviewTemplateId))
                 .fetchOne());
+    }
+
+    @Override
+    public boolean existsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList) {
+        Long count = jpaQueryFactory.select(productReviewTemplate.count())
+                .from(productReviewTemplate)
+                .where(
+                        productReviewTemplate.product.id.eq(productId),
+                        productReviewTemplate.reviewTemplate.id.in(reviewTemplateIdList))
+                .fetchOne();
+
+        if (count == null) {
+            throw new RuntimeException("올바르지 않은 쿼리");
+        }
+
+        return count == 0;
     }
 }

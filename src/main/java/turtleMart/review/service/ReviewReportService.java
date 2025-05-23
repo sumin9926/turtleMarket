@@ -37,7 +37,9 @@ public class ReviewReportService {
         Review review = reviewDslRepository.findByIdWithChoice(reviewId)
                                 .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
 
-        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+        if(reviewReportRepository.existsByMemberIdAndReviewId(member.getId(), review.getId())){
+            throw new RuntimeException("하나의 리뷰에 대한 신고는 한번만 가능합니다");
+        }
 
         if(!reasonCodeRepository.existsById(request.reasonCodeId())){throw new RuntimeException("존재하지 않는 신고 코드입니다");}
         ReasonCode reasonCode = reasonCodeRepository.getReferenceById(request.reasonCodeId());
@@ -45,6 +47,7 @@ public class ReviewReportService {
         ReviewReport reviewReport = reviewReportRepository.save(ReviewReport.of(review, member, reasonCode, request.ReasonDetail()));
 
         List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
@@ -63,7 +66,7 @@ public class ReviewReportService {
     @Transactional
     public ReviewReportResponse updateReviewReport(Long reviewReportId, UpdateReviewReportStatusRequest request) {
 
-        ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
+        ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
 
         ReviewReportStatus reviewReportStatus = ReviewReportStatus.of(request.reviewReportStatus());
@@ -79,8 +82,8 @@ public class ReviewReportService {
 
     @Transactional
     public void cancelReviewReport(Long reviewReportId, CancelReviewReportRequest request){
-      ReviewReport reviewReport = reviewReportRepository.findById(reviewReportId)
-              .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
+        ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
 
       reviewReport.cancel(request.cancelReason());
     }
