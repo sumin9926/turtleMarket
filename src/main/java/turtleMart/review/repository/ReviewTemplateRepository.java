@@ -2,6 +2,7 @@ package turtleMart.review.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import turtleMart.review.entity.ReviewTemplate;
 
 import java.util.List;
@@ -12,7 +13,6 @@ public interface ReviewTemplateRepository extends JpaRepository<ReviewTemplate, 
     @Query("SELECT r FROM ReviewTemplate r WHERE r.isDeleted = FALSE ")
     List<ReviewTemplate> findAllDeletedFalse();
 
-    Optional<ReviewTemplate> findByIdIsDeletedFalse(Long reviewTemplateId);
-
-
+    @Query("SELECT r FROM ReviewTemplate r WHERE r.id = :reviewTemplateId AND r.isDeleted = FALSE ")
+    Optional<ReviewTemplate> findByIdIsDeletedFalse(@Param("reviewTemplateId") Long reviewTemplateId);
 }

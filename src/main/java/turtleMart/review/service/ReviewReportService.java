@@ -85,6 +85,7 @@ public class ReviewReportService {
       reviewReport.cancel(request.cancelReason());
     }
 
+    //어디로 뺄지 고민중
     private List<TemplateChoiceResponse> readTemplateChoiceByReview(Review review){
        return review.getTemplateChoiceList().stream()
                 .map(t -> {

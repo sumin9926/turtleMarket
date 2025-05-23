@@ -24,8 +24,8 @@ public class ProductReviewTemplateService {
     private final ReviewTemplateRepository reviewTemplateRepository;
 
     public void createProductReviewTemplate(
-             Long productId, CreateProductReviewTemplateRequest request
-    ){
+             Long productId, CreateProductReviewTemplateRequest request){
+
         if(!sellerRepository.existsById(request.sellerId())){throw new RuntimeException("존재하지 않는 판매자입니다");}
         Seller seller = sellerRepository.getReferenceById(request.sellerId());
 
@@ -48,17 +48,18 @@ public class ProductReviewTemplateService {
     }
 
     public void deleteProductReviewTemplate(Long memberId, Long productReviewTemplateId){
-       Seller seller = sellerRepository.findByMemberId(memberId)
-               .orElseThrow(() -> new RuntimeException("존재하지 않는 판매자입니다"));
+
+//        Seller seller = sellerRepository.findByMemberId(memberId)
+//               .orElseThrow(() -> new RuntimeException("존재하지 않는 판매자입니다"));
 
 
        ProductReviewTemplate productReviewTemplate = productReviewTemplateRepository.findById(productReviewTemplateId)
                        .orElseThrow(() -> new RuntimeException("존재하지 않는 상품리뷰 템플릿입니다"));
 
        Long productSellerId = productReviewTemplate.getProduct().getSeller().getId();
-       if(!seller.getId().equals(productSellerId)){
-           throw new RuntimeException("해당 상품에 대한 권한이 없습니다");
-       }
+//       if(!seller.getId().equals(productSellerId)){
+//           throw new RuntimeException("해당 상품에 대한 권한이 없습니다");
+//       }
         productReviewTemplateRepository.deleteById(productReviewTemplateId);
     }
 }

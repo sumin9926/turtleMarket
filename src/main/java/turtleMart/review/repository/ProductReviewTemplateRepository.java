@@ -13,7 +13,7 @@ public interface ProductReviewTemplateRepository extends JpaRepository<ProductRe
                 SELECT p
                 FROM ProductReviewTemplate p
                 JOIN FETCH p.reviewTemplate
-                WHERE p.product.id = :productId AND p.isDeleted = FALSE
+                WHERE p.product.id = :productId
             """)
     List<ProductReviewTemplate> findByProductId(@Param("productId") Long productId);
 

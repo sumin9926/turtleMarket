@@ -62,7 +62,7 @@ public class ReviewTemplateService {
     }
 
     private ReviewTemplate findByIdElseThrow(Long reviewTemplateId){
-      return reviewTemplateRepository.findById(reviewTemplateId)
+      return reviewTemplateRepository.findByIdIsDeletedFalse(reviewTemplateId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰 템플릿입니다"));
     }
 }
