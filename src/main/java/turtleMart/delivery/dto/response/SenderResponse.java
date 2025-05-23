@@ -7,21 +7,21 @@ import java.time.LocalDateTime;
 
 public record SenderResponse(
     Long id,
-    CourierInfo courier,
     String name,
     String phoneNumber,
     String address,
     String detailAddress,
+    CourierInfo courier,
     LocalDateTime createdAt
 ) {
     public static SenderResponse from(Sender sender) {
         return new SenderResponse(
             sender.getId(),
-            CourierInfo.from(sender.getCourier()),
             sender.getName(),
             sender.getPhoneNumber(),
             sender.getAddress(),
             sender.getDetailAddress(),
+            CourierInfo.from(sender.getCourier()),
             sender.getCreatedAt()
         );
     }

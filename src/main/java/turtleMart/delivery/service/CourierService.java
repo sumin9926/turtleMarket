@@ -28,7 +28,7 @@ public class CourierService {
     @Transactional
     public CreateCourierResponse createCourier(CreateCourierRequest request) {
         if (courierRepository.existsByNameAndCode(request.name(), request.code())) {
-            throw new ConflictException(ErrorCode.ALREADY_EXIST_COURIER);
+            throw new ConflictException(ErrorCode.COURIER_ALREADY_EXISTS);
         }
 
         Courier courier = Courier.of(request.name(), request.code(), request.trackingUrlTemplate());
