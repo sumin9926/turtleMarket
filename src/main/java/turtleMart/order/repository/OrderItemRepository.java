@@ -14,8 +14,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
         FROM OrderItem oi
         WHERE oi.product.id = :productId
         AND oi.product.seller.id = :sellerId
-        AND oi.order.orderAt >= :startDate
-        AND oi.order.orderAt < :endDate
+        AND oi.order.orderedAt >= :startDate
+        AND oi.order.orderedAt < :endDate
     """)
     Integer countTotalOrderedBySellerAndProduct(
             @Param("sellerId")Long sellerId, @Param("productId")Long productId,
