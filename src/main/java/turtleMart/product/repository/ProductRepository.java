@@ -9,7 +9,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findAllBySellerId(Long sellerId);
 
-    List<Product> findAllBySellerIdDeletedFalse(Long sellerId);
+    List<Product> findAllBySellerIdAndIsDeletedFalse(Long sellerId);
 
-    List<Product> findAllBySellerIdDeletedTrue(Long sellerId);
+    List<Product> findAllBySellerIdAndIsDeletedTrue(Long sellerId);
 }
