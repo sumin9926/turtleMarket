@@ -3,8 +3,8 @@ package turtleMart.review.entity;
 import java.util.Arrays;
 
 public enum TemplateChoiceGrade {
-    LOW,      // 적다 / 부족하다 / 불만족
-    MEDIUM,   // 보통 / 적당함
+    LOW,
+    MEDIUM,
     HIGH;
 
     public static TemplateChoiceGrade of(String choice) {

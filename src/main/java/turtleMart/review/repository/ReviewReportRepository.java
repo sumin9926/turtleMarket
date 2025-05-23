@@ -5,4 +5,6 @@ import turtleMart.review.entity.ReviewReport;
 
 public interface ReviewReportRepository extends JpaRepository<ReviewReport, Long> {
 
+    boolean existsByMemberIdAndReviewId(Long memberId, Long reviewId);
+
 }

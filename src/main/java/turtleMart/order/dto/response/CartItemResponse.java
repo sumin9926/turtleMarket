@@ -5,7 +5,7 @@ public record CartItemResponse(
         Long productId,
         String productName,
         Integer productPrice,
-        Long quantity,
+        Integer quantity,
         Boolean isChecked
 ) {
 }

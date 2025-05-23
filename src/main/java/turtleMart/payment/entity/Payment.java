@@ -45,7 +45,7 @@ public class Payment extends BaseEntity {
         this.amount = amount;
         this.paymentMethod = paymentMethod;
         this.cardCompany = cardCompany;
-        this.installmentMonth = installmentMonth;
+        this.installmentMonth = installmentMonth == null ? 1 : installmentMonth;
         this.paymentStatus = PaymentStatus.PENDING;
     }
 
