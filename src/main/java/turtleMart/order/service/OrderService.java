@@ -2,21 +2,27 @@ package turtleMart.order.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.repository.DeliveryRepository;
+import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartOrderSheetRequest;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
+import turtleMart.order.dto.request.OrderRequest;
 import turtleMart.order.dto.response.*;
 import turtleMart.order.entity.Order;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.order.entity.OrderItemStatus;
 import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.order.repository.OrderRepository;
+import turtleMart.payment.dto.request.PaymentRequest;
 import turtleMart.product.entity.Product;
 import turtleMart.product.repository.ProductRepository;
 
@@ -33,10 +39,15 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
-    private final CartService cartService;
     private final OrderItemRepository orderItemRepository;
     private final DeliveryRepository deliveryRepository;
     private final SellerRepository sellerRepository;
+    private final CartService cartService;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Value("${kafka.topic.payment}")
+    private String paymentTopic;
 
     @Transactional(readOnly = true)
     public List<OrderSheetResponse> getCartOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
@@ -196,5 +207,46 @@ public class OrderService {
         );
 
         return TotalOrderedQuantityResponse.from(productId, totalOrderedQuantity);
+    }
+
+    @Transactional
+    public void createOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderRequest request) {
+        Member member = memberRepository.findById(memberId).orElseThrow(
+                () -> new RuntimeException("존재하지 않는 회원입니다.") //TODO 커스텀 예외처리
+        );
+
+        Order order = Order.of(member, new ArrayList<>(), 0);
+
+        itemList.forEach(item -> {
+            Product product = productRepository.findById(item.productId()).orElseThrow(
+                    () -> new RuntimeException("존재하지 않는 상품입니다.")//TODO 커스텀 예외처리
+            );
+            OrderItem orderItem = OrderItem.of(order, product, product.getPrice(), product.getName(), item.quantity());
+            order.addOrderItem(orderItem);
+        });
+
+        order.calculateTotalPrice();
+        orderRepository.save(order);
+
+        // 장바구니 Redis 캐시 삭제
+        removeCartItemFromRedis(memberId, request.cartItemIdList());
+
+        // Kafka로 결제 요청
+        PaymentRequest paymentRequest =  PaymentRequest.from(order, memberId, request);
+
+        kafkaTemplate.send(paymentTopic, paymentRequest);
+    }
+
+    private void removeCartItemFromRedis(Long memberId, List<Long> cartItemIdList) {
+        for(Long cartItemId : cartItemIdList){
+            String key = "cart:" + memberId;
+
+            Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));
+            if (Boolean.FALSE.equals(cartItemExist)) {
+                throw new RuntimeException("장바구니에서 삭제하려는 상품이 존재하지 않음"); //TODO 커스텀 예외처리
+            }
+
+            redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));
+        }
     }
 }

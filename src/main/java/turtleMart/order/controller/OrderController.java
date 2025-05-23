@@ -6,7 +6,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import turtleMart.order.dto.request.CartOrderSheetRequest;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
+import turtleMart.order.dto.request.OrderRequest;
 import turtleMart.order.dto.response.MemberOrderListResponse;
 import turtleMart.order.dto.response.OrderDetailResponse;
 import turtleMart.order.dto.response.TotalOrderedQuantityResponse;
@@ -22,6 +24,19 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+
+    @PostMapping("/orders")
+    public ResponseEntity<Void> createOrder(
+            @RequestParam String items, //상품명1:수량,상품명2:수량 형식으로 입력
+            @RequestBody OrderRequest request
+            /*TODO JWT 통해서 회원 ID 가져오기*/
+    ) {
+        List<CartOrderSheetRequest> productNameAndQuantityList = CartOrderSheetRequest.splitItemNameAndQuantity(items);
+
+        orderService.createOrder(1L, productNameAndQuantityList, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderDetailResponse> getOrderDetail(
