@@ -32,9 +32,21 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(productResponse);
     }
 
+    @GetMapping("/sellers/{sellerId}/products/every")
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithEverything(@PathVariable Long sellerId) {
+        List<ProductResponseForSeller> productResponseList = productService.getProductBySellerIdWithEverything(sellerId);
+        return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
+    }
+
     @GetMapping("/sellers/{sellerId}/products")
     public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerId(@PathVariable Long sellerId) {
         List<ProductResponseForSeller> productResponseList = productService.getProductBySellerId(sellerId);
+        return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
+    }
+
+    @GetMapping("/sellers/{sellerId}/products/deleted")
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithDeleted(@PathVariable Long sellerId) {
+        List<ProductResponseForSeller> productResponseList = productService.getProductBySellerIdWithDeleted(sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
     }
 
@@ -45,6 +57,12 @@ public class ProductController {
             @PathVariable Long productId
     ) {
         ProductResponse productResponse = productService.updateProduct(productRequest, sellerId, productId);
+        return ResponseEntity.status(HttpStatus.OK).body(productResponse);
+    }
+
+    @PatchMapping("/sellers/{sellerId}/products/{productId}/revive")
+    public ResponseEntity<ProductResponseForSeller> reviveProduct(@PathVariable Long sellerId, @PathVariable Long productId) {
+        ProductResponseForSeller productResponse = productService.reviveProduct(productId, sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponse);
     }
 

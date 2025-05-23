@@ -23,9 +23,13 @@ public class ReviewTemplateService {
 
     @Transactional
     public ReviewTemplateResponse createReviewTemplate(CreateReviewTemplateRequest request){
-        ReviewTemplate reviewTemplate = ReviewTemplate.of(request.question(), request.low(), request.medium(), request.high());
+        ReviewTemplate reviewTemplate = ReviewTemplate.of(
+                request.question(),
+                request.satisfaction_low(),
+                request.satisfaction_medium(),
+                request.satisfaction_high()
+        );
         reviewTemplateRepository.save(reviewTemplate);
-
         return ReviewTemplateResponse.from(reviewTemplate);
     }
 
@@ -42,18 +46,23 @@ public class ReviewTemplateService {
 
     @Transactional
     public ReviewTemplateResponse updateReviewTemplate(UpdateReviewTemplateRequest request, Long reviewTemplateId){
-        ReviewTemplate reviewTemplate = reviewTemplateRepository.findById(reviewTemplateId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰 템플릿입니다"));
+        ReviewTemplate reviewTemplate = findByIdElseThrow(reviewTemplateId);
+        if(reviewTemplate.isDeleted()){throw new RuntimeException("삭제된 리뷰 템플릿입니다");}
 
-        reviewTemplate.update(request);
+        reviewTemplate.update(request.question(), request.satisfaction_low(), request.satisfaction_medium(), request.high());
         return ReviewTemplateResponse.from(reviewTemplate);
     }
 
     @Transactional
     public void deleteReviewTemplate(Long reviewTemplateId){
-        ReviewTemplate reviewTemplate = reviewTemplateRepository.findById(reviewTemplateId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰 템플릿입니다"));
+        ReviewTemplate reviewTemplate = findByIdElseThrow(reviewTemplateId);
 
+        if(reviewTemplate.isDeleted()){throw new RuntimeException("삭제된 리뷰 템플릿입니다");}
         reviewTemplate.delete();
+    }
+
+    private ReviewTemplate findByIdElseThrow(Long reviewTemplateId){
+      return reviewTemplateRepository.findByIdIsDeletedFalse(reviewTemplateId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰 템플릿입니다"));
     }
 }

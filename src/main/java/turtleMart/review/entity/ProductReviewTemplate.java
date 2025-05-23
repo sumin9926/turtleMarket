@@ -9,22 +9,23 @@ import turtleMart.product.entity.Product;
 
 
 @Getter
-@Table @Entity
+ @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "review_template_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+
 public class ProductReviewTemplate {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "product_id")
     private Product product;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "review_template_id")
     private ReviewTemplate reviewTemplate;
 
-    private boolean isDeleted = false;
 
     private ProductReviewTemplate(Product product, ReviewTemplate reviewTemplate){
         this.product = product;
@@ -33,9 +34,5 @@ public class ProductReviewTemplate {
 
     public static ProductReviewTemplate of(Product product, ReviewTemplate reviewTemplate){
         return new ProductReviewTemplate(product, reviewTemplate);
-    }
-
-    public void delete(){
-        this.isDeleted = true;
     }
 }

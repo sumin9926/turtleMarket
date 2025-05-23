@@ -18,8 +18,8 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id")
     private Seller seller;
 
     private String name;
@@ -45,5 +45,9 @@ public class Product extends BaseEntity {
         this.name = productRequest.name();
         this.description = productRequest.description();
         this.price = productRequest.price();
+    }
+
+    public void delete(boolean choice) {
+        this.isDeleted = choice;
     }
 }
