@@ -84,12 +84,12 @@ public class ProductService {
     }
 
     public List<ProductResponseForSeller> getProductBySellerId(Long sellerId) {
-        List<Product> productList = productRepository.findAllBySellerIdDeletedFalse();
+        List<Product> productList = productRepository.findAllBySellerIdDeletedFalse(sellerId);
         return productList.stream().map(ProductResponseForSeller::from).toList();
     }
 
     public List<ProductResponseForSeller> getProductBySellerIdWithDeleted(Long sellerId) {
-        List<Product> productList = productRepository.findAllBySellerIdDeletedTrue();
+        List<Product> productList = productRepository.findAllBySellerIdDeletedTrue(sellerId);
         return productList.stream().map(ProductResponseForSeller::from).toList();
     }
 }

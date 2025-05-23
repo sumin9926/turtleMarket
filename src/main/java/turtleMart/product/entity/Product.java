@@ -28,6 +28,7 @@ public class Product extends BaseEntity {
 
     private String description;
 
+    @Column(name = "deleted")
     private boolean isDeleted;
 
     private Product(Seller seller, String name, Integer price, String description) {
