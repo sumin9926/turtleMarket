@@ -7,7 +7,7 @@ import turtleMart.delivery.entity.Sender;
 
 import java.util.List;
 
-public interface SenderRepository extends JpaRepository<Sender, Long> {
+public interface SenderRepository extends JpaRepository<Sender, Long>, SenderQueryRepository {
 
     boolean existsByAddressAndDetailAddress(String address, String detailAddress);
 
