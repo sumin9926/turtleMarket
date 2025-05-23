@@ -10,7 +10,7 @@ import turtleMart.payment.entity.PaymentMethod;
 public record PaymentRequest(
         @NotNull Long orderId,
         @NotNull Long memberId,
-        @Min(value = 100, message = "100원 이상 결제하셔야 합니다.") int totalAmount,
+        @Min(value = 100, message = "100원 이상 결제하셔야 합니다.") int amount,
         @NotNull PaymentMethod paymentMethod,
         @NotBlank String cardCompany,
         int installmentMonth
