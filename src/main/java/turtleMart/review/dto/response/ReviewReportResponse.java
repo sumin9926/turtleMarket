@@ -6,23 +6,23 @@ import java.time.LocalDateTime;
 
 public record ReviewReportResponse(Long id,
                                    Long memberId,
-                                   ReviewResponse reviewResponse,
                                    String reasonCode,
                                    Boolean isProcessed,
                                    String ReasonDetail,
                                    LocalDateTime createdAt,
-                                   LocalDateTime updatedAt
-) {
+                                   LocalDateTime updatedAt,
+                                   ReviewResponse reviewResponse
+                                   ) {
     public static ReviewReportResponse of(ReviewResponse reviewResponse, ReviewReport reviewReport) {
         return new ReviewReportResponse(
                 reviewReport.getId(),
                 reviewReport.getMember().getId(),
-                reviewResponse,
                 reviewReport.getReasonCode().getReason(),
                 reviewReport.isProcessed(),
                 reviewReport.getReasonDetail(),
                 reviewReport.getCreatedAt(),
-                reviewReport.getUpdatedAt()
+                reviewReport.getUpdatedAt(),
+                reviewResponse
         );
     }
 }

@@ -55,7 +55,7 @@ public class ReviewReportService {
                 })
                 .toList();
 
-        return ReviewReportResponse.of( ReviewResponse.of(review, imageUrlList, choiceResponseList), reviewReport);
+        return ReviewReportResponse.of(ReviewResponse.of(review, imageUrlList, choiceResponseList), reviewReport);
     }
 
 //    public Page<ReviewReportResponse> readAll(Pageable pageable){
