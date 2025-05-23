@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.entity.Order;
+import turtleMart.order.repository.OrderRepository;
 import turtleMart.payment.dto.request.PaymentRequest;
 import turtleMart.payment.dto.response.PaymentResponse;
 import turtleMart.payment.entity.Payment;
@@ -69,8 +70,6 @@ public class PaymentService {
 
         return payments.stream().map(PaymentResponse::from).toList();
     }
-
-
 
     private Payment findPayment(Long paymentId) {
         return paymentRepository.findById(paymentId).orElseThrow(
