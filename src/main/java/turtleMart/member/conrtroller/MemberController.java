@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import turtleMart.member.dto.request.updatePasswordRequest;
+import turtleMart.member.dto.request.updateProfileRequest;
 import turtleMart.member.dto.response.MemberResponse;
 import turtleMart.member.service.MemberService;
 import turtleMart.security.AuthUser;
@@ -24,7 +24,7 @@ public class MemberController {
     @GetMapping("/userProfile")
     public ResponseEntity<MemberResponse> getMyProfile(
             @AuthenticationPrincipal AuthUser authUser
-            ) {
+    ) {
         MemberResponse myProfile = memberService.getMyProfile(authUser.memberId());
         return ResponseEntity.status(HttpStatus.OK).body(myProfile);
     }
@@ -33,11 +33,27 @@ public class MemberController {
      * PATCH
      * 회원 정보 수정
      */
+    @PatchMapping("/userProfile")
+    public ResponseEntity<MemberResponse> updateProfile(
+            @AuthenticationPrincipal AuthUser authuser,
+            @RequestBody updateProfileRequest request
+    ) {
+        MemberResponse updatedProfile = memberService.updateProfile(authuser.memberId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedProfile);
+    }
 
     /**
      * PATCH
      * 비밀번호 수정
      */
+    @PatchMapping("/userProfile/password")
+    public ResponseEntity<String> updatePassword(
+            @AuthenticationPrincipal AuthUser authUser,
+            @RequestBody updatePasswordRequest request
+    ) {
+        String successMessage = memberService.updatePassword(authUser.memberId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(successMessage);
+    }
 
     /**
      * DELETE
