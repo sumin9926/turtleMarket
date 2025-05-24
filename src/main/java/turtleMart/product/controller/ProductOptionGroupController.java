@@ -8,9 +8,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import turtleMart.product.dto.ProductOptionGroupRequest;
-import turtleMart.product.dto.ProductOptionGroupResponse;
-import turtleMart.product.entity.ProductOptionGroup;
+import turtleMart.product.dto.*;
 import turtleMart.product.service.ProductOptionGroupService;
 
 import java.util.List;
@@ -30,20 +28,44 @@ public class ProductOptionGroupController {
         return ResponseEntity.status(HttpStatus.CREATED).body(productOptionGroupResponse);
     }
 
+    @PostMapping("/members/{memberId}/products-option-group/{productOptionGroupId}/proucts-option-value")
+    public ResponseEntity<ProductOptionGroupResponseUpdate> createProductOptionValue(
+            @RequestBody List<ProductOptionValueRequest> productOptionValueRequest,
+            @PathVariable Long memberId,
+            @PathVariable Long productOptionGroupId
+    ) {
+        ProductOptionGroupResponseUpdate productOptionGroupResponse = productOptionGroupService.createProductOptionValue(productOptionValueRequest, memberId, productOptionGroupId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(productOptionGroupResponse);
+
+    }
+
     @GetMapping("/products-option-group")
     public ResponseEntity<Page<ProductOptionGroupResponse>> getAllProductOptionGroup(
-        @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
-        Pageable pageable) {
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable) {
         Page<ProductOptionGroupResponse> productOptionGroupResponse = productOptionGroupService.getAllProductOptionGroup(pageable);
         return ResponseEntity.status(HttpStatus.OK).body(productOptionGroupResponse);
     }
 
-    @PatchMapping("/members/{memberId}/products-option-group")
+    @PatchMapping("/members/{memberId}/products-option-group/{productOptionGroupId}")
     public ResponseEntity<ProductOptionGroupResponse> updateProductOptionGroup(
             @RequestBody ProductOptionGroupRequest productOptionGroupRequest,
-            @PathVariable Long memberId
+            @PathVariable Long memberId,
+            @PathVariable Long productOptionGroupId
     ) {
-        ProductOptionGroupResponse productOptionGroupResponse = productOptionGroupService.updateProductOptionGroup(memberId);
+        ProductOptionGroupResponse productOptionGroupResponse =
+                productOptionGroupService.updateProductOptionGroup(productOptionGroupRequest,memberId,productOptionGroupId);
+        return ResponseEntity.status(HttpStatus.OK).body(productOptionGroupResponse);
+    }
+
+    @PatchMapping("/members/{memberId}/products-option-group/{productOptionGroupId}/products-option-value")
+    public ResponseEntity<ProductOptionGroupResponse> updateProductOptionValue(
+            @RequestBody List<ProductOptionValueUpdateRequest> productOptionValueRequest,
+            @PathVariable Long memberId,
+            @PathVariable Long productOptionGroupId
+    ) {
+        ProductOptionGroupResponse productOptionGroupResponse =
+                productOptionGroupService.updateProductOptionValue(productOptionValueRequest,memberId, productOptionGroupId);
         return ResponseEntity.status(HttpStatus.OK).body(productOptionGroupResponse);
     }
 
@@ -53,6 +75,16 @@ public class ProductOptionGroupController {
             @PathVariable Long memberId
             ) {
         productOptionGroupService.deleteProductOptionGroup(productOptionGroupId, memberId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @DeleteMapping("/members/{memberId}/products-option-group/{productOptionGroupId}/products-option-value/{productOptionValue}")
+    public ResponseEntity<Void> deleteProductOptionValue(
+        @PathVariable Long memberId,
+        @PathVariable Long productOptionGroupId,
+        @PathVariable Long productOptionValue
+    ) {
+
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

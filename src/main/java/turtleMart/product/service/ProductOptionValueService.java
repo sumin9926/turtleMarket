@@ -2,6 +2,8 @@ package turtleMart.product.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import turtleMart.product.dto.ProductOptionValueRequest;
+import turtleMart.product.dto.ProductOptionValueUpdateRequest;
 import turtleMart.product.entity.ProductOptionGroup;
 import turtleMart.product.entity.ProductOptionValue;
 import turtleMart.product.repository.ProductOptionValueRepository;
@@ -22,17 +24,16 @@ public class ProductOptionValueService {
         }
     }
 
-    public Map<String, String> updateProductOptionValue(List<String> optionList, ProductOptionGroup productOptionGroup) {
+    public Map<String, String> updateProductOptionValue(List<ProductOptionValueRequest> productOptionValueRequestList, ProductOptionGroup productOptionGroup) {
         Map<String, String> passList = new LinkedHashMap<>();
-        for (String name : optionList) {
-            if (productOptionGroup.duplicate(name)) {
-                passList.put(name, "이미 존재하는 옵션");
+        for (ProductOptionValueRequest productOptionValueRequest : productOptionValueRequestList) {
+            if (productOptionGroup.duplicate(productOptionValueRequest.name())) {
+                passList.put(productOptionValueRequest.name(), "이미 존재하는 옵션");
                 continue;
             }
-            ProductOptionValue productOptionValue = ProductOptionValue.of(name);
-            productOptionGroup.getProductOptionValueList().add(productOptionValue);
+            ProductOptionValue productOptionValue = ProductOptionValue.of(productOptionValueRequest.name());
+            productOptionGroup.addValue(productOptionValue);
         }
-
         return passList;
     }
 }

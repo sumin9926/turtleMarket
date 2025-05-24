@@ -55,7 +55,6 @@ public class ProductService {
         Product product = productDslRepository.findByIdWithSeller(productId);
         checkPermission(sellerId, product);
         product.update(productRequest);
-        productRepository.save(product);
         return ProductResponse.from(product);
     }
 

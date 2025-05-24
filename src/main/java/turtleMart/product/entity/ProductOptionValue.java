@@ -31,4 +31,10 @@ public class ProductOptionValue {
     public void addGroup(ProductOptionGroup productOptionGroup) {
         this.productOptionGroup = productOptionGroup;
     }
+
+    public void update(String name) {
+        if (!this.name.equals(name)) {
+            this.name = name;
+        }
+    }
 }
