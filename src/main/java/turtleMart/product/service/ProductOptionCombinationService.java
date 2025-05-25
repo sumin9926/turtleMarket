@@ -40,6 +40,7 @@ public class ProductOptionCombinationService {
             ProductOptionCombination productOptionCombination =
                     ProductOptionCombination.of(product, optionCombinationRequest.price(), optionCombinationRequest.inventory());
             LinkedHashSet<Long> valueIdList = new LinkedHashSet<>(optionCombinationRequest.valueIdList());
+            //중복 조합 검증로직 필요
             for (Long id : valueIdList) {
                 ProductOptionValue productOptionValue = productOptionValueRepository.findById(id).orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_VALUE_NOT_FOUND));
                 ProductOptionMap productOptionMap = ProductOptionMap.of(productOptionCombination, productOptionValue);

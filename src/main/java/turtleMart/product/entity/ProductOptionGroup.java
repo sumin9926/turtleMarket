@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import turtleMart.global.common.BaseEntity;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
-import turtleMart.product.dto.ProductOptionGroupRequest;
+import turtleMart.product.dto.ProductOptionGroupRequestUpdate;
 import turtleMart.product.dto.ProductOptionValueUpdateRequest;
 
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class ProductOptionGroup extends BaseEntity {
         productOptionValueList.add(productOptionValue);
     }
 
-    public void update(ProductOptionGroupRequest productOptionGroupRequest) {
+    public void update(ProductOptionGroupRequestUpdate productOptionGroupRequest) {
         if (!this.name.equals(productOptionGroupRequest.name())) {
             this.name = productOptionGroupRequest.name();
         }

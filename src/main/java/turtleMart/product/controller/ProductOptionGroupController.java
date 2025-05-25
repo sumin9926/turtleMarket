@@ -49,7 +49,7 @@ public class ProductOptionGroupController {
 
     @PatchMapping("/members/{memberId}/products-option-group/{productOptionGroupId}")
     public ResponseEntity<ProductOptionGroupResponse> updateProductOptionGroup(
-            @RequestBody ProductOptionGroupRequest productOptionGroupRequest,
+            @RequestBody ProductOptionGroupRequestUpdate productOptionGroupRequest,
             @PathVariable Long memberId,
             @PathVariable Long productOptionGroupId
     ) {

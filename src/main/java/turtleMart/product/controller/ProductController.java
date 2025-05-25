@@ -80,8 +80,8 @@ public class ProductController {
     }
 
     @PatchMapping("/sellers/{sellerId}/products/{productId}/revive")
-    public ResponseEntity<ProductResponseForSeller> reviveProduct(@PathVariable Long sellerId, @PathVariable Long productId) {
-        ProductResponseForSeller productResponse = productService.reviveProduct(productId, sellerId);
+    public ResponseEntity<ProductResponse> reviveProduct(@PathVariable Long sellerId, @PathVariable Long productId) {
+        ProductResponse productResponse = productService.reviveProduct(productId, sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponse);
     }
 

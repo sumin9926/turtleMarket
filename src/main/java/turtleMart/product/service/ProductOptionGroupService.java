@@ -51,7 +51,7 @@ public class ProductOptionGroupService {
     }
 
     @Transactional
-    public ProductOptionGroupResponse updateProductOptionGroup(ProductOptionGroupRequest productOptionGroupRequest, Long memberId, Long productOptionGroupId) {
+    public ProductOptionGroupResponse updateProductOptionGroup(ProductOptionGroupRequestUpdate productOptionGroupRequest, Long memberId, Long productOptionGroupId) {
         //시큐리티 없을때 임시
         checkPermission(memberId);
         ProductOptionGroup productOptionGroup = productOptionGroupRepository.findById(productOptionGroupId)

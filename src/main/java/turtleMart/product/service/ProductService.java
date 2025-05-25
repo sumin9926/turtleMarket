@@ -42,6 +42,9 @@ public class ProductService {
 
     public ProductResponse getProduct(Long productId) {
         Product product = productDslRepository.findByIdWithSeller(productId);
+        if (product == null) {
+            throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
         return ProductResponse.from(product);
     }
 
@@ -53,6 +56,9 @@ public class ProductService {
     @Transactional
     public ProductResponse updateProduct(ProductRequest productRequest, Long sellerId, Long productId) {
         Product product = productDslRepository.findByIdWithSeller(productId);
+        if (product == null) {
+            throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
         checkPermission(sellerId, product);
         product.update(productRequest);
         return ProductResponse.from(product);
@@ -67,14 +73,17 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductResponseForSeller reviveProduct(Long productId, Long sellerId) {
-        Product product = productRepository.findById(productId).orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
+    public ProductResponse reviveProduct(Long productId, Long sellerId) {
+        Product product = productDslRepository.findByIdWithSeller(productId);
+        if (product == null) {
+            throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
         if (!product.isDeleted()) {
             throw new BadRequestException(ErrorCode.PRODUCT_ALL_READY_SURVIVE);
         }
         checkPermission(sellerId, product);
         product.delete(false);
-        return ProductResponseForSeller.from(product);
+        return ProductResponse.from(product);
     }
 
     private void checkPermission(Long sellerId, Product product) {
