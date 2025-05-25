@@ -8,7 +8,6 @@ import turtleMart.global.common.BaseEntity;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.product.dto.ProductOptionGroupRequest;
-import turtleMart.product.dto.ProductOptionValueRequest;
 import turtleMart.product.dto.ProductOptionValueUpdateRequest;
 
 import java.util.ArrayList;
@@ -69,6 +68,11 @@ public class ProductOptionGroup extends BaseEntity {
                     .collect(Collectors.toMap(ProductOptionValue::getId, v -> v));
         }
         return Optional.ofNullable(optionValueMapCache.get(id))
-                .orElseThrow(() -> new NotFoundException(ErrorCode.OPTION_VALUE_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_VALUE_NOT_FOUND));
+    }
+
+    public void deleteValue(Long productOptionValueId) {
+        ProductOptionValue productOptionValue = getOptionValueById(productOptionValueId);
+        productOptionValueList.remove(productOptionValue);
     }
 }

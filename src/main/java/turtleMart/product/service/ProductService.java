@@ -62,6 +62,7 @@ public class ProductService {
     public void deleteProduct(Long productId, Long sellerId) {
         Product product = productRepository.findById(productId).orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
         checkPermission(sellerId,product);
+        //상품에 연결된 콤비네이션은? 존재해도 괜찮지않을까? 같이 딜리트상태로 만들까?
         product.delete(true);
     }
 

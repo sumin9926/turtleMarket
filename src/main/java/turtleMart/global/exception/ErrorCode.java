@@ -24,7 +24,7 @@ public enum ErrorCode {
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND,"존재하지 않는 상품입니다."),
     PRODUCT_ALL_READY_SURVIVE(HttpStatus.BAD_REQUEST, "해당 상품은 삭제되지않았습니다"),
     PRODUCT_OPTION_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 상품옵션그룹입니다."),
-    OPTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "상품옵션그룹에 존재하지않는 상품옵션값입니다."),
+    PRODUCT_OPTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "상품옵션그룹에 존재하지않는 상품옵션값입니다."),
 
     //유저 관련
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다.");

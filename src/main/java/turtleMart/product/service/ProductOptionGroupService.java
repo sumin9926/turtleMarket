@@ -97,4 +97,17 @@ public class ProductOptionGroupService {
         Map<String, String> passList = productOptionValueService.updateProductOptionValue(productOptionValueRequest, productOptionGroup);
         return ProductOptionGroupResponseUpdate.of(productOptionGroup,passList);
     }
+
+    @Transactional
+    public void deleteProductOptionValue(List<Long> productOptionValueList, Long memberId, Long productOptionGroupId) {
+        checkPermission(memberId);
+        ProductOptionGroup productOptionGroup = productOptionGroupRepository.findById(productOptionGroupId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_GROUP_NOT_FOUND));
+        // 옵션밸류값이 상품과 연결되있지않을경우검증
+
+        for (Long productOptionValueId : productOptionValueList) {
+            productOptionGroup.deleteValue(productOptionValueId);
+        }
+
+    }
 }

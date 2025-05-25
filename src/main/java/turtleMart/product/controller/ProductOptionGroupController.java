@@ -78,13 +78,13 @@ public class ProductOptionGroupController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @DeleteMapping("/members/{memberId}/products-option-group/{productOptionGroupId}/products-option-value/{productOptionValue}")
+    @DeleteMapping("/members/{memberId}/products-option-group/{productOptionGroupId}/products-option-value")
     public ResponseEntity<Void> deleteProductOptionValue(
         @PathVariable Long memberId,
         @PathVariable Long productOptionGroupId,
-        @PathVariable Long productOptionValue
+        @RequestParam List<Long> productOptionValueList
     ) {
-
+        productOptionGroupService.deleteProductOptionValue(productOptionValueList, memberId, productOptionGroupId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }
