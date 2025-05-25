@@ -25,41 +25,40 @@ public class Payment extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    private int amount;
+    private Integer totalAmount;
 
+    private Integer deductedAmount;
+
+    private Integer actualAmount;
+
+    @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
 
     private String cardCompany;
 
     private Integer installmentMonth;
 
-    private PaymentStatus paymentStatus;
-
-    private FailReason failReason;
-
     public Payment(
-            Order order, Member member, int amount, PaymentMethod paymentMethod,
+            Order order, Member member, Integer amount, PaymentMethod paymentMethod,
             String cardCompany, Integer installmentMonth) {
         this.order = order;
         this.member = member;
-        this.amount = amount;
+        this.totalAmount = amount;
+        this.deductedAmount = 0;
+        this.actualAmount = amount;
         this.paymentMethod = paymentMethod;
         this.cardCompany = cardCompany;
         this.installmentMonth = installmentMonth == null ? 1 : installmentMonth;
-        this.paymentStatus = PaymentStatus.PENDING;
     }
 
     public static Payment of(
-            Order order, Member member, int amount, PaymentMethod paymentMethod,
+            Order order, Member member, Integer amount, PaymentMethod paymentMethod,
             String cardCompany, Integer installmentMonth) {
         return new Payment(order, member, amount, paymentMethod, cardCompany, installmentMonth);
     }
 
-    public void addFailReason(FailReason failReason) {
-        this.failReason = failReason;
-    }
-
-    public void changePaymentStatus(PaymentStatus paymentStatus) {
-        this.paymentStatus = paymentStatus;
+    public void deduct(Integer amount) {
+        this.deductedAmount += amount;
+        this.actualAmount -= amount;
     }
 }
