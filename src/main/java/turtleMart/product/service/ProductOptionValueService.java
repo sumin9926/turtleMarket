@@ -2,8 +2,7 @@ package turtleMart.product.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import turtleMart.product.dto.ProductOptionValueRequest;
-import turtleMart.product.dto.ProductOptionValueUpdateRequest;
+import turtleMart.product.dto.request.ProductOptionValueRequest;
 import turtleMart.product.entity.ProductOptionGroup;
 import turtleMart.product.entity.ProductOptionValue;
 import turtleMart.product.repository.ProductOptionValueRepository;

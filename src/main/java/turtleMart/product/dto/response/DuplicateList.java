@@ -1,4 +1,4 @@
-package turtleMart.product.dto;
+package turtleMart.product.dto.response;
 
 import java.util.List;
 

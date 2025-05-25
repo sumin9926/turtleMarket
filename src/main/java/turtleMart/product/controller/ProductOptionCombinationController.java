@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import turtleMart.product.dto.ProductOptionCombinationRequest;
-import turtleMart.product.dto.ProductOptionCombinationResponse;
-import turtleMart.product.dto.ProductOptionCombinationResponseCreate;
+import turtleMart.product.dto.request.ProductOptionCombinationRequest;
+import turtleMart.product.dto.response.ProductOptionCombinationResponse;
+import turtleMart.product.dto.response.ProductOptionCombinationResponseCreate;
 import turtleMart.product.service.ProductOptionCombinationService;
 
 import java.util.List;

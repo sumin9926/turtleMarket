@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 import turtleMart.global.common.BaseEntity;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
-import turtleMart.product.dto.ProductOptionGroupRequestUpdate;
-import turtleMart.product.dto.ProductOptionValueUpdateRequest;
+import turtleMart.product.dto.request.ProductOptionGroupRequestUpdate;
+import turtleMart.product.dto.request.ProductOptionValueUpdateRequest;
 
 import java.util.ArrayList;
 import java.util.List;

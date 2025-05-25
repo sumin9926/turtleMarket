@@ -7,9 +7,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import turtleMart.product.dto.ProductRequest;
-import turtleMart.product.dto.ProductResponse;
-import turtleMart.product.dto.ProductResponseForSeller;
+import turtleMart.product.dto.request.ProductRequest;
+import turtleMart.product.dto.response.ProductResponse;
+import turtleMart.product.dto.response.ProductResponseForSeller;
 import turtleMart.product.service.ProductService;
 
 import java.util.List;

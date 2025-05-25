@@ -8,7 +8,12 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import turtleMart.product.dto.*;
+import turtleMart.product.dto.request.ProductOptionGroupRequest;
+import turtleMart.product.dto.request.ProductOptionGroupRequestUpdate;
+import turtleMart.product.dto.request.ProductOptionValueRequest;
+import turtleMart.product.dto.request.ProductOptionValueUpdateRequest;
+import turtleMart.product.dto.response.ProductOptionGroupResponse;
+import turtleMart.product.dto.response.ProductOptionGroupResponseUpdate;
 import turtleMart.product.service.ProductOptionGroupService;
 
 import java.util.List;
