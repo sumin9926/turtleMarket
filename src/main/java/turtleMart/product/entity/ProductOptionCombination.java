@@ -10,7 +10,8 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table
+@Table(name = "product_option_combination",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"product_id","unique_key"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductOptionCombination {
 
@@ -26,17 +27,20 @@ public class ProductOptionCombination {
 
     private Integer inventory;
 
+    private String uniqueKey;
+
     @OneToMany(mappedBy = "productOptionCombination", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductOptionMap> productOptionMapList = new ArrayList<>();
 
-    private ProductOptionCombination(Product product, Integer price, Integer inventory) {
+    private ProductOptionCombination(Product product, Integer price, Integer inventory,String uniqueKey) {
         this.product = product;
         this.price = price;
         this.inventory = inventory;
+        this.uniqueKey = uniqueKey;
     }
 
-    public static ProductOptionCombination of(Product product, Integer price, Integer inventory) {
-        return new ProductOptionCombination(product, price, inventory);
+    public static ProductOptionCombination of(Product product, Integer price, Integer inventory,String uniqueKey) {
+        return new ProductOptionCombination(product, price, inventory,uniqueKey);
     }
 
     public void addOptionMap(ProductOptionMap productOptionMap) {

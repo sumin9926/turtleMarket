@@ -9,4 +9,6 @@ import java.util.List;
 
 public interface ProductOptionCombinationRepository extends JpaRepository<ProductOptionCombination, Long> {
     List<ProductOptionCombination> findAllByProductId(Long productId);
+
+    boolean existsByProductIdAndUniqueKey(Long productId, String uniqueKey);
 }
