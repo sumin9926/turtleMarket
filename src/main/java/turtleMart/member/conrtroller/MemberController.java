@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import turtleMart.member.dto.request.MemberWithdrawRequest;
 import turtleMart.member.dto.request.updatePasswordRequest;
 import turtleMart.member.dto.request.updateProfileRequest;
 import turtleMart.member.dto.response.MemberResponse;
@@ -59,5 +60,12 @@ public class MemberController {
      * DELETE
      * 회원 탈퇴
      */
-
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<String> withdrawMember(
+            @AuthenticationPrincipal AuthUser authUser,
+            @RequestBody MemberWithdrawRequest request
+    ) {
+        String resultMessage = memberService.withdrawMember(authUser.memberId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(resultMessage);
+    }
 }
