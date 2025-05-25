@@ -37,7 +37,7 @@ public class AuthService {
         Member member = memberRepository.findMemberByEmail(request.email())
                 .orElseThrow(() -> new RuntimeException("가입된 이메일이 아닙니다."));
         if (!passwordEncoder.matches(request.password(), member.getPassword())) {
-            throw new RuntimeException("이메일이 잘못되었습니다.");
+            throw new RuntimeException("비밀번호가 잘못되었습니다.");
         }
         String token = jwtUtil.createToken(member.getId(), member.getAuthority());
         return jwtUtil.removePrefix(token);

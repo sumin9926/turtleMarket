@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import turtleMart.member.dto.request.SignupRequest;
+import turtleMart.member.dto.request.updateProfileRequest;
 
 @Entity
 @Getter
@@ -48,5 +49,15 @@ public class Member {
                 password,
                 request.phoneNumber()
         );
+    }
+
+    public void updateProfile(updateProfileRequest request) {
+        this.name = request.name() != null ? request.name() : this.name;
+        this.email = request.email() != null ? request.email() : this.email;
+        this.phoneNumber = request.phoneNumber() != null ? request.phoneNumber() : this.phoneNumber;
+    }
+
+    public void updatePassword(String password) {
+        this.password = password;
     }
 }
