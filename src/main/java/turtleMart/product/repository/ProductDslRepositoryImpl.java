@@ -18,8 +18,9 @@ public class ProductDslRepositoryImpl implements ProductDslRepository {
     @Override
     public Product findByIdWithSeller(Long productId) {
         QProduct product = QProduct.product;
+        QSeller seller = QSeller.seller;
         return jpaQueryFactory.selectFrom(product)
-                .join(product.seller, QSeller.seller).fetchJoin()
+                .join(product.seller, seller).fetchJoin()
                 .where(product.id.eq(productId))
                 .fetchOne();
     }

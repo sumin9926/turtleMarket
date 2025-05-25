@@ -1,6 +1,9 @@
 package turtleMart.product.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,25 +30,41 @@ public class ProductController {
     }
 
     @GetMapping("/products/{productId}")
-    public ResponseEntity<ProductResponse> getProduct(@PathVariable Long productId) {
+    public ResponseEntity<ProductResponse> getProduct(
+            @PathVariable Long productId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
         ProductResponse productResponse = productService.getProduct(productId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponse);
     }
 
     @GetMapping("/sellers/{sellerId}/products/every")
-    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithEverything(@PathVariable Long sellerId) {
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithEverything(
+            @PathVariable Long sellerId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
         List<ProductResponseForSeller> productResponseList = productService.getProductBySellerIdWithEverything(sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
     }
 
     @GetMapping("/sellers/{sellerId}/products")
-    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerId(@PathVariable Long sellerId) {
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerId(
+            @PathVariable Long sellerId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
         List<ProductResponseForSeller> productResponseList = productService.getProductBySellerId(sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
     }
 
     @GetMapping("/sellers/{sellerId}/products/deleted")
-    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithDeleted(@PathVariable Long sellerId) {
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithDeleted(
+            @PathVariable Long sellerId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
         List<ProductResponseForSeller> productResponseList = productService.getProductBySellerIdWithDeleted(sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
     }
