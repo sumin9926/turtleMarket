@@ -3,10 +3,8 @@ package turtleMart.product.repository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import turtleMart.product.entity.ProductOptionCombination;
-import turtleMart.product.entity.QProductOptionCombination;
-import turtleMart.product.entity.QProductOptionMap;
-import turtleMart.product.entity.QProductOptionValue;
+import turtleMart.member.entity.QSeller;
+import turtleMart.product.entity.*;
 
 import java.util.List;
 
@@ -27,5 +25,17 @@ public class ProductOptionCombinationDslRepositoryImpl implements ProductOptionC
                 .where(productOptionCombination.product.id.eq(productId))
                 .distinct()
                 .fetch();
+    }
+
+    @Override
+    public ProductOptionCombination findByIdWithProductAndSeller(Long productOptionCombinationId) {
+        QProductOptionCombination productOptionCombination = QProductOptionCombination.productOptionCombination;
+        QProduct product = QProduct.product;
+        QSeller seller = QSeller.seller;
+        return jpaQueryFactory.select(productOptionCombination)
+                .join(productOptionCombination.product,product).fetchJoin()
+                .join(productOptionCombination.product.seller,seller).fetchJoin()
+                .where(productOptionCombination.id.eq(productOptionCombinationId))
+                .fetchOne();
     }
 }

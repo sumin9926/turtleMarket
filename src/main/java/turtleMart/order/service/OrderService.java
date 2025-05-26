@@ -235,6 +235,7 @@ public class OrderService {
         PaymentRequest paymentRequest =  PaymentRequest.from(order, memberId, request);
 
         kafkaTemplate.send(paymentTopic, paymentRequest);
+        //라운드 로빈방식을 해시키로 변경 키는 상품옵션조합id 실질적으로 주문해야하는 물건이되야한다.
     }
 
     private void removeCartItemFromRedis(Long memberId, List<Long> cartItemIdList) {

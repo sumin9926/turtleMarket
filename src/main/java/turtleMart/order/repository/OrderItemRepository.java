@@ -21,4 +21,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("sellerId")Long sellerId, @Param("productId")Long productId,
             @Param("startDate")LocalDateTime startDateTime, @Param("endDate")LocalDateTime endDateTime
     );
+
+    boolean existsByProductOptionCombinationId(Long productOptionCombinationId);
 }

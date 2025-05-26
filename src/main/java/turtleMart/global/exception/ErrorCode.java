@@ -25,9 +25,13 @@ public enum ErrorCode {
     PRODUCT_ALL_READY_SURVIVE(HttpStatus.BAD_REQUEST, "해당 상품은 삭제되지않았습니다"),
     PRODUCT_OPTION_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 상품옵션그룹입니다."),
     PRODUCT_OPTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "상품옵션그룹에 존재하지않는 상품옵션값입니다."),
-
+    PRODUCT_OPTION_COMBINATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지않는 상품옵션 조합입니다."),
+    PRODUCT_OPTION_COMBINATION_ALL_READY_SOLD(HttpStatus.BAD_REQUEST, "주문이 존재하는 상품옵션조합은 삭제할수없습니다."),
     //유저 관련
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다.");
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
+    //여러가지 관련
+    TIME_OUT(HttpStatus.INTERNAL_SERVER_ERROR, "응답 대기시간을 초과하였습니다."),
+    INTERRUPT(HttpStatus.INTERNAL_SERVER_ERROR, "인터럽");
 
     private final HttpStatus httpStatus;
     private final String message;
