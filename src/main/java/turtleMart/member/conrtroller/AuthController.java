@@ -1,5 +1,6 @@
 package turtleMart.member.conrtroller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class AuthController {
      */
     @PostMapping("/signup")
     public ResponseEntity<String> signup(
-            @RequestBody SignupRequest request
+            @RequestBody @Valid SignupRequest request
     ) {
         String token = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(token);
@@ -36,7 +37,7 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<String> login(
-            @RequestBody LoginRequest request
+            @RequestBody @Valid LoginRequest request
     ) {
         String token = authService.login(request);
         return ResponseEntity.status(HttpStatus.OK).body(token);

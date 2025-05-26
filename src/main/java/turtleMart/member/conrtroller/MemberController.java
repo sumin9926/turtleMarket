@@ -1,5 +1,6 @@
 package turtleMart.member.conrtroller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,7 @@ public class MemberController {
     @PatchMapping("/userProfile")
     public ResponseEntity<MemberResponse> updateProfile(
             @AuthenticationPrincipal AuthUser authuser,
-            @RequestBody updateProfileRequest request
+            @RequestBody @Valid updateProfileRequest request
     ) {
         MemberResponse updatedProfile = memberService.updateProfile(authuser.memberId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(updatedProfile);
@@ -50,7 +51,7 @@ public class MemberController {
     @PatchMapping("/userProfile/password")
     public ResponseEntity<String> updatePassword(
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody updatePasswordRequest request
+            @RequestBody @Valid updatePasswordRequest request
     ) {
         String successMessage = memberService.updatePassword(authUser.memberId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(successMessage);
@@ -63,7 +64,7 @@ public class MemberController {
     @DeleteMapping("/withdraw")
     public ResponseEntity<String> withdrawMember(
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody MemberWithdrawRequest request
+            @RequestBody @Valid MemberWithdrawRequest request
     ) {
         String resultMessage = memberService.withdrawMember(authUser.memberId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(resultMessage);
