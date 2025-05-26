@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.*;
 import turtleMart.global.utill.JsonHelper;
+import turtleMart.member.entity.Seller;
+import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.product.dto.ProductOptionCombinationPriceDto;
 import turtleMart.product.dto.response.DuplicateList;
@@ -37,15 +39,19 @@ public class ProductOptionCombinationService {
     private final OrderItemRepository orderItemRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final RedisTemplate<String, Boolean> redisTemplate;
+    private final ProductDslRepository productDslRepository;
+    private final SellerRepository sellerRepository;
 
     @Transactional
-    public ProductOptionCombinationResponseCreate createProductOptionCombination(List<ProductOptionCombinationRequest> productOptionCombinationRequest, Long sellerId, Long productId) {
-        if (!productRepository.existsById(productId)) {
-            throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
-        }
+    public ProductOptionCombinationResponseCreate createProductOptionCombination(List<ProductOptionCombinationRequest> productOptionCombinationRequest, Long memberId, Long productId) {
         List<ProductOptionCombination> productOptionCombinationList = new ArrayList<>();
         List<String> duplicated = new ArrayList<>();
-        Product product = productRepository.getReferenceById(productId);
+        Product product = productDslRepository.findByIdWithSeller(productId);
+        Seller seller = sellerRepository.findByMemberId(memberId).orElseThrow(() -> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
+        if (!product.getSeller().getId().equals(seller.getId())) {
+            throw new RoleMismatchException(ErrorCode.FORBIDDEN);
+        }
+
         for (ProductOptionCombinationRequest optionCombinationRequest : productOptionCombinationRequest) {
             TreeSet<Long> valueIdList = new TreeSet<>(optionCombinationRequest.valueIdList());
             String uniqueKey = valueIdList.stream().map(String::valueOf).collect(Collectors.joining("-"));
@@ -75,33 +81,35 @@ public class ProductOptionCombinationService {
         return productOptionCombinationList.stream().map(ProductOptionCombinationResponse::from).toList();
     }
 
-    public void hardDeleteProductOptionCombination(Long sellerId, Long productOptionCombinationId) {
-        ProductOptionCombination productOptionCombination = checkPermission(sellerId, productOptionCombinationId);
+    public void hardDeleteProductOptionCombination(Long memberId, Long productOptionCombinationId) {
+        ProductOptionCombination productOptionCombination = checkPermission(memberId, productOptionCombinationId);
         if (orderItemRepository.existsByProductOptionCombinationId(productOptionCombinationId)) {
             throw new BadRequestException(ErrorCode.PRODUCT_OPTION_COMBINATION_ALL_READY_SOLD);
         }
         productOptionCombinationRepository.delete(productOptionCombination);
     }
 
-    private ProductOptionCombination checkPermission(Long sellerId, Long productOptionCombinationId) {
+    private ProductOptionCombination checkPermission(Long memberId, Long productOptionCombinationId) {
         ProductOptionCombination productOptionCombination = productOptionCombinationDslRepository.findByIdWithProductAndSeller(productOptionCombinationId);
         if (productOptionCombination == null) {
             throw new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND);
         }
-        if (!productOptionCombination.getProduct().getSeller().getId().equals(sellerId)) {
+        Seller seller = sellerRepository.findByMemberId(memberId).orElseThrow(() -> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
+
+        if (!productOptionCombination.getProduct().getSeller().getId().equals(seller.getId())) {
             throw new RoleMismatchException(ErrorCode.FORBIDDEN);
         }
         return productOptionCombination;
     }
 
-    public ResponseEntity<Void> updateProductOptionCombinationPrice(Long sellerId, Long productOptionCombinationId, Integer price) {
-        checkPermission(sellerId, productOptionCombinationId);
-        ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price);
-        String payload = JsonHelper.toJson(productOptionCombinationPriceDto);
+    public ResponseEntity<Void> updateProductOptionCombinationPrice(Long memberId, Long productOptionCombinationId, Integer price) {
+        checkPermission(memberId, productOptionCombinationId);
         String priceChangeRedisKey = "softLock:priceChange:combination:" + productOptionCombinationId;
         if (redisTemplate.hasKey(priceChangeRedisKey)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+        ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price);
+        String payload = JsonHelper.toJson(productOptionCombinationPriceDto);
         redisTemplate.opsForValue().set(priceChangeRedisKey,false, Duration.ofMinutes(4));
         kafkaTemplate.send("order_make_topic", productOptionCombinationId.toString(), payload);
 
@@ -120,6 +128,33 @@ public class ProductOptionCombinationService {
             }
             try {
                 Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new CustomRuntimeException(ErrorCode.INTERRUPT);
+            }
+        }
+        throw new CustomRuntimeException(ErrorCode.TIME_OUT);
+    }
+
+    public ResponseEntity<Void> updateProductOptionCombinationInventory(Long memberId, Long productOptionCombinationId, Integer inventory) {
+        checkPermission(memberId, productOptionCombinationId);
+        ProductOptionCombinationInventoryDto productOptionCombinationInventoryDto = ProductOptionCombinationInventoryDto.of(productOptionCombinationId, inventory);
+        String payload = JsonHelper.toJson(productOptionCombinationInventoryDto);
+        kafkaTemplate.send("", productOptionCombinationId.toString(), payload);
+
+        String statusRedisKey = "status:inventoryChange:combination:" + productOptionCombinationId;
+        long timeOut = System.currentTimeMillis() + 60_000;
+        while (System.currentTimeMillis() < timeOut) {
+            Boolean success = redisTemplate.opsForValue().get(statusRedisKey);
+            if (Boolean.TRUE.equals(success)) {
+                redisTemplate.delete(statusRedisKey);
+                return ResponseEntity.status(HttpStatus.OK).build();
+            } else if (Boolean.FALSE.equals(success)){
+                redisTemplate.delete(statusRedisKey);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+            try {
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new CustomRuntimeException(ErrorCode.INTERRUPT);

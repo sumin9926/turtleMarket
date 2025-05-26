@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.product.dto.request.ProductOptionCombinationRequest;
 import turtleMart.product.dto.response.ProductOptionCombinationResponse;
 import turtleMart.product.dto.response.ProductOptionCombinationResponseCreate;
 import turtleMart.product.service.ProductOptionCombinationService;
+import turtleMart.security.AuthUser;
 
 import java.util.List;
 
@@ -18,15 +20,15 @@ public class ProductOptionCombinationController {
 
     private final ProductOptionCombinationService productOptionCombinationService;
 
-    @PostMapping("/sellers/{sellerId}/products/{productId}/products-option-combination")
+    @PostMapping("/seller/me/products/{productId}/products-option-combination")
     public ResponseEntity<ProductOptionCombinationResponseCreate> createProductOptionCombination(
             @RequestBody List<ProductOptionCombinationRequest> productOptionCombinationRequest,
-            @PathVariable Long sellerId,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long productId
     ) {
 
         ProductOptionCombinationResponseCreate productOptionCombination =
-                productOptionCombinationService.createProductOptionCombination(productOptionCombinationRequest, sellerId, productId);
+                productOptionCombinationService.createProductOptionCombination(productOptionCombinationRequest, authUser.memberId(), productId);
         return ResponseEntity.status(HttpStatus.CREATED).body(productOptionCombination);
     }
 
@@ -39,18 +41,22 @@ public class ProductOptionCombinationController {
         return ResponseEntity.status(HttpStatus.OK).body(productOptionCombinationResponseList);
     }
 
-    @PatchMapping("/sellers/{sellerId}/products-option-combination/{productOptionCombinationId}")
+    @PatchMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
     public ResponseEntity<Void> updateProductOptionCombinationPrice(
-            @PathVariable Long sellerId,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long productOptionCombinationId,
             @RequestParam Integer price
     ) {
-       return productOptionCombinationService.updateProductOptionCombinationPrice(sellerId, productOptionCombinationId, price);
+       return productOptionCombinationService.updateProductOptionCombinationPrice(authUser.memberId(), productOptionCombinationId, price);
     }
 
-    @PatchMapping("/sellers/{sellerId}/products-option-combination")
-    public ResponseEntity<Void> updateProductOptionCombinationInventory() {
-        return null;
+    @PatchMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
+    public ResponseEntity<Void> updateProductOptionCombinationInventory(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long productOptionCombinationId,
+            @RequestParam Integer inventory
+    ) {
+        return productOptionCombinationService.updateProductOptionCombinationInventory(authUser.memberId(), productOptionCombinationId, inventory);
     }
 
     @DeleteMapping
@@ -59,12 +65,12 @@ public class ProductOptionCombinationController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @DeleteMapping("/sellers/{sellerId}/products-option-combination/{productOptionCombinationId}")
+    @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
     public ResponseEntity<Void> hardDeleteProductOptionCombination(
-            @PathVariable Long sellerId,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long productOptionCombinationId
     ) {
-        productOptionCombinationService.hardDeleteProductOptionCombination(sellerId, productOptionCombinationId);
+        productOptionCombinationService.hardDeleteProductOptionCombination(authUser.memberId(), productOptionCombinationId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
