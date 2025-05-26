@@ -5,9 +5,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import turtleMart.review.dto.request.UpdateReviewTemplateRequest;
-
-import java.awt.*;
 
 @Getter
 @Table @Entity
@@ -22,43 +19,42 @@ public class ReviewTemplate {
     private String question;
 
     @Column(length = 30, nullable = false)
-    private String low;
+    private String satisfaction_low;
 
     @Column(length = 30, nullable = false)
-    private String medium;
+    private String satisfaction_medium;
 
     @Column(length = 30, nullable = false)
-    private String high;
+    private String satisfaction_high;
 
     private boolean isDeleted = false;
 
-    private ReviewTemplate(String question, String low, String medium, String high){
+    private ReviewTemplate(String question, String satisfaction_low, String satisfaction_medium, String satisfaction_high){
         this.question = question;
-        this.low = low;
-        this.medium = medium;
-        this.high = high;
+        this.satisfaction_low = satisfaction_low;
+        this.satisfaction_medium = satisfaction_medium;
+        this.satisfaction_high = satisfaction_high;
     }
 
     public static ReviewTemplate of(String question, String low, String medium, String high){
         return new ReviewTemplate(question, low, medium, high);
     }
 
-    public void update(UpdateReviewTemplateRequest request){
-        this.question = request.question();
-        this.low = request.low();
-        this.medium = request.medium();
-        this.high = request.high();
+    public void update(String question, String satisfaction_low, String satisfaction_medium, String satisfaction_high){
+        this.question = question;
+        this.satisfaction_low = satisfaction_low;
+        this.satisfaction_medium = satisfaction_medium;
+        this.satisfaction_high = satisfaction_high;
     }
 
-    public void delete(){
-        this.isDeleted = true;
-    }
+    public void delete(){this.isDeleted = true;}
 
     public String getChoice(TemplateChoiceGrade choiceGrade){
-
-        if(TemplateChoiceGrade.LOW == choiceGrade){return this.low;}
-        if(TemplateChoiceGrade.MEDIUM == choiceGrade){return this.medium;}
-        if(TemplateChoiceGrade.HIGH == choiceGrade){return this.high;}
-        return null;
+        switch (choiceGrade){
+            case LOW -> {return this.satisfaction_low;}
+            case MEDIUM -> {return this.satisfaction_medium;}
+            case HIGH -> {return this.satisfaction_high;}
+            default -> throw new RuntimeException("존재하지 않는 TemplateChoiceGrade입니다");
+        }
     }
 }

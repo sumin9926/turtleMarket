@@ -18,7 +18,7 @@ public record OrderDetailResponse(
                 order.getMember().getId(),
                 orderItemList,
                 order.getTotalPrice(),
-                order.getOrderAt()
+                order.getOrderedAt()
         );
     }
 }

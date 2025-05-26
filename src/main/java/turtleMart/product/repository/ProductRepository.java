@@ -8,4 +8,8 @@ import java.util.List;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findAllBySellerId(Long sellerId);
+
+    List<Product> findAllBySellerIdAndIsDeletedFalse(Long sellerId);
+
+    List<Product> findAllBySellerIdAndIsDeletedTrue(Long sellerId);
 }

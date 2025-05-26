@@ -18,7 +18,7 @@ public record OrderSimpleResponse(
                 order.getId(),
                 delivery.getDeliveryStatus(),
                 orderItemIdList,
-                order.getOrderAt()
+                order.getOrderedAt()
         );
     }
 }

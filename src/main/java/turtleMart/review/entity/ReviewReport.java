@@ -8,7 +8,8 @@ import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
 
 @Getter
-@Entity @Table
+@Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "review_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReviewReport extends BaseEntity {
 
@@ -17,21 +18,22 @@ public class ReviewReport extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "review_id")
     private Review review;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "member_id")
     private Member member;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn
     private ReasonCode reasonCode;
 
-    private boolean isProcessed = false;
+    @Enumerated(EnumType.STRING)
+    private ReviewReportStatus reviewReportStatus = ReviewReportStatus.SUBMITTED;
 
     @Column(length = 255, nullable = false)
-    private String ReasonDetail;
+    private String reasonDetail;
 
     @Column(length = 50, nullable = true)
     private String cancelReason;
@@ -40,14 +42,19 @@ public class ReviewReport extends BaseEntity {
         this.review = review;
         this.member = member;
         this.reasonCode = reasonCode;
-        this.ReasonDetail = reasonDetail;
+        this.reasonDetail = reasonDetail;
     }
 
     public static ReviewReport of(Review review, Member member, ReasonCode reasonCode, String reasonDetail){
         return new ReviewReport(review, member, reasonCode, reasonDetail);
     }
 
-    public void update(){
-        this.isProcessed = true;
+    public void updateReviewReportStatus(ReviewReportStatus reviewReportStatus){
+       this.reviewReportStatus = reviewReportStatus;
+    }
+
+    public void cancel(String cancelReason){
+        this.cancelReason = cancelReason;
+        this.reviewReportStatus = ReviewReportStatus.CANCELLED;
     }
 }
