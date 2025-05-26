@@ -117,7 +117,7 @@ public class ProductOptionCombinationService {
         redisTemplate.opsForValue().set(priceChangeRedisKey,false, Duration.ofMinutes(4));
 
         String operationId = OperationType.PRICE_CHANGE+":"+serverId + ":" + UUID.randomUUID();
-        ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price,operationId);
+        ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price,operationId,OperationType.PRICE_CHANGE);
         String payload = JsonHelper.toJson(productOptionCombinationPriceDto);
         kafkaTemplate.send("order_make_topic", productOptionCombinationId.toString(), payload);
 

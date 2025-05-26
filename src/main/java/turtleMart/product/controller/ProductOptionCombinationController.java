@@ -56,9 +56,8 @@ public class ProductOptionCombinationController {
         deferredResultStore.put(operationId, objectDeferredResult);
         objectDeferredResult.onTimeout(() -> {
             deferredResultStore.remove(operationId);
-            String redisKey = "status" + operationId;
+            String redisKey = "status:" + operationId;
             Boolean success = (Boolean) redisTemplate.opsForValue().get(redisKey);
-            redisTemplate.delete(redisKey);
             if (Boolean.TRUE.equals(success)) {
                 objectDeferredResult.setResult(ResponseEntity.ok().build());
             } else if (Boolean.FALSE.equals(success)) {
@@ -66,6 +65,8 @@ public class ProductOptionCombinationController {
             } else {
                 objectDeferredResult.setErrorResult(ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).build());
             }
+            //주문생성 소프트락도 여기서 해제
+            redisTemplate.delete(redisKey);
             redisTemplate.delete("softLock:priceChange:combination:" + productOptionCombinationId);
         });
         return objectDeferredResult;

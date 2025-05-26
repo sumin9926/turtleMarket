@@ -31,11 +31,9 @@ public class PriceChangePubSubListener {
         String payload = new String(message.getBody(), StandardCharsets.UTF_8);
         ProductOptionCombinationRedisDto productOptionCombinationRedisDto = JsonHelper.fromJson(payload, ProductOptionCombinationRedisDto.class);
         Long productCombinationId = productOptionCombinationRedisDto.productCombinationId();
-        String operation = productOptionCombinationRedisDto.operationId();
+        String operationId = productOptionCombinationRedisDto.operationId();
         Boolean success = productOptionCombinationRedisDto.success();
-        String[] splitOperation = operation.split(":",2);
-        OperationType type = OperationType.valueOf(splitOperation[0]);
-        String operationId = splitOperation[1];
+        OperationType type = productOptionCombinationRedisDto.operationType();
         switch (type) {
             case PRICE_CHANGE -> {
                 responsePriceChange(operationId, success, productCombinationId);
@@ -63,7 +61,7 @@ public class PriceChangePubSubListener {
             result.setResult(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
         }
 
-        redisTemplate.delete("status" + operationId);
+        redisTemplate.delete("status:" + operationId);
         redisTemplate.delete("softLock:priceChange:combination:" + productCombinationId);
     }
 }
