@@ -1,6 +1,7 @@
 package turtleMart.product.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.repository.OrderItemRepository;
+import turtleMart.product.dto.ProductOptionCombinationInventoryDto;
 import turtleMart.product.dto.ProductOptionCombinationPriceDto;
 import turtleMart.product.dto.response.DuplicateList;
 import turtleMart.product.dto.request.ProductOptionCombinationRequest;
@@ -41,6 +43,9 @@ public class ProductOptionCombinationService {
     private final RedisTemplate<String, Boolean> redisTemplate;
     private final ProductDslRepository productDslRepository;
     private final SellerRepository sellerRepository;
+
+    @Value("${server.id}")
+    private String serverId;
 
     @Transactional
     public ProductOptionCombinationResponseCreate createProductOptionCombination(List<ProductOptionCombinationRequest> productOptionCombinationRequest, Long memberId, Long productId) {
@@ -102,38 +107,20 @@ public class ProductOptionCombinationService {
         return productOptionCombination;
     }
 
-    public ResponseEntity<Void> updateProductOptionCombinationPrice(Long memberId, Long productOptionCombinationId, Integer price) {
+    public String updateProductOptionCombinationPrice(Long memberId, Long productOptionCombinationId, Integer price) {
         checkPermission(memberId, productOptionCombinationId);
         String priceChangeRedisKey = "softLock:priceChange:combination:" + productOptionCombinationId;
         if (redisTemplate.hasKey(priceChangeRedisKey)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            throw new BadRequestException(ErrorCode.SOFT_LOCK_CANT_ACCESS);
         }
-        ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price);
-        String payload = JsonHelper.toJson(productOptionCombinationPriceDto);
         redisTemplate.opsForValue().set(priceChangeRedisKey,false, Duration.ofMinutes(4));
+
+        String operationId = serverId + ":" + UUID.randomUUID();
+        ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price,operationId);
+        String payload = JsonHelper.toJson(productOptionCombinationPriceDto);
         kafkaTemplate.send("order_make_topic", productOptionCombinationId.toString(), payload);
 
-        String orderRedisKey = "status:priceChange:combination:" + productOptionCombinationId;
-        long timeOut = System.currentTimeMillis() + 300_000;
-        while (System.currentTimeMillis() < timeOut) {
-            Boolean success = redisTemplate.opsForValue().get(orderRedisKey);
-            if (Boolean.TRUE.equals(success)) {
-                redisTemplate.delete(orderRedisKey);
-                redisTemplate.delete(priceChangeRedisKey);
-                return ResponseEntity.status(HttpStatus.OK).build();
-            } else if (Boolean.FALSE.equals(success)){
-                redisTemplate.delete(orderRedisKey);
-                redisTemplate.delete(priceChangeRedisKey);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            }
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new CustomRuntimeException(ErrorCode.INTERRUPT);
-            }
-        }
-        throw new CustomRuntimeException(ErrorCode.TIME_OUT);
+        return operationId;
     }
 
     public ResponseEntity<Void> updateProductOptionCombinationInventory(Long memberId, Long productOptionCombinationId, Integer inventory) {

@@ -1,4 +1,4 @@
-package turtleMart.product.service;
+package turtleMart.product.dto;
 
 public record ProductOptionCombinationInventoryDto(
         Long productOptionCombinationId,

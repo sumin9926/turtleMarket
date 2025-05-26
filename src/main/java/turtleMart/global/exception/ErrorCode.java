@@ -31,7 +31,8 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
     //여러가지 관련
     TIME_OUT(HttpStatus.INTERNAL_SERVER_ERROR, "응답 대기시간을 초과하였습니다."),
-    INTERRUPT(HttpStatus.INTERNAL_SERVER_ERROR, "인터럽");
+    INTERRUPT(HttpStatus.INTERNAL_SERVER_ERROR, "인터럽"),
+    SOFT_LOCK_CANT_ACCESS(HttpStatus.CONFLICT, "현재 다른요청을 처리중임으로 접근할수없습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

@@ -1,0 +1,52 @@
+package turtleMart.product.service;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.Message;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.async.DeferredResult;
+import turtleMart.global.component.DeferredResultStore;
+import turtleMart.global.utill.JsonHelper;
+import turtleMart.product.dto.ProductOptionCombinationRedisDto;
+
+import java.nio.charset.StandardCharsets;
+
+@Component
+@RequiredArgsConstructor
+public class PriceChangePubSubListener {
+
+    private final DeferredResultStore deferredResultStore;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    @Value("${server.id}")
+    private String serverId;
+
+
+    public void onMessage(Message message, byte[] pattern) {
+        String payload = new String(message.getBody(), StandardCharsets.UTF_8);
+        ProductOptionCombinationRedisDto productOptionCombinationRedisDto = JsonHelper.fromJson(payload, ProductOptionCombinationRedisDto.class);
+        Long productCombinationId = productOptionCombinationRedisDto.productCombinationId();
+        String operationId = productOptionCombinationRedisDto.operationId();
+        Boolean success = productOptionCombinationRedisDto.success();
+
+        if (!operationId.startsWith(serverId + ":")) {
+            return;
+        }
+        DeferredResult<ResponseEntity<?>> result = deferredResultStore.remove(operationId);
+        if (result == null) {
+            return;
+        }
+        if (Boolean.TRUE.equals(success)) {
+            result.setResult(ResponseEntity.ok().build());
+        } else {
+            result.setResult(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+        }
+
+        redisTemplate.delete("status" + operationId);
+        redisTemplate.delete("softLock:priceChange:combination:" + productCombinationId);
+    }
+}
