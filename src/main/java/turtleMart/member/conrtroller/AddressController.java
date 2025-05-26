@@ -4,13 +4,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import turtleMart.member.dto.request.AddressRegisterRequest;
 import turtleMart.member.dto.response.AddressResponse;
 import turtleMart.member.service.AddressService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/members/userProfile/address")
@@ -24,5 +23,19 @@ public class AddressController {
     ) {
         AddressResponse addressResponse = addressService.registerAddress(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(addressResponse);
+    }
+
+    @GetMapping("/myAddress/{addressId}")
+    public ResponseEntity<AddressResponse> getMyAddress(
+            @PathVariable Long addressId
+    ) {
+        AddressResponse foundMyAddress = addressService.getAddress(addressId);
+        return ResponseEntity.status(HttpStatus.OK).body(foundMyAddress);
+    }
+
+    @GetMapping("/myAddress")
+    public ResponseEntity<List<AddressResponse>> getMyAddressList() {
+        List<AddressResponse> foundMyAddressList = addressService.getAddressList();
+        return ResponseEntity.status(HttpStatus.OK).body(foundMyAddressList);
     }
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.member.dto.request.AddressRegisterRequest;
 
 @Entity
 @Getter
@@ -28,4 +29,18 @@ public class Address {
     private String receiverName;
 
     private String receiverPhone;
+
+    public Address(String name, String address, String detailAddress) {
+        this.name = name;
+        this.address = address;
+        this.detailAddress = detailAddress;
+    }
+
+    public static Address of(AddressRegisterRequest request) {
+        return new Address(
+                request.name(),
+                request.address(),
+                request.detailAddress()
+        );
+    }
 }
