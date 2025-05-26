@@ -51,7 +51,8 @@ public class ProductOptionCombinationController {
             @PathVariable Long productOptionCombinationId,
             @RequestParam Integer price
     ) {
-        String operationId = productOptionCombinationService.updateProductOptionCombinationPrice(authUser.memberId(), productOptionCombinationId, price);
+        String operationId =
+                productOptionCombinationService.updateProductOptionCombinationPrice(authUser.memberId(), productOptionCombinationId, price);
         DeferredResult<ResponseEntity<?>> objectDeferredResult = new DeferredResult<>(300_000L);
         deferredResultStore.put(operationId, objectDeferredResult);
         objectDeferredResult.onTimeout(() -> {
@@ -74,18 +75,35 @@ public class ProductOptionCombinationController {
 
 
     @PatchMapping("/seller/me/products-option-combination/{productOptionCombinationId}/inventory")
-    public ResponseEntity<Void> updateProductOptionCombinationInventory(
+    public DeferredResult<ResponseEntity<?>> updateProductOptionCombinationInventory(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long productOptionCombinationId,
             @RequestParam Integer inventory
     ) {
-        return productOptionCombinationService.updateProductOptionCombinationInventory(authUser.memberId(), productOptionCombinationId, inventory);
+        String operationId =
+                productOptionCombinationService.updateProductOptionCombinationInventory(authUser.memberId(), productOptionCombinationId, inventory);
+        return getResponseEntityDeferredResult(operationId);
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> softDeleteProductOptionCombination() {
+    @PatchMapping("/seller/me/products-option-combination/{productOptionCombinationId}/inventory/override")
+    public DeferredResult<ResponseEntity<?>> updateProductOptionCombinationInventoryOverride(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long productOptionCombinationId,
+            @RequestParam Integer inventory
+    ) {
+        String operationId =
+                productOptionCombinationService.updateProductOptionCombinationInventoryOverride(authUser.memberId(), productOptionCombinationId, inventory);
+        return getResponseEntityDeferredResult(operationId);
 
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
+    public DeferredResult<ResponseEntity<?>> softDeleteProductOptionCombination(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long productOptionCombinationId
+    ) {
+        String operationId = productOptionCombinationService.softDeleteProductOptionCombination(authUser.memberId(), productOptionCombinationId);
+        return getResponseEntityDeferredResult(operationId);
     }
 
     @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
@@ -97,4 +115,23 @@ public class ProductOptionCombinationController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+
+    private DeferredResult<ResponseEntity<?>> getResponseEntityDeferredResult(String operationId) {
+        DeferredResult<ResponseEntity<?>> objectDeferredResult = new DeferredResult<>(60_000L);
+        deferredResultStore.put(operationId, objectDeferredResult);
+        objectDeferredResult.onTimeout(() -> {
+            deferredResultStore.remove(operationId);
+            String redisKey = "status:" + operationId;
+            Boolean success = (Boolean) redisTemplate.opsForValue().get(redisKey);
+            if (Boolean.TRUE.equals(success)) {
+                objectDeferredResult.setResult(ResponseEntity.ok().build());
+            } else if (Boolean.FALSE.equals(success)) {
+                objectDeferredResult.setResult(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+            } else {
+                objectDeferredResult.setErrorResult(ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).build());
+            }
+            redisTemplate.delete(redisKey);
+        });
+        return objectDeferredResult;
+    }
 }

@@ -3,8 +3,6 @@ package turtleMart.product.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +12,7 @@ import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.repository.OrderItemRepository;
+import turtleMart.product.dto.ProductOptionCombinationDeleteDto;
 import turtleMart.product.dto.ProductOptionCombinationInventoryDto;
 import turtleMart.product.dto.ProductOptionCombinationPriceDto;
 import turtleMart.product.dto.response.DuplicateList;
@@ -116,7 +115,7 @@ public class ProductOptionCombinationService {
         }
         redisTemplate.opsForValue().set(priceChangeRedisKey,false, Duration.ofMinutes(4));
 
-        String operationId = OperationType.PRICE_CHANGE+":"+serverId + ":" + UUID.randomUUID();
+        String operationId = serverId + ":" + UUID.randomUUID();
         ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price,operationId,OperationType.PRICE_CHANGE);
         String payload = JsonHelper.toJson(productOptionCombinationPriceDto);
         kafkaTemplate.send("order_make_topic", productOptionCombinationId.toString(), payload);
@@ -124,11 +123,33 @@ public class ProductOptionCombinationService {
         return operationId;
     }
 
-    public ResponseEntity<Void> updateProductOptionCombinationInventory(Long memberId, Long productOptionCombinationId, Integer inventory) {
+    public String updateProductOptionCombinationInventory(Long memberId, Long productOptionCombinationId, Integer inventory) {
         checkPermission(memberId, productOptionCombinationId);
-        ProductOptionCombinationInventoryDto productOptionCombinationInventoryDto = ProductOptionCombinationInventoryDto.of(productOptionCombinationId, inventory);
+        String operationId = serverId + ":" + UUID.randomUUID();
+        ProductOptionCombinationInventoryDto productOptionCombinationInventoryDto =
+                ProductOptionCombinationInventoryDto.of(productOptionCombinationId, inventory, operationId, OperationType.INVENTORY_UPDATE);
         String payload = JsonHelper.toJson(productOptionCombinationInventoryDto);
         kafkaTemplate.send("", productOptionCombinationId.toString(), payload);
+        return operationId;
+    }
 
+    public String updateProductOptionCombinationInventoryOverride(Long memberId, Long productOptionCombinationId, Integer inventory) {
+        checkPermission(memberId, productOptionCombinationId);
+        String operationId = serverId + ":" + UUID.randomUUID();
+        ProductOptionCombinationInventoryDto productOptionCombinationInventoryDto =
+                ProductOptionCombinationInventoryDto.of(productOptionCombinationId, inventory, operationId, OperationType.INVENTORY_OVERRIDE);
+        String payload = JsonHelper.toJson(productOptionCombinationInventoryDto);
+        kafkaTemplate.send("", productOptionCombinationId.toString(), payload);
+        return operationId;
+    }
+
+    public String softDeleteProductOptionCombination(Long memberId, Long productOptionCombinationId) {
+        checkPermission(memberId, productOptionCombinationId);
+        String operationId = serverId + ":" + UUID.randomUUID();
+        ProductOptionCombinationDeleteDto productOptionCombinationDeleteDto =
+                ProductOptionCombinationDeleteDto.of(productOptionCombinationId, operationId, OperationType.COMBINATION_DELETE);
+        String payload = JsonHelper.toJson(productOptionCombinationDeleteDto);
+        kafkaTemplate.send("", productOptionCombinationId.toString(), payload);
+        return operationId;
     }
 }
