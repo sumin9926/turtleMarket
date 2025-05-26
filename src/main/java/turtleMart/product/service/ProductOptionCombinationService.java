@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.common.OperationType;
 import turtleMart.global.exception.*;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Seller;
@@ -115,7 +116,7 @@ public class ProductOptionCombinationService {
         }
         redisTemplate.opsForValue().set(priceChangeRedisKey,false, Duration.ofMinutes(4));
 
-        String operationId = serverId + ":" + UUID.randomUUID();
+        String operationId = OperationType.PRICE_CHANGE+":"+serverId + ":" + UUID.randomUUID();
         ProductOptionCombinationPriceDto productOptionCombinationPriceDto = ProductOptionCombinationPriceDto.of(productOptionCombinationId, price,operationId);
         String payload = JsonHelper.toJson(productOptionCombinationPriceDto);
         kafkaTemplate.send("order_make_topic", productOptionCombinationId.toString(), payload);
@@ -129,24 +130,5 @@ public class ProductOptionCombinationService {
         String payload = JsonHelper.toJson(productOptionCombinationInventoryDto);
         kafkaTemplate.send("", productOptionCombinationId.toString(), payload);
 
-        String statusRedisKey = "status:inventoryChange:combination:" + productOptionCombinationId;
-        long timeOut = System.currentTimeMillis() + 60_000;
-        while (System.currentTimeMillis() < timeOut) {
-            Boolean success = redisTemplate.opsForValue().get(statusRedisKey);
-            if (Boolean.TRUE.equals(success)) {
-                redisTemplate.delete(statusRedisKey);
-                return ResponseEntity.status(HttpStatus.OK).build();
-            } else if (Boolean.FALSE.equals(success)){
-                redisTemplate.delete(statusRedisKey);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new CustomRuntimeException(ErrorCode.INTERRUPT);
-            }
-        }
-        throw new CustomRuntimeException(ErrorCode.TIME_OUT);
     }
 }

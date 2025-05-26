@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
+import turtleMart.global.common.OperationType;
 import turtleMart.global.component.DeferredResultStore;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.product.dto.ProductOptionCombinationRedisDto;
@@ -30,9 +31,25 @@ public class PriceChangePubSubListener {
         String payload = new String(message.getBody(), StandardCharsets.UTF_8);
         ProductOptionCombinationRedisDto productOptionCombinationRedisDto = JsonHelper.fromJson(payload, ProductOptionCombinationRedisDto.class);
         Long productCombinationId = productOptionCombinationRedisDto.productCombinationId();
-        String operationId = productOptionCombinationRedisDto.operationId();
+        String operation = productOptionCombinationRedisDto.operationId();
         Boolean success = productOptionCombinationRedisDto.success();
+        String[] splitOperation = operation.split(":",2);
+        OperationType type = OperationType.valueOf(splitOperation[0]);
+        String operationId = splitOperation[1];
+        switch (type) {
+            case PRICE_CHANGE -> {
+                responsePriceChange(operationId, success, productCombinationId);
+            }
+            case INVENTORY_UPDATE -> {
 
+            }
+            default -> {
+
+            }
+        }
+    }
+
+    private void responsePriceChange(String operationId, Boolean success, Long productCombinationId) {
         if (!operationId.startsWith(serverId + ":")) {
             return;
         }
