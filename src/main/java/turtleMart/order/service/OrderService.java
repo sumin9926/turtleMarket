@@ -29,7 +29,6 @@ import turtleMart.product.entity.Product;
 import turtleMart.product.entity.ProductOptionCombination;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
 import turtleMart.product.repository.ProductOptionValueRepository;
-import turtleMart.product.repository.ProductRepository;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ public class OrderService {
     public List<OrderSheetResponse> getOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
 
         if (!memberRepository.existsById(memberId)) {
-            throw new NotFoundException(ErrorCode. MEMBER_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         List<OrderSheetResponse> responseList = new ArrayList<>();
@@ -71,7 +70,7 @@ public class OrderService {
 
             Product product = option.getProduct();
 
-            if(null==product){
+            if (null == product) {
                 throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
             }
 
@@ -89,9 +88,9 @@ public class OrderService {
     @Transactional
     public OrderSheetResponse getDirectOrderSheet(List<CartOrderSheetRequest> requests, Long memberId) {
 
-        List<OrderSheetResponse> responseList =  getOrderSheet(requests, memberId);
+        List<OrderSheetResponse> responseList = getOrderSheet(requests, memberId);
 
-        if(responseList.isEmpty()){
+        if (responseList.isEmpty()) {
             throw new NotFoundException(ErrorCode.ORDER_SHEET_NOT_FOUND);
         }
 
@@ -111,7 +110,7 @@ public class OrderService {
     public OrderDetailResponse getOrderDetail(Long memberId, Long orderId) {
 
         if (!memberRepository.existsById(memberId)) {
-            throw new NotFoundException(ErrorCode. MEMBER_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         Order order = orderRepository.findWithOrderItemsById(orderId).orElseThrow(
@@ -136,7 +135,7 @@ public class OrderService {
             Long orderId, List<Long> orderItemIdList, OrderItemStatusRequest request, Long memberId
     ) {
         if (!memberRepository.existsById(memberId)) {
-            throw new NotFoundException(ErrorCode. MEMBER_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         Order order = orderRepository.findById(orderId).orElseThrow(
@@ -157,15 +156,9 @@ public class OrderService {
 
             // 갱신 순서를 지켜야한다.
             OrderItemStatus currentStatus = orderItem.getOrderItemStatus();
-            if (!canTransition(currentStatus, newStatus)) {
-                throw new IllegalStateException(
-                        String.format("상태 변경 불가: 현재 상태 '%s'에서 '%s'(으)로 변경할 수 없습니다.",
-                                currentStatus, newStatus)
-                );
-            } else {
-                orderItem.updateStatus(newStatus);
-                updatedOrderItemList.add(orderItem);
-            }
+            currentStatus.validateTransitionTo(newStatus);
+            orderItem.updateStatus(newStatus);
+            updatedOrderItemList.add(orderItem);
         }
 
         List<OrderItemResponse> orderItemResponseList = updatedOrderItemList.stream()
@@ -181,20 +174,10 @@ public class OrderService {
         return OrderDetailResponse.from(order, orderItemResponseList);
     }
 
-    public boolean canTransition(OrderItemStatus current, OrderItemStatus target) {
-        return switch (current) {
-            case UNPAID -> target == OrderItemStatus.CANCELED || target == OrderItemStatus.ORDERED;
-            case CANCELED -> target == OrderItemStatus.ORDERED;
-            case ORDERED -> target == OrderItemStatus.REFUNDING || target == OrderItemStatus.CONFIRMED;
-            case REFUNDING -> target == OrderItemStatus.REFUNDED;
-            case REFUNDED, CONFIRMED -> false;
-        };
-    }
-
     @Transactional(readOnly = true)
     public MemberOrderListResponse getOrderList(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
-            throw new NotFoundException(ErrorCode. MEMBER_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         List<OrderSimpleResponse> simpleResponseList = new ArrayList<>();
@@ -207,7 +190,7 @@ public class OrderService {
         for (Order order : orderList) {
             // orderId로 deliveryStatus 가져오기
             Delivery delivery = deliveryMap.get(order.getId());
-            if (null==delivery) {
+            if (null == delivery) {
                 throw new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND);
             }
 
@@ -230,7 +213,7 @@ public class OrderService {
     public TotalOrderedQuantityResponse getTotalOrderedQuantity(
             Long sellerId, Long productId, LocalDate startDate, LocalDate endDate
     ) {
-        if(!sellerRepository.existsById(sellerId)){
+        if (!sellerRepository.existsById(sellerId)) {
             throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
         }
 
@@ -271,7 +254,7 @@ public class OrderService {
     }
 
     private void removeCartItemFromRedis(Long memberId, List<Long> cartItemIdList) {
-        for(Long cartItemId : cartItemIdList){
+        for (Long cartItemId : cartItemIdList) {
             String key = "cart:" + memberId;
 
             Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));
