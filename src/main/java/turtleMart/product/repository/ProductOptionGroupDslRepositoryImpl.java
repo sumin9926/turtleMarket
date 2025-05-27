@@ -25,7 +25,7 @@ public class ProductOptionGroupDslRepositoryImpl implements ProductOptionGroupDs
         QProductOptionValue productOptionValue = QProductOptionValue.productOptionValue;
 
         List<ProductOptionGroup> content = jpaQueryFactory.selectFrom(productOptionGroup)
-                .leftJoin(productOptionGroup.productOptionValueList, productOptionValue).fetchJoin()
+                .join(productOptionGroup.productOptionValueList, productOptionValue).fetchJoin()
                 .distinct()
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())

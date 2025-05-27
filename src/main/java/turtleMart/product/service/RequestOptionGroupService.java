@@ -18,6 +18,7 @@ import turtleMart.product.dto.response.ProductOptionGroupResponse;
 import turtleMart.product.dto.response.RequestOptionGroupResponse;
 import turtleMart.product.entity.RequestOptionGroup;
 import turtleMart.product.entity.RequestOptionValue;
+import turtleMart.product.entity.RequestOptionValueStatus;
 import turtleMart.product.repository.RequestOptionGroupDslRepository;
 import turtleMart.product.repository.RequestOptionGroupRepository;
 import turtleMart.security.AuthUser;
@@ -50,11 +51,11 @@ public class RequestOptionGroupService {
     }
 
     public Page<RequestOptionGroupResponse> getAllRequestOptionGroupWithNotYet(Pageable pageable) {
-        return requestOptionGroupDslRepository.findAllByNotYetWithSeller(pageable).map(RequestOptionGroupResponse::from);
+        return requestOptionGroupDslRepository.findAllByStatusWithSeller(pageable,RequestOptionValueStatus.PENDING).map(RequestOptionGroupResponse::from);
     }
 
     public Page<RequestOptionGroupResponse> getAllRequestOptionGroupWithAllReady(Pageable pageable) {
-        return requestOptionGroupDslRepository.findAllByAllReadyWithSeller(pageable).map(RequestOptionGroupResponse::from);
+        return requestOptionGroupDslRepository.findAllByStatusWithSeller(pageable, RequestOptionValueStatus.REJECTED).map(RequestOptionGroupResponse::from);
     }
 
     public ProductOptionGroupResponse approveRequestOptionGroup(AuthUser authUser, ApproveOptionRequest approveOptionRequest) {
