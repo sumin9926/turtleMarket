@@ -40,4 +40,12 @@ public class RequestOptionValue {
     public void addGroup(RequestOptionGroup requestOptionGroup) {
         this.requestOptionGroup = requestOptionGroup;
     }
+
+    public void promote() {
+        this.requestOptionValueStatus = RequestOptionValueStatus.COMPANION;
+    }
+
+    public void reject() {
+        this.requestOptionValueStatus = RequestOptionValueStatus.REJECTED;
+    }
 }

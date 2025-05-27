@@ -53,7 +53,7 @@ public class RequestOptionGroup {
         Map<Long, RequestOptionValue> valueMap = this.requestOptionValueList.stream()
                 .collect(Collectors.toMap(RequestOptionValue::getId, Function.identity()));
 
-        return selectIdList.stream()
+        List<RequestOptionValue> selected = selectIdList.stream()
                 .map(id -> {
                     RequestOptionValue value = valueMap.get(id);
                     if (value == null) {
@@ -62,8 +62,13 @@ public class RequestOptionGroup {
                                 "해당 옵션 값 ID는 요청 그룹에 존재하지 않습니다. ID = " + id
                         );
                     }
+                    value.promote();
                     return value;
                 })
                 .toList();
+        this.requestOptionValueList.stream()
+                .filter(v -> !selectIdList.contains(v.getId()))
+                .forEach(RequestOptionValue::reject);
+        return selected;
     }
 }
