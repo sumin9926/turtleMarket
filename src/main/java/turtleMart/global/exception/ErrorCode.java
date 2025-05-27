@@ -36,6 +36,7 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문 내역이 존재하지 않습니다."),
     ORDER_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "상품 주문 내역이 존재하지 않습니다."),
     ORDER_ITEM_NOT_IN_ORDER(HttpStatus.BAD_REQUEST, "해당 주문에 속하지 않은 상품입니다."),
+    ORDER_ITEM_NOT_OWNED_BY_MEMBER(HttpStatus.FORBIDDEN, "해당 회원이 이 주문 항목의 소유자가 아닙니다."),
 
     //장바구니 관련
     PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 삭제하려는 상품이 존재하지 않음"),
