@@ -35,7 +35,7 @@ public class MemberController {
      * PATCH
      * 회원 정보 수정
      */
-    @PatchMapping("/userProfile")
+    @PatchMapping("/userProfile/modify")
     public ResponseEntity<MemberResponse> updateProfile(
             @AuthenticationPrincipal AuthUser authuser,
             @RequestBody @Valid updateProfileRequest request
