@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ProductOptionCombinationDslRepository {
     List<ProductOptionCombination> findAllByProductIdWithMapAndValue(Long productId);
+
+    ProductOptionCombination findByIdWithProductAndSeller(Long productOptionCombinationId);
 }

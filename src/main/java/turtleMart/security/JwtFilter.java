@@ -55,7 +55,8 @@ public class JwtFilter extends OncePerRequestFilter {
             String[] data = claims.getSubject().split(":");
             Long memberId = Long.valueOf(data[0]);
             Authority authority = Authority.of(data[1]);
-            AuthUser authUser = AuthUser.of(memberId, authority);
+            AuthUser authUser =
+                    AuthUser.of(memberId, authority);
             JwtAuthenticationToken authenticationToken = new JwtAuthenticationToken(authUser);
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
