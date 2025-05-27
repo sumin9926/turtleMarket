@@ -39,6 +39,12 @@ public class AddressService {
         return AddressResponse.from(foundAddress);
     }
 
+    public String deleteAddress(Long addressId) {
+        Address foundAddress = findAddress(addressId);
+        addressRepository.delete(foundAddress);
+        return "주소가 삭제되었습니다.";
+    }
+
     private Address findAddress(Long addressId) {
         return addressRepository.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("등록된 주소가 없습니다."));
