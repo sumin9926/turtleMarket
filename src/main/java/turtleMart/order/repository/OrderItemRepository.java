@@ -30,4 +30,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("startDate")LocalDateTime startDateTime, @Param("endDate")LocalDateTime endDateTime,
             @Param("status")OrderItemStatus status
             );
+
+    boolean existsByProductOptionCombinationId(Long productOptionCombinationId);
 }
