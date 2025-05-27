@@ -40,7 +40,7 @@ public class RequestOptionGroup {
         this.seller = seller;
     }
 
-    public static RequestOptionGroup of(String name,Seller seller) {
+    public static RequestOptionGroup of(String name,Seller seller ) {
         return new RequestOptionGroup(name, seller);
     }
 
@@ -70,5 +70,9 @@ public class RequestOptionGroup {
                 .filter(v -> !selectIdList.contains(v.getId()))
                 .forEach(RequestOptionValue::reject);
         return selected;
+    }
+
+    public void updateRejection(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

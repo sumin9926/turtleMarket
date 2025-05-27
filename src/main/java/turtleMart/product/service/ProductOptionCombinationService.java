@@ -15,14 +15,12 @@ import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.product.dto.ProductOptionCombinationDeleteDto;
 import turtleMart.product.dto.ProductOptionCombinationInventoryDto;
 import turtleMart.product.dto.ProductOptionCombinationPriceDto;
+import turtleMart.product.dto.ProductOptionCombinationStatusDto;
 import turtleMart.product.dto.response.DuplicateList;
 import turtleMart.product.dto.request.ProductOptionCombinationRequest;
 import turtleMart.product.dto.response.ProductOptionCombinationResponse;
 import turtleMart.product.dto.response.ProductOptionCombinationResponseCreate;
-import turtleMart.product.entity.Product;
-import turtleMart.product.entity.ProductOptionCombination;
-import turtleMart.product.entity.ProductOptionMap;
-import turtleMart.product.entity.ProductOptionValue;
+import turtleMart.product.entity.*;
 import turtleMart.product.repository.*;
 
 import java.time.Duration;
@@ -58,17 +56,19 @@ public class ProductOptionCombinationService {
         }
 
         for (ProductOptionCombinationRequest optionCombinationRequest : productOptionCombinationRequest) {
-            TreeSet<Long> valueIdList = new TreeSet<>(optionCombinationRequest.valueIdList());
-            String uniqueKey = valueIdList.stream().map(String::valueOf).collect(Collectors.joining("-"));
+            TreeSet<Long> valueIdSet = new TreeSet<>(optionCombinationRequest.valueIdList());
+            String uniqueKey = valueIdSet.stream().map(String::valueOf).collect(Collectors.joining("-"));
             if (productOptionCombinationRepository.existsByProductIdAndUniqueKey(productId, uniqueKey)) {
                 duplicated.add(uniqueKey);
                 continue;
             }
             ProductOptionCombination productOptionCombination =
                     ProductOptionCombination.of(product, optionCombinationRequest.price(), optionCombinationRequest.inventory(),uniqueKey);
-
-            for (Long id : valueIdList) {
-                ProductOptionValue productOptionValue = productOptionValueRepository.findById(id).orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_VALUE_NOT_FOUND));
+            List<ProductOptionValue> productOptionValueList = productOptionValueRepository.findAllById(valueIdSet.stream().toList());
+            if (productOptionValueList.isEmpty()) {
+                throw new NotFoundException(ErrorCode.PRODUCT_OPTION_VALUE_NOT_FOUND);
+            }
+            for (ProductOptionValue productOptionValue : productOptionValueList) {
                 ProductOptionMap productOptionMap = ProductOptionMap.of(productOptionCombination, productOptionValue);
                 productOptionCombination.addOptionMap(productOptionMap);
             }
@@ -151,6 +151,15 @@ public class ProductOptionCombinationService {
         ProductOptionCombinationDeleteDto productOptionCombinationDeleteDto =
                 ProductOptionCombinationDeleteDto.of(productOptionCombinationId, operationId, OperationType.COMBINATION_DELETE);
         String payload = JsonHelper.toJson(productOptionCombinationDeleteDto);
+        kafkaTemplate.send("", productOptionCombinationId.toString(), payload);
+        return operationId;
+    }
+
+    public String updateProductOptionCombinationStatus(Long memberId, Long productOptionCombinationId, CombinationStatus combinationStatus) {
+        checkPermission(memberId, productOptionCombinationId);
+        String operationId = serverId + ":" + UUID.randomUUID();
+        ProductOptionCombinationStatusDto productOptionCombinationStatusDto = ProductOptionCombinationStatusDto.of(productOptionCombinationId, operationId, combinationStatus);
+        String payload = JsonHelper.toJson(productOptionCombinationStatusDto);
         kafkaTemplate.send("", productOptionCombinationId.toString(), payload);
         return operationId;
     }

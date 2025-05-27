@@ -11,6 +11,7 @@ import turtleMart.global.component.DeferredResultStore;
 import turtleMart.product.dto.request.ProductOptionCombinationRequest;
 import turtleMart.product.dto.response.ProductOptionCombinationResponse;
 import turtleMart.product.dto.response.ProductOptionCombinationResponseCreate;
+import turtleMart.product.entity.CombinationStatus;
 import turtleMart.product.service.ProductOptionCombinationService;
 import turtleMart.security.AuthUser;
 
@@ -97,11 +98,22 @@ public class ProductOptionCombinationController {
 
     }
 
+    @PatchMapping("/seller/me/products-option-combination/{productOptionCombinationId}/status")
+    public DeferredResult<ResponseEntity<?>> updateProductOptionCombinationStatus(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long productOptionCombinationId,
+            @RequestParam CombinationStatus combinationStatus
+            ) {
+        String operationId = productOptionCombinationService.updateProductOptionCombinationStatus(authUser.memberId(), productOptionCombinationId, combinationStatus);
+        return getResponseEntityDeferredResult(operationId);
+    }
+
     @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
     public DeferredResult<ResponseEntity<?>> softDeleteProductOptionCombination(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long productOptionCombinationId
     ) {
+
         String operationId = productOptionCombinationService.softDeleteProductOptionCombination(authUser.memberId(), productOptionCombinationId);
         return getResponseEntityDeferredResult(operationId);
     }

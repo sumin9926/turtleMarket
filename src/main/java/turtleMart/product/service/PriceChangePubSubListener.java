@@ -38,13 +38,31 @@ public class PriceChangePubSubListener {
             case PRICE_CHANGE -> {
                 responsePriceChange(operationId, success, productCombinationId);
             }
-            case INVENTORY_UPDATE -> {
-
+            case INVENTORY_UPDATE , COMBINATION_DELETE, INVENTORY_OVERRIDE,COMBINATION_STATUS -> {
+                responseCombinationWalk(operationId,success);
             }
             default -> {
 
             }
         }
+    }
+
+    private void responseCombinationWalk(String operationId, Boolean success) {
+        if (!operationId.startsWith(serverId + ":")) {
+            return;
+        }
+        DeferredResult<ResponseEntity<?>> result = deferredResultStore.remove(operationId);
+        if (result == null) {
+            return;
+        }
+        if (Boolean.TRUE.equals(success)) {
+            result.setResult(ResponseEntity.ok().build());
+        } else {
+            result.setResult(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+        }
+
+        String redisKey = "status:" + operationId;
+        redisTemplate.delete(redisKey);
     }
 
     private void responsePriceChange(String operationId, Boolean success, Long productCombinationId) {
@@ -64,4 +82,5 @@ public class PriceChangePubSubListener {
         redisTemplate.delete("status:" + operationId);
         redisTemplate.delete("softLock:priceChange:combination:" + productCombinationId);
     }
+
 }

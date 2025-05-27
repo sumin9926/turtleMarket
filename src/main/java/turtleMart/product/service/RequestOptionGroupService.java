@@ -64,6 +64,7 @@ public class RequestOptionGroupService {
         }
         RequestOptionGroup requestOptionGroup = requestOptionGroupDslRepository.findByIdWithValue(approveOptionRequest.requestOptionGroupId());
         List<RequestOptionValue> requestOptionValues = requestOptionGroup.extractSelectValue(approveOptionRequest.requestOptionValueIdList());
+        requestOptionGroup.updateRejection(approveOptionRequest.rejectionReason());
         PromoteOptionGroupDto promoteOptionGroupDto = PromoteOptionGroupDto.of(requestOptionGroup, requestOptionValues);
         return productOptionGroupService.promoteOptionGroup(promoteOptionGroupDto);
     }
