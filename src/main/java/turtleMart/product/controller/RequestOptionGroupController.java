@@ -1,6 +1,10 @@
 package turtleMart.product.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,8 +15,6 @@ import turtleMart.product.dto.response.ProductOptionGroupResponse;
 import turtleMart.product.dto.response.RequestOptionGroupResponse;
 import turtleMart.product.service.RequestOptionGroupService;
 import turtleMart.security.AuthUser;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,22 +32,30 @@ public class RequestOptionGroupController {
     }
 
     @GetMapping("/seller/me/request-option-group")
-    public ResponseEntity<List<RequestOptionGroupResponse>> getAllRequestOptionGroupBySeller(
-            @AuthenticationPrincipal AuthUser authUser
+    public ResponseEntity<Page<RequestOptionGroupResponse>> getAllRequestOptionGroupBySeller(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
     ) {
-        List<RequestOptionGroupResponse> requestOptionGroupResponseList = requestOptionGroupService.getAllRequestOptionGroupBySeller(authUser.memberId());
+        Page<RequestOptionGroupResponse> requestOptionGroupResponseList = requestOptionGroupService.getAllRequestOptionGroupBySeller(authUser.memberId(),pageable);
         return ResponseEntity.status(HttpStatus.OK).body(requestOptionGroupResponseList);
     }
 
     @GetMapping("/request-option-group/not-yet")
-    public ResponseEntity<List<RequestOptionGroupResponse>> getAllRequestOptionGroupWithNotYet() {
-        List<RequestOptionGroupResponse> requestOptionGroupResponseList = requestOptionGroupService.getAllRequestOptionGroupWithNotYet();
+    public ResponseEntity<Page<RequestOptionGroupResponse>> getAllRequestOptionGroupWithNotYet(
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        Page<RequestOptionGroupResponse> requestOptionGroupResponseList = requestOptionGroupService.getAllRequestOptionGroupWithNotYet(pageable);
         return ResponseEntity.status(HttpStatus.OK).body(requestOptionGroupResponseList);
     }
 
     @GetMapping("/request-option-group/all-ready")
-    public ResponseEntity<List<RequestOptionGroupResponse>> getAllRequestOptionGroupWithAllReady() {
-        List<RequestOptionGroupResponse> requestOptionGroupResponseList = requestOptionGroupService.getAllRequestOptionGroupWithAllReady();
+    public ResponseEntity<Page<RequestOptionGroupResponse>> getAllRequestOptionGroupWithAllReady(
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        Page<RequestOptionGroupResponse> requestOptionGroupResponseList = requestOptionGroupService.getAllRequestOptionGroupWithAllReady(pageable);
         return ResponseEntity.status(HttpStatus.OK).body(requestOptionGroupResponseList);
     }
 

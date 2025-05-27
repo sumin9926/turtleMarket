@@ -1,4 +1,9 @@
 package turtleMart.product.dto.request;
 
-public record ApproveOptionRequest() {
+import java.util.List;
+
+public record ApproveOptionRequest(
+        Long requestOptionGroupId,
+        List<Long> requestOptionValueIdList
+) {
 }

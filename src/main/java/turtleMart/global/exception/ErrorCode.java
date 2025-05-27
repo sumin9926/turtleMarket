@@ -27,6 +27,8 @@ public enum ErrorCode {
     PRODUCT_OPTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "상품옵션그룹에 존재하지않는 상품옵션값입니다."),
     PRODUCT_OPTION_COMBINATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지않는 상품옵션 조합입니다."),
     PRODUCT_OPTION_COMBINATION_ALL_READY_SOLD(HttpStatus.BAD_REQUEST, "주문이 존재하는 상품옵션조합은 삭제할수없습니다."),
+    REQUEST_OPTION_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지않는 옵션그룹 요청입니다."),
+    REQUEST_OPTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지않는 옵션밸류요청입니다."),
     //유저 관련
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
     //여러가지 관련

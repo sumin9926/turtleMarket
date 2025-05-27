@@ -81,11 +81,13 @@ public class ProductOptionCombinationService {
         return ProductOptionCombinationResponseCreate.of(productOptionCombinationResponseList, duplicateList);
     }
 
+    @Transactional(readOnly = true)
     public List<ProductOptionCombinationResponse> getAllCombinationByProduct(Long productId) {
         List<ProductOptionCombination> productOptionCombinationList = productOptionCombinationDslRepository.findAllByProductIdWithMapAndValue(productId);
         return productOptionCombinationList.stream().map(ProductOptionCombinationResponse::from).toList();
     }
 
+    @Transactional
     public void hardDeleteProductOptionCombination(Long memberId, Long productOptionCombinationId) {
         ProductOptionCombination productOptionCombination = checkPermission(memberId, productOptionCombinationId);
         if (orderItemRepository.existsByProductOptionCombinationId(productOptionCombinationId)) {

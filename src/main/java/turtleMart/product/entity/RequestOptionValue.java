@@ -17,10 +17,14 @@ public class RequestOptionValue {
 
     private String name;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn
+    private RequestOptionGroup requestOptionGroup;
+
     @Enumerated(EnumType.STRING)
     private RequestOptionValueStatus requestOptionValueStatus;
 
-    private RequestOptionValue(String name, RequestOptionValueStatus requestOptionValueStatus) {
+    private RequestOptionValue(String name ,RequestOptionValueStatus requestOptionValueStatus) {
         this.name = name;
         this.requestOptionValueStatus = requestOptionValueStatus;
     }
@@ -31,5 +35,9 @@ public class RequestOptionValue {
 
     public void updateStatus(RequestOptionValueStatus requestOptionValueStatus) {
         this.requestOptionValueStatus = requestOptionValueStatus;
+    }
+
+    public void addGroup(RequestOptionGroup requestOptionGroup) {
+        this.requestOptionGroup = requestOptionGroup;
     }
 }
