@@ -2,7 +2,7 @@ package turtleMart.member.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import turtleMart.delivery.repository.AddressRepository;
+import turtleMart.member.repository.AddressRepository;
 import turtleMart.member.dto.request.AddressRegisterRequest;
 import turtleMart.member.dto.response.AddressResponse;
 import turtleMart.member.entity.Address;
