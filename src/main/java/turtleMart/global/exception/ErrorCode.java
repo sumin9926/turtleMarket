@@ -21,9 +21,6 @@ public enum ErrorCode {
     DELIVERY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 배송입니다."),
     INVALID_DELIVERY_STATUS(HttpStatus.BAD_REQUEST, "허용되지 않은 상태 변경입니다."),
 
-    // 주문 관련
-    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 주문입니다."),
-
     // 판매자 관련
     SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 판매자입니다."),
 
@@ -40,6 +37,16 @@ public enum ErrorCode {
     PRODUCT_OPTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "상품옵션그룹에 존재하지않는 상품옵션값입니다."),
     PRODUCT_OPTION_COMBINATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지않는 상품옵션 조합입니다."),
     PRODUCT_OPTION_COMBINATION_ALL_READY_SOLD(HttpStatus.BAD_REQUEST, "주문이 존재하는 상품옵션조합은 삭제할수없습니다."),
+
+    //주문 관련
+    ORDER_SHEET_NOT_FOUND(HttpStatus.NOT_FOUND, "주문서 내용이 존재하지 않습니다."),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문 내역이 존재하지 않습니다."),
+    ORDER_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "상품 주문 내역이 존재하지 않습니다."),
+    ORDER_ITEM_NOT_IN_ORDER(HttpStatus.BAD_REQUEST, "해당 주문에 속하지 않은 상품입니다."),
+
+    //장바구니 관련
+    PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 삭제하려는 상품이 존재하지 않음"),
+
     //유저 관련
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
     //여러가지 관련
