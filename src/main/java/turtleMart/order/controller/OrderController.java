@@ -31,6 +31,7 @@ public class OrderController {
             @RequestBody OrderRequest request
             /*TODO JWT 통해서 회원 ID 가져오기*/
     ) {
+
         List<CartOrderSheetRequest> productNameAndQuantityList = CartOrderSheetRequest.splitItemNameAndQuantity(items);
 
         orderService.createOrder(1L, productNameAndQuantityList, request);

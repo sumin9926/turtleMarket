@@ -3,6 +3,7 @@ package turtleMart.product.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.product.dto.request.ProductOptionCombinationRequest;
 import turtleMart.product.dto.response.ProductOptionCombinationResponse;
@@ -37,4 +38,34 @@ public class ProductOptionCombinationController {
                 productOptionCombinationService.getAllCombinationByProduct(productId);
         return ResponseEntity.status(HttpStatus.OK).body(productOptionCombinationResponseList);
     }
+
+    @PatchMapping("/sellers/{sellerId}/products-option-combination/{productOptionCombinationId}")
+    public ResponseEntity<Void> updateProductOptionCombinationPrice(
+            @PathVariable Long sellerId,
+            @PathVariable Long productOptionCombinationId,
+            @RequestParam Integer price
+    ) {
+       return productOptionCombinationService.updateProductOptionCombinationPrice(sellerId, productOptionCombinationId, price);
+    }
+
+    @PatchMapping("/sellers/{sellerId}/products-option-combination")
+    public ResponseEntity<Void> updateProductOptionCombinationInventory() {
+        return null;
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Void> softDeleteProductOptionCombination() {
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @DeleteMapping("/sellers/{sellerId}/products-option-combination/{productOptionCombinationId}")
+    public ResponseEntity<Void> hardDeleteProductOptionCombination(
+            @PathVariable Long sellerId,
+            @PathVariable Long productOptionCombinationId
+    ) {
+        productOptionCombinationService.hardDeleteProductOptionCombination(sellerId, productOptionCombinationId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
 }

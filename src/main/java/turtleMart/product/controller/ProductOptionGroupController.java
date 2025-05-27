@@ -33,7 +33,7 @@ public class ProductOptionGroupController {
         return ResponseEntity.status(HttpStatus.CREATED).body(productOptionGroupResponse);
     }
 
-    @PostMapping("/members/{memberId}/products-option-group/{productOptionGroupId}/proucts-option-value")
+    @PostMapping("/members/{memberId}/products-option-group/{productOptionGroupId}/products-option-value")
     public ResponseEntity<ProductOptionGroupResponseUpdate> createProductOptionValue(
             @RequestBody List<ProductOptionValueRequest> productOptionValueRequest,
             @PathVariable Long memberId,
