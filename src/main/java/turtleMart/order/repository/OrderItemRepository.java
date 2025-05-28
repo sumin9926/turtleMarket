@@ -7,6 +7,7 @@ import turtleMart.order.entity.OrderItem;
 import turtleMart.order.entity.OrderItemStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
@@ -32,4 +33,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             );
 
     boolean existsByProductOptionCombinationId(Long productOptionCombinationId);
+
+    @Query("SELECT o FROM OrderItem o LEFT JOIN FETCH o.productOptionCombination WHERE o.order.id = :orderId")
+    List<OrderItem> findAllByOrderId(Long orderId);
 }

@@ -9,10 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.*;
 import turtleMart.global.utill.JsonHelper;
+import turtleMart.order.entity.OrderItem;
 import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.product.dto.ProductOptionCombinationPriceDto;
-import turtleMart.product.dto.response.DuplicateList;
 import turtleMart.product.dto.request.ProductOptionCombinationRequest;
+import turtleMart.product.dto.response.DuplicateList;
 import turtleMart.product.dto.response.ProductOptionCombinationResponse;
 import turtleMart.product.dto.response.ProductOptionCombinationResponseCreate;
 import turtleMart.product.entity.Product;
@@ -22,7 +23,9 @@ import turtleMart.product.entity.ProductOptionValue;
 import turtleMart.product.repository.*;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -126,5 +129,25 @@ public class ProductOptionCombinationService {
             }
         }
         throw new CustomRuntimeException(ErrorCode.TIME_OUT);
+    }
+
+    @Transactional
+    public void decreaseProductOptionCombinationInventory(Long orderId) {
+        List<OrderItem> orderItemList = orderItemRepository.findAllByOrderId(orderId);
+
+        for (OrderItem orderItem : orderItemList) {
+            Long productOptionCombinationId = orderItem.getProductOptionCombination().getId();
+            Integer quantity = orderItem.getQuantity();
+
+            ProductOptionCombination productOptionCombination = productOptionCombinationRepository
+                .findByIdWithPessimisticLock(productOptionCombinationId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND));
+
+            if (productOptionCombination.getInventory() < quantity) {
+                throw new ConflictException(ErrorCode.PRODUCT_OPTION_COMBINATION_OUT_OF_INVENTORY);
+            }
+
+            productOptionCombination.decreaseInventory(quantity);
+        }
     }
 }

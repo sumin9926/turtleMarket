@@ -46,4 +46,8 @@ public class ProductOptionCombination {
     public void addOptionMap(ProductOptionMap productOptionMap) {
         this.productOptionMapList.add(productOptionMap);
     }
+
+    public void decreaseInventory(Integer quantity) {
+        this.inventory -= quantity;
+    }
 }
