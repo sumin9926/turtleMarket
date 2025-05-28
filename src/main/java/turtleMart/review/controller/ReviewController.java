@@ -2,19 +2,13 @@ package turtleMart.review.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import turtleMart.review.dto.request.CreateReviewRequest;
 import turtleMart.review.dto.request.UpdateReviewRequest;
 import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.service.ReviewService;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,10 +20,9 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> createReview(
             //@RequestAttribute("memberId") Long memberId,
             @PathVariable(name = "productId") Long productId,
-            @RequestPart(name = "request") @Valid CreateReviewRequest request,
-            @RequestPart(name = "imageList") List<MultipartFile> imageList) {
+            @RequestPart(name = "request") @Valid CreateReviewRequest request) {
 
-        ReviewResponse reviewResponse = reviewService.createReview(1L, productId, request, imageList);
+        ReviewResponse reviewResponse = reviewService.createReview(1L, productId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewResponse);
     }
 
