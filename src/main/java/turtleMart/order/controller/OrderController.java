@@ -27,11 +27,11 @@ public class OrderController {
 
     @PostMapping("/orders")
     public ResponseEntity<Void> createOrder(
-            @RequestParam String items, //상품명1:수량,상품명2:수량 형식으로 입력
+            @RequestParam String items, //상품옵션Id1:수량,상품옵션Id2:수량 형식으로 입력
             @RequestBody OrderRequest request
             /*TODO JWT 통해서 회원 ID 가져오기*/
     ) {
-        List<CartOrderSheetRequest> productNameAndQuantityList = CartOrderSheetRequest.splitItemNameAndQuantity(items);
+        List<CartOrderSheetRequest> productNameAndQuantityList = CartOrderSheetRequest.splitItemIdAndQuantity(items);
 
         orderService.createOrder(1L, productNameAndQuantityList, request);
 

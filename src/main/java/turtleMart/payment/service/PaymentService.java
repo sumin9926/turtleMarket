@@ -7,7 +7,9 @@ import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.entity.Order;
 import turtleMart.order.repository.OrderRepository;
+import turtleMart.payment.dto.request.PaymentDeductRequest;
 import turtleMart.payment.dto.request.PaymentRequest;
+import turtleMart.payment.dto.response.PaymentDeductResponse;
 import turtleMart.payment.dto.response.PaymentResponse;
 import turtleMart.payment.entity.Payment;
 import turtleMart.payment.repository.PaymentRepository;
@@ -69,6 +71,16 @@ public class PaymentService {
         }
 
         return payments.stream().map(PaymentResponse::from).toList();
+    }
+
+    @Transactional
+    public PaymentDeductResponse deductPayment(Long paymentId, Long memberId, PaymentDeductRequest request) {
+        Payment foundPayment = findPayment(paymentId);
+        checkOwnPayment(foundPayment, memberId);
+
+        foundPayment.deduct(request.deductAmount());
+
+        return PaymentDeductResponse.from(foundPayment);
     }
 
     private Payment findPayment(Long paymentId) {

@@ -1,12 +1,15 @@
 package turtleMart.product.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import turtleMart.product.dto.ProductRequest;
-import turtleMart.product.dto.ProductResponse;
-import turtleMart.product.dto.ProductResponseForSeller;
+import turtleMart.product.dto.request.ProductRequest;
+import turtleMart.product.dto.response.ProductResponse;
+import turtleMart.product.dto.response.ProductResponseForSeller;
 import turtleMart.product.service.ProductService;
 
 import java.util.List;
@@ -27,14 +30,42 @@ public class ProductController {
     }
 
     @GetMapping("/products/{productId}")
-    public ResponseEntity<ProductResponse> getProduct(@PathVariable Long productId) {
+    public ResponseEntity<ProductResponse> getProduct(
+            @PathVariable Long productId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
         ProductResponse productResponse = productService.getProduct(productId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponse);
     }
 
+    @GetMapping("/sellers/{sellerId}/products/every")
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithEverything(
+            @PathVariable Long sellerId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        List<ProductResponseForSeller> productResponseList = productService.getProductBySellerIdWithEverything(sellerId);
+        return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
+    }
+
     @GetMapping("/sellers/{sellerId}/products")
-    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerId(@PathVariable Long sellerId) {
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerId(
+            @PathVariable Long sellerId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
         List<ProductResponseForSeller> productResponseList = productService.getProductBySellerId(sellerId);
+        return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
+    }
+
+    @GetMapping("/sellers/{sellerId}/products/deleted")
+    public ResponseEntity<List<ProductResponseForSeller>> getProductBySellerIdWithDeleted(
+            @PathVariable Long sellerId,
+            @PageableDefault(page = 0,size = 10,sort = "createdAt",direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        List<ProductResponseForSeller> productResponseList = productService.getProductBySellerIdWithDeleted(sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponseList);
     }
 
@@ -45,6 +76,12 @@ public class ProductController {
             @PathVariable Long productId
     ) {
         ProductResponse productResponse = productService.updateProduct(productRequest, sellerId, productId);
+        return ResponseEntity.status(HttpStatus.OK).body(productResponse);
+    }
+
+    @PatchMapping("/sellers/{sellerId}/products/{productId}/revive")
+    public ResponseEntity<ProductResponse> reviveProduct(@PathVariable Long sellerId, @PathVariable Long productId) {
+        ProductResponse productResponse = productService.reviveProduct(productId, sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(productResponse);
     }
 
