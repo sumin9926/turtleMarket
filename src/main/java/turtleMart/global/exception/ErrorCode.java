@@ -38,6 +38,7 @@ public enum ErrorCode {
     ORDER_ITEM_NOT_IN_ORDER(HttpStatus.BAD_REQUEST, "해당 주문에 속하지 않은 상품입니다."),
     ORDER_ITEM_NOT_OWNED_BY_MEMBER(HttpStatus.FORBIDDEN, "해당 회원이 이 주문 항목의 소유자가 아닙니다."),
     NO_REFUNDING_ORDER_ITEM_FOUND(HttpStatus.NOT_FOUND, "환불중인 주문 항목이 없습니다."),
+    ORDER_PRICE_VALIDATION_FAILED(HttpStatus.CONFLICT, "주문 생성 중 가격 정합성 오류: 주문서 가격과 상품 가격이 일치하지 않습니다."),
 
     //장바구니 관련
     PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 삭제하려는 상품이 존재하지 않음"),
