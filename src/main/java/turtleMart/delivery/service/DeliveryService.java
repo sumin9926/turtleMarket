@@ -12,7 +12,7 @@ import turtleMart.delivery.dto.response.UpdateDeliveryResponse;
 import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.entity.DeliveryStatus;
 import turtleMart.delivery.entity.Sender;
-import turtleMart.delivery.repository.AddressRepository;
+import turtleMart.member.repository.AddressRepository;
 import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.delivery.repository.SenderRepository;
 import turtleMart.global.exception.BadRequestException;
