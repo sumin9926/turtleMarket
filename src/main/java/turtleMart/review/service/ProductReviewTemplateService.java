@@ -29,9 +29,9 @@ public class ProductReviewTemplateService {
              Long productId, CreateProductReviewTemplateRequest request){
 
         if(!sellerRepository.existsById(request.sellerId())){throw new RuntimeException("존재하지 않는 판매자입니다");}
-        Seller seller = sellerRepository.getReferenceById(request.sellerId());
-
         if(!productRepository.existsById(productId)){throw new RuntimeException("존재하지 않는 상품입니다");}
+
+        Seller seller = sellerRepository.getReferenceById(request.sellerId());
         Product product = productRepository.getReferenceById(productId);
 
         Long productSellerId = product.getSeller().getId();
@@ -49,7 +49,6 @@ public class ProductReviewTemplateService {
         }
 
         List<ProductReviewTemplate> productReviewTemplateList = new ArrayList<>();
-
         reviewTemplateList.forEach(r -> productReviewTemplateList.add(ProductReviewTemplate.of(product, r)));
 
         productReviewTemplateRepository.saveAll(productReviewTemplateList);

@@ -2,8 +2,11 @@ package turtleMart.review.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import turtleMart.global.common.ImageService;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
@@ -22,6 +25,7 @@ import turtleMart.review.repository.ProductReviewTemplateDslRepositoryImpl;
 import turtleMart.review.repository.ReviewDslRepositoryImpl;
 import turtleMart.review.repository.ReviewRepository;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -34,24 +38,26 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductReviewTemplateDslRepositoryImpl productReviewTemplateDslRepositoryImpl;
     private final ReviewDslRepositoryImpl reviewDslRepositoryImpl;
+    private final ImageService imageService;
 
     @Transactional
-    public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request) {
+    public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request, List<MultipartFile> imageList) {
 
         if (!memberRepository.existsById(memberId)) {throw new RuntimeException("존재하지 않는 회원입니다");}
-        Member member = memberRepository.getReferenceById(memberId);
-
         if (!productRepository.existsById(productId)) {throw new RuntimeException("존재하지 않는 상품입니다");}
-        Product product = productRepository.getReferenceById(productId);
-
         if (!orderItemRepository.existsById(request.orderItemId())) {throw new RuntimeException("존재하지 않는 주문상품입니다");}
+
+        Product product = productRepository.getReferenceById(productId);
+        Member member = memberRepository.getReferenceById(memberId);
         OrderItem orderItem = orderItemRepository.getReferenceById(request.orderItemId());
 
         //주문상품의 상태가 배송완료인지를 확인하는 로직 추가 예정
 
         if (reviewRepository.existsByOrderItemIdAndIsDeletedFalse(orderItem.getId())) {throw new RuntimeException("주문건에 대한 리뷰는 한번만 작성가능합니다");}
 
-        String dbImageList = JsonHelper.toJson(request.imageUrlList());
+        //이미지 업로드 중 문제가 발생할 경우 아예 데이터베이스에 저장이 안되는것이 맞긴한다
+
+        String dbImageList = JsonHelper.toJson(request.imageUrlList());// 이 부분에서 정합성 문제 발생가능성 비동기 처리 필요?
         Review review = Review.of(member, product, orderItem, request.title(), request.content(), request.rating(), dbImageList);
 
         List<ProductReviewTemplate> productReviewTemplateList = productReviewTemplateDslRepositoryImpl.findByIdInWithReviewTemplate(
@@ -71,7 +77,8 @@ public class ReviewService {
         reviewRepository.save(review);
 
         List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
-        return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
+        List<String> imageUrlList = JsonHelper.fromJsonToList(dbImageList, new TypeReference<>() {});
+        return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
 
     public ReviewResponse readReview(Long reviewId) {
@@ -82,6 +89,10 @@ public class ReviewService {
         List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
 
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+    }
+
+    public Page<ReviewResponse> readByMemberId(Long memberId){
+        return null;
     }
 
 

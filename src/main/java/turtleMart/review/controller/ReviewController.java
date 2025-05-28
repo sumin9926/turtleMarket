@@ -2,13 +2,19 @@ package turtleMart.review.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import turtleMart.review.dto.request.CreateReviewRequest;
 import turtleMart.review.dto.request.UpdateReviewRequest;
 import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.service.ReviewService;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,9 +26,10 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> createReview(
             //@RequestAttribute("memberId") Long memberId,
             @PathVariable(name = "productId") Long productId,
-            @RequestBody @Valid CreateReviewRequest request) {
+            @RequestPart(name = "request") @Valid CreateReviewRequest request,
+            @RequestPart(name = "imageList") List<MultipartFile> imageList) {
 
-        ReviewResponse reviewResponse = reviewService.createReview(1L, productId, request);
+        ReviewResponse reviewResponse = reviewService.createReview(1L, productId, request, imageList);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewResponse);
     }
 
@@ -33,17 +40,17 @@ public class ReviewController {
         ReviewResponse reviewResponse = reviewService.readReview(reviewId);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
-//
+
 //    @GetMapping("members/reviews")
-//    public ResponseEntity<List<ReviewResponse>> readByMemberId(//@RequestAttribute("memberId") Long memberId,
+//    public ResponseEntity<Page<ReviewResponse>> readByMemberId(//@RequestAttribute("memberId") Long memberId,
 //                                                               @RequestParam(name = "size", required = false, defaultValue = "10") int size,
 //                                                               @RequestParam(name = "page", required = false, defaultValue = "1" ) int page
 //    ) {
 //        Pageable pageable = PageRequest.of(page - 1 , size);
-//        List<ReviewResponse> reviewResponse = reviewService.readByMemberId(1L);
+//        Page<ReviewResponse> reviewResponse = reviewService.readByMemberId(1L);
 //        return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
 //    }
-//
+
 //    @GetMapping("/products/{productId}/reviews")
 //    public ResponseEntity<Page<ReviewResponse>> readByProductId(@PathVariable(name = "productId") Long productId,
 //                                                                @RequestParam(name = "size", required = false, defaultValue = "10") int size,
