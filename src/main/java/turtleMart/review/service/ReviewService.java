@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
+import turtleMart.global.exception.RoleMismatchException;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
@@ -44,9 +45,9 @@ public class ReviewService {
     @Transactional
     public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request) {
 
-        if (!memberRepository.existsById(memberId)) {throw new RuntimeException("존재하지 않는 회원입니다");}
-        if (!productRepository.existsById(productId)) {throw new RuntimeException("존재하지 않는 상품입니다");}
-        if (!orderItemRepository.existsById(request.orderItemId())) {throw new RuntimeException("존재하지 않는 주문상품입니다");}
+        if (!memberRepository.existsById(memberId)) {throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}
+        if (!productRepository.existsById(productId)) {throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);}
+        if (!orderItemRepository.existsById(request.orderItemId())) {throw new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND);}
 
         Product product = productRepository.getReferenceById(productId);
         Member member = memberRepository.getReferenceById(memberId);
@@ -59,7 +60,7 @@ public class ReviewService {
         if (reviewRepository.existsByOrderItemIdAndIsDeletedFalse(orderItem.getId())) {throw new BadRequestException(ErrorCode.REVIEW_ALREADY_EXISTS);}
 
 
-        String dbImageList = JsonHelper.toJson(request.imageUrlList());// 이 부분에서 정합성 문제 발생가능성 비동기 처리 필요?
+        String dbImageList = JsonHelper.toJson(request.imageUrlList());
         Review review = Review.of(member, product, orderItem, request.title(), request.content(), request.rating(), dbImageList);
 
         List<ProductReviewTemplate> productReviewTemplateList = productReviewTemplateDslRepositoryImpl.findByIdInWithReviewTemplate(
@@ -135,7 +136,7 @@ public class ReviewService {
         if (!reviewRepository.existsById(reviewId)) {throw new NotFoundException(ErrorCode.REVIEW_NOT_FOUND);}
         Review review = reviewRepository.getReferenceById(reviewId);
 
-        if (!member.getId().equals(review.getMember().getId())) {throw new RuntimeException("본인이 작성한 리뷰만 삭제가능합니다");}
+        if (!member.getId().equals(review.getMember().getId())) {throw new RoleMismatchException(ErrorCode.FORBIDDEN);}
 
         review.delete();
     }
@@ -143,7 +144,7 @@ public class ReviewService {
     private Review findByIdElseThrow(Long reviewId) {
 
         return reviewDslRepositoryImpl.findByIdWithChoice(reviewId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));// 메서드 추출
+                .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_NOT_FOUND));
     }
 
     //어디로 뺄지 고민중

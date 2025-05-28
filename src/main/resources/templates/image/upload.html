@@ -18,7 +18,10 @@
             uploadBtn.addEventListener('click', async () => {
                 const fileInput = document.getElementById('fileInput');
                 const file = fileInput.files[0];
+
+                const domainPrefix = review;
                 const filename = encodeURIComponent(file.name);
+
                 console.log(filename)
 
                 const allowedTypes = ['image/png', 'image/jpeg'];
@@ -39,7 +42,7 @@
 
                     try {
                         // 프리사인드 URL 요청
-                        const response = await fetch(`/images/upload/${filename}`, {
+                        const response = await fetch(`/images/upload/${domainPrefix}/${filename}`, {
                             method: 'GET',
                             headers: {
                                 'Content-Type': 'application/json', // JSON 형식이지만 바디는 비어있음
