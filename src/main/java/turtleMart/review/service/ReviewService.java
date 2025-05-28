@@ -2,6 +2,8 @@ package turtleMart.review.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.utill.JsonHelper;
@@ -82,6 +84,17 @@ public class ReviewService {
         List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
 
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+    }
+
+    public Page<ReviewResponse> readByMemberId(Long memberId, Pageable pageable){
+        Page<Review> reviewPage = reviewDslRepositoryImpl.findByMemberIdWithPagination(memberId, pageable);
+
+        return reviewPage.map(review -> {
+            List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+            List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+
+            return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+        });
     }
 
 
