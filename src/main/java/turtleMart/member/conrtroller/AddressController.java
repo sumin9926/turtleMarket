@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.member.dto.request.AddressRegisterRequest;
+import turtleMart.member.dto.request.UpdateAddressRequest;
 import turtleMart.member.dto.response.AddressResponse;
 import turtleMart.member.service.AddressService;
 
@@ -37,5 +38,22 @@ public class AddressController {
     public ResponseEntity<List<AddressResponse>> getMyAddressList() {
         List<AddressResponse> foundMyAddressList = addressService.getAddressList();
         return ResponseEntity.status(HttpStatus.OK).body(foundMyAddressList);
+    }
+
+    @PatchMapping("/myAddress/{addressId}/modify")
+    public ResponseEntity<AddressResponse> modifyMyAddress(
+            @PathVariable Long addressId,
+            @RequestBody @Valid UpdateAddressRequest request
+    ) {
+        AddressResponse addressResponse = addressService.modifyAddress(addressId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(addressResponse);
+    }
+
+    @DeleteMapping("/myAddress/{addressId}")
+    public ResponseEntity<String> deleteMyAddress(
+            @PathVariable Long addressId
+    ) {
+        String resultMessage = addressService.deleteAddress(addressId);
+        return ResponseEntity.status(HttpStatus.OK).body(resultMessage);
     }
 }

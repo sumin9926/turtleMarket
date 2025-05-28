@@ -1,9 +1,11 @@
 package turtleMart.member.service;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import turtleMart.member.repository.AddressRepository;
 import turtleMart.member.dto.request.AddressRegisterRequest;
+import turtleMart.member.dto.request.UpdateAddressRequest;
 import turtleMart.member.dto.response.AddressResponse;
 import turtleMart.member.entity.Address;
 
@@ -21,13 +23,30 @@ public class AddressService {
     }
 
     public AddressResponse getAddress(Long addressId) {
-        Address foundAddress = addressRepository.findById(addressId)
-                .orElseThrow(() -> new RuntimeException("등록된 주소가 없습니다."));
+        Address foundAddress = findAddress(addressId);
         return AddressResponse.from(foundAddress);
     }
 
     public List<AddressResponse> getAddressList() {
         List<Address> addressList = addressRepository.findAll();
         return addressList.stream().map(AddressResponse::from).toList();
+    }
+
+    public AddressResponse modifyAddress(Long addressId, @Valid UpdateAddressRequest request) {
+        Address foundAddress = findAddress(addressId);
+        foundAddress.updateAddress(request);
+        addressRepository.save(foundAddress);
+        return AddressResponse.from(foundAddress);
+    }
+
+    public String deleteAddress(Long addressId) {
+        Address foundAddress = findAddress(addressId);
+        addressRepository.delete(foundAddress);
+        return "주소가 삭제되었습니다.";
+    }
+
+    private Address findAddress(Long addressId) {
+        return addressRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("등록된 주소가 없습니다."));
     }
 }
