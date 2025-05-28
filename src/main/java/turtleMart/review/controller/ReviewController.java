@@ -20,7 +20,7 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> createReview(
             //@RequestAttribute("memberId") Long memberId,
             @PathVariable(name = "productId") Long productId,
-            @RequestPart(name = "request") @Valid CreateReviewRequest request) {
+            @RequestBody @Valid CreateReviewRequest request) {
 
         ReviewResponse reviewResponse = reviewService.createReview(1L, productId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewResponse);
