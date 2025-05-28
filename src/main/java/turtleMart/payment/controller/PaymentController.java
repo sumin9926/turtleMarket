@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import turtleMart.payment.dto.request.PaymentDeductRequest;
+import turtleMart.payment.dto.response.PaymentDeductResponse;
 import turtleMart.payment.dto.response.PaymentResponse;
 import turtleMart.payment.service.PaymentService;
 
@@ -40,5 +42,14 @@ public class PaymentController {
             @RequestParam(name = "member", required = false) Long memberId) {
         List<PaymentResponse> responses = paymentService.getAllPayments(memberId);
         return ResponseEntity.status(HttpStatus.OK).body(responses);
+    }
+
+    @PatchMapping("/{paymentId}/refund")
+    public ResponseEntity<PaymentDeductResponse> deductPayment(
+            @PathVariable Long paymentId,
+            @RequestParam(name = "member", required = false) Long memberId,
+            @RequestBody PaymentDeductRequest request) {
+        PaymentDeductResponse response = paymentService.deductPayment(paymentId, memberId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

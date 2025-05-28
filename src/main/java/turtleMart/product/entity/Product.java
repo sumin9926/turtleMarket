@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Seller;
-import turtleMart.product.dto.ProductRequest;
+import turtleMart.product.dto.request.ProductRequest;
 
 @Entity
 @Getter
@@ -18,8 +18,8 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id")
     private Seller seller;
 
     private String name;
@@ -28,6 +28,7 @@ public class Product extends BaseEntity {
 
     private String description;
 
+    @Column(name = "deleted")
     private boolean isDeleted;
 
     private Product(Seller seller, String name, Integer price, String description) {
@@ -42,8 +43,18 @@ public class Product extends BaseEntity {
     }
 
     public void update(ProductRequest productRequest) {
-        this.name = productRequest.name();
-        this.description = productRequest.description();
-        this.price = productRequest.price();
+        if (!this.name.equals(productRequest.name())) {
+            this.name = productRequest.name();
+        }
+        if (!this.description.equals(productRequest.description())) {
+            this.description = productRequest.description();
+        }
+        if (!this.price.equals(productRequest.price())) {
+            this.price = productRequest.price();
+        }
+    }
+
+    public void delete(boolean choice) {
+        this.isDeleted = choice;
     }
 }

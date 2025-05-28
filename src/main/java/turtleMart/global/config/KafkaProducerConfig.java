@@ -12,12 +12,22 @@ import java.util.HashMap;
 public class KafkaProducerConfig {
 
     @Bean
-    public ProducerFactory<String, Object> producerFactory() {
+    public ProducerFactory<String, Object> producerFactoryForObject() {
         return new DefaultKafkaProducerFactory<>(new HashMap<>());
     }
 
     @Bean
-    public KafkaTemplate<String, Object> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+    public ProducerFactory<String, String> producerFactoryForString() {
+        return new DefaultKafkaProducerFactory<>(new HashMap<>());
+    }
+
+    @Bean
+    public KafkaTemplate<String, Object> objectKafkaTemplate() {
+        return new KafkaTemplate<>(producerFactoryForObject());
+    }
+
+    @Bean
+    public KafkaTemplate<String, String> stringKafkaTemplate() {
+        return new KafkaTemplate<>(producerFactoryForString());
     }
 }

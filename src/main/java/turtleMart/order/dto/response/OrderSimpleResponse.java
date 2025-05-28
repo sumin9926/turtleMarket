@@ -10,15 +10,15 @@ import java.util.List;
 public record OrderSimpleResponse(
         Long orderId,
         DeliveryStatus deliveryStatus,
-        List<Long> orderItemIdList,
+        List<OrderItemResponse> orderItems,
         LocalDateTime orderedAt
 ) {
-    public static OrderSimpleResponse from(Order order, Delivery delivery, List<Long> orderItemIdList){
+    public static OrderSimpleResponse from(Order order, Delivery delivery, List<OrderItemResponse> orderItems){
         return new OrderSimpleResponse(
                 order.getId(),
                 delivery.getDeliveryStatus(),
-                orderItemIdList,
-                order.getOrderAt()
+                orderItems,
+                order.getOrderedAt()
         );
     }
 }
