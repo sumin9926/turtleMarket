@@ -1,9 +1,7 @@
 package turtleMart.global.kafka.listener;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
@@ -16,8 +14,6 @@ import turtleMart.order.service.OrderService;
 @Component
 public class OrderKafkaListener {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final KafkaTemplate<String, String> kafkaTemplate;
     private final OrderService orderService;
 
     @KafkaListener(topics = "order_create_topic", groupId = "order-group")
