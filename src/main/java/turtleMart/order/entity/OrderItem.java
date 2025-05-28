@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import turtleMart.product.entity.Product;
+import turtleMart.product.entity.ProductOptionCombination;
 
 @Entity
 @Getter
@@ -22,8 +22,8 @@ public class OrderItem {
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
-    private Product product;
+    @JoinColumn(name = "product_option_combination_id")
+    private ProductOptionCombination productOptionCombination;
 
     private Integer price;
 
@@ -33,17 +33,17 @@ public class OrderItem {
 
     private OrderItemStatus orderItemStatus;
 
-    private OrderItem(Order order, Product product, Integer price, String name, Integer quantity, OrderItemStatus orderItemStatus) {
+    private OrderItem(Order order, ProductOptionCombination productOptionCombination, Integer price, String name, Integer quantity, OrderItemStatus orderItemStatus) {
         this.order = order;
-        this.product = product;
+        this.productOptionCombination = productOptionCombination;
         this.price = price;
         this.name = name;
         this.quantity = quantity;
         this.orderItemStatus = orderItemStatus;
     }
 
-    public static OrderItem of(Order order, Product product, Integer price, String name, Integer quantity) {
-        return new OrderItem(order, product, price, name, quantity, OrderItemStatus.UNPAID);
+    public static OrderItem of(Order order, ProductOptionCombination productOptionCombination, Integer price, String name, Integer quantity) {
+        return new OrderItem(order, productOptionCombination, price, name, quantity, OrderItemStatus.UNPAID);
     }
 
     public void updateStatus(OrderItemStatus status) {

@@ -1,7 +1,6 @@
 package turtleMart.global.exception;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
 public class CustomRuntimeException extends RuntimeException {
@@ -11,7 +10,6 @@ public class CustomRuntimeException extends RuntimeException {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
-
     public CustomRuntimeException(ErrorCode errorCode, String errorMessage) {
         super(errorMessage);
         this.errorCode = errorCode;

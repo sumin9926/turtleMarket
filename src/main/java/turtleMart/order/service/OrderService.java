@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.repository.DeliveryRepository;
-import turtleMart.member.entity.Member;
+import turtleMart.global.common.OptionDisplayUtils;
+import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.dto.request.AddCartItemRequest;
@@ -22,9 +25,10 @@ import turtleMart.order.entity.OrderItem;
 import turtleMart.order.entity.OrderItemStatus;
 import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.order.repository.OrderRepository;
-import turtleMart.payment.dto.request.PaymentRequest;
 import turtleMart.product.entity.Product;
-import turtleMart.product.repository.ProductRepository;
+import turtleMart.product.entity.ProductOptionCombination;
+import turtleMart.product.repository.ProductOptionCombinationRepository;
+import turtleMart.product.repository.ProductOptionValueRepository;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -36,12 +40,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
     private final OrderItemRepository orderItemRepository;
     private final DeliveryRepository deliveryRepository;
     private final SellerRepository sellerRepository;
+    private final ProductOptionCombinationRepository productOptionCombinationRepository;
+    private final ProductOptionValueRepository productOptionValueRepository;
     private final CartService cartService;
     private final RedisTemplate<String, String> redisTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -50,48 +55,50 @@ public class OrderService {
     private String paymentTopic;
 
     @Transactional(readOnly = true)
-    public List<OrderSheetResponse> getCartOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
+    public List<OrderSheetResponse> getOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
 
         if (!memberRepository.existsById(memberId)) {
-            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
-
-        /*TODO 가격/품절상태 검증 필요*/
 
         List<OrderSheetResponse> responseList = new ArrayList<>();
 
         for (CartOrderSheetRequest orderSheet : orderSheetList) {
-            Product product = productRepository.findById(orderSheet.productId()).orElseThrow(
-                    () -> new RuntimeException("상품이 존재하지 않습니다.") //TODO 커스텀 예외처리
+            ProductOptionCombination option = productOptionCombinationRepository.findById(orderSheet.productOptionId()).orElseThrow(
+                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
             );
-            OrderSheetResponse response = new OrderSheetResponse(
-                    product.getId(), product.getName(), product.getPrice(), orderSheet.quantity()
-            );
+
+            Product product = option.getProduct();
+
+            if (null == product) {
+                throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
+            }
+
+            String optionInfo = OptionDisplayUtils.buildOptionDisplay(option.getUniqueKey(), productOptionValueRepository);
+
+            OrderSheetResponse response = new OrderSheetResponse(orderSheet.productOptionId(), product.getId(),
+                    optionInfo, product.getName(), product.getPrice(), orderSheet.quantity());
+
             responseList.add(response);
         }
 
         return responseList;
     }
 
-    public OrderSheetResponse getDirectOrderSheet(CartOrderSheetRequest request, Long memberId) {
+    @Transactional
+    public OrderSheetResponse getDirectOrderSheet(List<CartOrderSheetRequest> requests, Long memberId) {
 
-        if (!memberRepository.existsById(memberId)) {
-            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+        List<OrderSheetResponse> responseList = getOrderSheet(requests, memberId);
+
+        if (responseList.isEmpty()) {
+            throw new NotFoundException(ErrorCode.ORDER_SHEET_NOT_FOUND);
         }
 
-        /*TODO 가격/품절상태 검증 필요*/
-
-        // 주문서에 들어갈 정보 보내기
-        Product product = productRepository.findById(request.productId()).orElseThrow(
-                () -> new RuntimeException("상품이 존재하지 않습니다.") //TODO 커스텀 예외처리
-        );
-        OrderSheetResponse response = new OrderSheetResponse(
-                product.getId(), product.getName(), product.getPrice(), request.quantity()
-        );
+        OrderSheetResponse response = responseList.get(0);
 
         // 장바구니에 해당 상품 담기
         try {
-            cartService.addItemsToCart(memberId, new AddCartItemRequest(request.productId(), request.quantity()));
+            cartService.addItemsToCart(memberId, new AddCartItemRequest(requests.get(0).productOptionId(), requests.get(0).quantity()));
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Redis 장바구니 상품 추가 실패", e);
         }
@@ -103,15 +110,21 @@ public class OrderService {
     public OrderDetailResponse getOrderDetail(Long memberId, Long orderId) {
 
         if (!memberRepository.existsById(memberId)) {
-            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         Order order = orderRepository.findWithOrderItemsById(orderId).orElseThrow(
-                () -> new RuntimeException("존재하지 않는 주문 입니다.")//TODO 커스텀 예외처리
+                () -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND)
         );
 
         List<OrderItemResponse> orderItemResponseList = order.getOrderItems().stream()
-                .map(OrderItemResponse::from)
+                .map(orderItem -> {
+                    String optionInfo = OptionDisplayUtils.buildOptionDisplay(
+                            orderItem.getProductOptionCombination().getUniqueKey(),
+                            productOptionValueRepository
+                    );
+                    return OrderItemResponse.from(orderItem, optionInfo);
+                })
                 .toList();
 
         return OrderDetailResponse.from(order, orderItemResponseList);
@@ -122,11 +135,11 @@ public class OrderService {
             Long orderId, List<Long> orderItemIdList, OrderItemStatusRequest request, Long memberId
     ) {
         if (!memberRepository.existsById(memberId)) {
-            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         Order order = orderRepository.findById(orderId).orElseThrow(
-                () -> new RuntimeException("존재하지 않는 주문서 입니다.")//TODO 커스텀 예외처리
+                () -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND)
         );
 
         OrderItemStatus newStatus = OrderItemStatusRequest.checkOrderItemStatusIgnoreCase(request.orderItemStatus());
@@ -134,45 +147,37 @@ public class OrderService {
         // orderItemList 를 for 문으로 하나씩 조회해서 업데이트 내역을 반영하고 List 형태로 저장
         for (Long orderItemId : orderItemIdList) {
             OrderItem orderItem = orderItemRepository.findById(orderItemId).orElseThrow(
-                    () -> new RuntimeException("존재하지 않는 상품 주문 내역입니다.")//TODO 커스텀 예외처리
+                    () -> new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND)
             );
 
             if (!order.getOrderItems().contains(orderItem)) {
-                throw new RuntimeException("해당 주문에 속하지 않은 상품입니다."); //TODO 커스텀 예외처리
+                throw new BadRequestException(ErrorCode.ORDER_ITEM_NOT_IN_ORDER);
             }
 
             // 갱신 순서를 지켜야한다.
             OrderItemStatus currentStatus = orderItem.getOrderItemStatus();
-            if (!canTransition(currentStatus, newStatus)) {
-                throw new IllegalStateException(
-                        String.format("상태 변경 불가: 현재 상태 '%s'에서 '%s'(으)로 변경할 수 없습니다.",
-                                currentStatus, newStatus)
-                );
-            } else {
-                orderItem.updateStatus(newStatus);
-                updatedOrderItemList.add(orderItem);
-            }
+            currentStatus.validateTransitionTo(newStatus);
+            orderItem.updateStatus(newStatus);
+            updatedOrderItemList.add(orderItem);
         }
 
-        List<OrderItemResponse> orderItemResponseList = updatedOrderItemList.stream().map(OrderItemResponse::from).toList();
+        List<OrderItemResponse> orderItemResponseList = updatedOrderItemList.stream()
+                .map(orderItem -> {
+                    String optionInfo = OptionDisplayUtils.buildOptionDisplay(
+                            orderItem.getProductOptionCombination().getUniqueKey(),
+                            productOptionValueRepository
+                    );
+                    return OrderItemResponse.from(orderItem, optionInfo);
+                })
+                .toList();
 
         return OrderDetailResponse.from(order, orderItemResponseList);
-    }
-
-    public boolean canTransition(OrderItemStatus current, OrderItemStatus target) {
-        return switch (current) {
-            case UNPAID -> target == OrderItemStatus.CANCELED || target == OrderItemStatus.ORDERED;
-            case CANCELED -> target == OrderItemStatus.ORDERED;
-            case ORDERED -> target == OrderItemStatus.REFUNDING || target == OrderItemStatus.CONFIRMED;
-            case REFUNDING -> target == OrderItemStatus.REFUNDED;
-            case REFUNDED, CONFIRMED -> false;
-        };
     }
 
     @Transactional(readOnly = true)
     public MemberOrderListResponse getOrderList(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
-            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         List<OrderSimpleResponse> simpleResponseList = new ArrayList<>();
@@ -185,11 +190,21 @@ public class OrderService {
         for (Order order : orderList) {
             // orderId로 deliveryStatus 가져오기
             Delivery delivery = deliveryMap.get(order.getId());
-            if (null==delivery) {
-                throw new RuntimeException("배송 내역이 존재하지 않습니다.");
+            if (null == delivery) {
+                throw new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND);
             }
-            List<Long> orderItemIdList = order.getOrderItems().stream().map(OrderItem::getId).toList();
-            simpleResponseList.add(OrderSimpleResponse.from(order, delivery, orderItemIdList));
+
+            List<OrderItemResponse> orderItemResponses = order.getOrderItems().stream()
+                    .map(orderItem -> {
+                        String optionInfo = OptionDisplayUtils.buildOptionDisplay(
+                                orderItem.getProductOptionCombination().getUniqueKey(),
+                                productOptionValueRepository
+                        );
+                        return OrderItemResponse.from(orderItem, optionInfo);
+                    })
+                    .toList();
+
+            simpleResponseList.add(OrderSimpleResponse.from(order, delivery, orderItemResponses));
         }
 
         return MemberOrderListResponse.from(memberId, simpleResponseList);
@@ -198,12 +213,12 @@ public class OrderService {
     public TotalOrderedQuantityResponse getTotalOrderedQuantity(
             Long sellerId, Long productId, LocalDate startDate, LocalDate endDate
     ) {
-        if(!sellerRepository.existsById(sellerId)){
-            throw new RuntimeException("존재하지 않는 판매자입니다.");//TODO 커스텀 예외처리
+        if (!sellerRepository.existsById(sellerId)) {
+            throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
         }
 
-        Integer totalOrderedQuantity = orderItemRepository.countTotalOrderedBySellerAndProduct(
-                sellerId, productId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay()
+        Long totalOrderedQuantity = orderItemRepository.countTotalOrderedBySellerAndProduct(
+                sellerId, productId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay(), OrderItemStatus.REFUNDED
         );
 
         return TotalOrderedQuantityResponse.from(productId, totalOrderedQuantity);
@@ -211,35 +226,35 @@ public class OrderService {
 
     @Transactional
     public void createOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderRequest request) {
-        Member member = memberRepository.findById(memberId).orElseThrow(
-                () -> new RuntimeException("존재하지 않는 회원입니다.") //TODO 커스텀 예외처리
-        );
-
-        Order order = Order.of(member, new ArrayList<>(), 0);
-
-        itemList.forEach(item -> {
-            Product product = productRepository.findById(item.productId()).orElseThrow(
-                    () -> new RuntimeException("존재하지 않는 상품입니다.")//TODO 커스텀 예외처리
-            );
-            OrderItem orderItem = OrderItem.of(order, product, product.getPrice(), product.getName(), item.quantity());
-            order.addOrderItem(orderItem);
-        });
-
-        order.calculateTotalPrice();
-        orderRepository.save(order);
-
-        // 장바구니 Redis 캐시 삭제
-        removeCartItemFromRedis(memberId, request.cartItemIdList());
-
-        // Kafka로 결제 요청
-        PaymentRequest paymentRequest =  PaymentRequest.from(order, memberId, request);
-
-        kafkaTemplate.send(paymentTopic, paymentRequest);
-        //라운드 로빈방식을 해시키로 변경 키는 상품옵션조합id 실질적으로 주문해야하는 물건이되야한다.
+        /*TODO 수정 예정*/
+//        Member member = memberRepository.findById(memberId).orElseThrow(
+//                () -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND)
+//        );
+//
+//        Order order = Order.of(member, new ArrayList<>(), 0);
+//
+//        itemList.forEach(item -> {
+//            Product product = productRepository.findById(item.productId()).orElseThrow(
+//                    () -> new RuntimeException("존재하지 않는 상품입니다.")//TODO 커스텀 예외처리
+//            );
+//            OrderItem orderItem = OrderItem.of(order, product, product.getPrice(), product.getName(), item.quantity());
+//            order.addOrderItem(orderItem);
+//        });
+//
+//        order.calculateTotalPrice();
+//        orderRepository.save(order);
+//
+//        // 장바구니 Redis 캐시 삭제
+//        removeCartItemFromRedis(memberId, request.cartItemIdList());
+//
+//        // Kafka로 결제 요청
+//        PaymentRequest paymentRequest =  PaymentRequest.from(order, memberId, request);
+//
+//        kafkaTemplate.send(paymentTopic, paymentRequest);
     }
 
     private void removeCartItemFromRedis(Long memberId, List<Long> cartItemIdList) {
-        for(Long cartItemId : cartItemIdList){
+        for (Long cartItemId : cartItemIdList) {
             String key = "cart:" + memberId;
 
             Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));

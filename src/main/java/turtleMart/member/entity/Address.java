@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import turtleMart.member.dto.request.AddressRegisterRequest;
+import turtleMart.member.dto.request.UpdateAddressRequest;
 
 @Entity
 @Getter
@@ -16,7 +17,7 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn
     private Member member;
 
@@ -30,7 +31,23 @@ public class Address {
 
     private String receiverPhone;
 
+    public Address(String name, String address, String detailAddress) {
+        this.name = name;
+        this.address = address;
+        this.detailAddress = detailAddress;
+    }
+
     public static Address of(AddressRegisterRequest request) {
-        return null;
+        return new Address(
+                request.name(),
+                request.address(),
+                request.detailAddress()
+        );
+    }
+
+    public void updateAddress(UpdateAddressRequest request) {
+        this.name = request.name() != null ? request.name() : this.name;
+        this.address = request.address() != null ? request.address() : this.address;
+        this.detailAddress = request.detailAddress() != null ? request.detailAddress() : this.detailAddress;
     }
 }

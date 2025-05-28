@@ -11,12 +11,15 @@ import turtleMart.delivery.dto.response.UpdateCourierResponse;
 import turtleMart.delivery.entity.Courier;
 import turtleMart.delivery.repository.CourierRepository;
 import turtleMart.delivery.repository.SenderRepository;
+import turtleMart.global.exception.ConflictException;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class CourierService {
 
     private final CourierRepository courierRepository;
@@ -25,7 +28,7 @@ public class CourierService {
     @Transactional
     public CreateCourierResponse createCourier(CreateCourierRequest request) {
         if (courierRepository.existsByNameAndCode(request.name(), request.code())) {
-            throw new RuntimeException("이미 존재하는 택배사입니다.");
+            throw new ConflictException(ErrorCode.COURIER_ALREADY_EXISTS);
         }
 
         Courier courier = Courier.of(request.name(), request.code(), request.trackingUrlTemplate());
@@ -46,7 +49,7 @@ public class CourierService {
     @Transactional
     public UpdateCourierResponse updateCourier(UpdateCourierRequest request, Long courierId) {
         Courier courier = courierRepository.findById(courierId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 택배사입니다."));
+            .orElseThrow(() -> new NotFoundException(ErrorCode.COURIER_NOT_FOUND));
 
         courier.update(request);
 
@@ -56,12 +59,12 @@ public class CourierService {
     @Transactional
     public void deleteCourier(Long courierId) {
         Courier courier = courierRepository.findById(courierId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 택배사입니다."));
+            .orElseThrow(() -> new NotFoundException(ErrorCode.COURIER_NOT_FOUND));
 
-        long senderCount = senderRepository.countByCourierId(courier);
+        long senderCount = senderRepository.countByCourier(courier);
 
-        if (senderCount != 0) {
-            throw new RuntimeException("계약된 출고지(물류센터)가 존재하기 때문에 삭제할 수 없습니다.");
+        if (senderCount > 0) {
+            throw new ConflictException(ErrorCode.COURIER_DELETE_FAILED);
         }
 
         courier.delete();
