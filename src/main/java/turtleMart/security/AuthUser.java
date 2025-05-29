@@ -18,4 +18,9 @@ public record AuthUser(
                 List.of(new SimpleGrantedAuthority(authority.getRole()))
         );
     }
+
+    public boolean hasAuthority(Authority targetAuthority) {
+        return authority.stream()
+                .anyMatch(auth -> auth.getAuthority().equals(targetAuthority.getRole()));
+    }
 }

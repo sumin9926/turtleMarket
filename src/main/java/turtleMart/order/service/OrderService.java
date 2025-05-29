@@ -11,20 +11,23 @@ import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.global.common.OptionDisplayUtils;
 import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ConflictRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
+import turtleMart.global.kafka.dto.OperationWrapperDto;
+import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.utill.JsonHelper;
+import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
-import turtleMart.order.dto.request.AddCartItemRequest;
-import turtleMart.order.dto.request.CartOrderSheetRequest;
-import turtleMart.order.dto.request.OrderItemStatusRequest;
-import turtleMart.order.dto.request.OrderRequest;
+import turtleMart.order.dto.request.*;
 import turtleMart.order.dto.response.*;
 import turtleMart.order.entity.Order;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.order.entity.OrderItemStatus;
 import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.order.repository.OrderRepository;
+import turtleMart.payment.dto.request.PaymentRequest;
 import turtleMart.product.entity.Product;
 import turtleMart.product.entity.ProductOptionCombination;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
@@ -34,6 +37,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,7 +53,8 @@ public class OrderService {
     private final ProductOptionValueRepository productOptionValueRepository;
     private final CartService cartService;
     private final RedisTemplate<String, String> redisTemplate;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, String> stringKafkaTemplate;
+    private final KafkaTemplate<String, Object> objectKafkaTemplate;
 
     @Value("${kafka.topic.payment}")
     private String paymentTopic;
@@ -225,41 +230,94 @@ public class OrderService {
     }
 
     @Transactional
-    public void createOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderRequest request) {
-        /*TODO 수정 예정*/
-//        Member member = memberRepository.findById(memberId).orElseThrow(
-//                () -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND)
-//        );
-//
-//        Order order = Order.of(member, new ArrayList<>(), 0);
-//
-//        itemList.forEach(item -> {
-//            Product product = productRepository.findById(item.productId()).orElseThrow(
-//                    () -> new RuntimeException("존재하지 않는 상품입니다.")//TODO 커스텀 예외처리
-//            );
-//            OrderItem orderItem = OrderItem.of(order, product, product.getPrice(), product.getName(), item.quantity());
-//            order.addOrderItem(orderItem);
-//        });
-//
-//        order.calculateTotalPrice();
-//        orderRepository.save(order);
-//
-//        // 장바구니 Redis 캐시 삭제
-//        removeCartItemFromRedis(memberId, request.cartItemIdList());
-//
-//        // Kafka로 결제 요청
-//        PaymentRequest paymentRequest =  PaymentRequest.from(order, memberId, request);
-//
-//        kafkaTemplate.send(paymentTopic, paymentRequest);
+    public void tryOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderWrapperRequest wrapperRequest) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        // 일단 DTO 먼저 만든다. (OrderWrapperRequest - OrderRequest+결재요청DTO+배송요청Dto)
+        OrderWrapperRequest newWrapperRequest = OrderWrapperRequest.updateItemList(wrapperRequest, itemList);
+        // 주문 요청이 들어오면 kafka 'order~' 토픽으로 일단 넘긴다.(그러면 그쪽에서 가격 상태 변경 상태인지 아닌지 검증한다.)
+        List<Long> productOptionCombinationIdList = itemList.stream()
+                .map(CartOrderSheetRequest::productOptionId)
+                .toList();
+
+        String key = JsonHelper.toJson(productOptionCombinationIdList);
+        String payload = JsonHelper.toJson(newWrapperRequest);
+        String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
+
+        stringKafkaTemplate.send("order_make_topic", key, value);
+    }
+
+    @Transactional
+    public void createOrder(OrderWrapperRequest wrapperRequest){
+        // 카프카 통과해서 오면 실행되는 로직
+        List<OrderRequest> orderRequestList = wrapperRequest.orderList();
+        List<CartOrderSheetRequest> orderSheetRequestList = wrapperRequest.itemList();
+        PaymentRequest paymentRequest = wrapperRequest.payment();
+
+        Map<Long, CartOrderSheetRequest> orderSheetMap = orderSheetRequestList.stream()
+                .collect(Collectors.toMap(
+                        CartOrderSheetRequest::productOptionId,
+                        Function.identity()
+                ));
+        Map<Long, OrderRequest> orderMap = orderRequestList.stream()
+                .collect(Collectors.toMap(
+                        OrderRequest::productOptionId,
+                        Function.identity()
+                ));
+
+        // 가격 정합성 검증
+        for(Long productOptionId : orderSheetMap.keySet()){
+            Integer quantity = orderSheetMap.get(productOptionId).quantity();
+            OrderRequest order = orderMap.get(productOptionId);
+            ProductOptionCombination optionCombination = productOptionCombinationRepository.findById(productOptionId).orElseThrow(
+                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
+            );
+            Integer currentPrice = optionCombination.getPrice();
+            Integer snapShotPrice = order.price();
+
+            if(!snapShotPrice.equals(currentPrice) || !order.totalPrice().equals(currentPrice*quantity)){
+                throw new ConflictRequestException(ErrorCode.ORDER_PRICE_VALIDATION_FAILED);
+            }
+        }
+
+        // 정합성 문제 없을 경우 결재 계속 진행
+        Member member = memberRepository.findById(paymentRequest.memberId()).orElseThrow(
+                () -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND)
+        );
+        Order order = Order.of(member, new ArrayList<>(), 0);
+
+        orderSheetMap.keySet().forEach(productOptionId -> {
+            ProductOptionCombination productOptionCombination = productOptionCombinationRepository.findById(productOptionId).orElseThrow(
+                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
+            );
+            OrderItem orderItem = OrderItem.of(order, productOptionCombination, productOptionCombination.getPrice(),
+                    productOptionCombination.getProduct().getName(), orderSheetMap.get(productOptionId).quantity());
+            order.addOrderItem(orderItem);
+        });
+
+        order.calculateTotalPrice();
+        orderRepository.save(order);
+
+        List<Long> cartItemIdList = orderRequestList.stream()
+                .map(OrderRequest::cartItemId)
+                .toList();
+
+        // 장바구니 Redis 캐시 삭제
+        removeCartItemFromRedis(member.getId(), cartItemIdList);
+
+        // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
+        PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(wrapperRequest.payment(), wrapperRequest.delivery());
+        objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest);
     }
 
     private void removeCartItemFromRedis(Long memberId, List<Long> cartItemIdList) {
-        for (Long cartItemId : cartItemIdList) {
-            String key = "cart:" + memberId;
+        String key = "cart:" + memberId;
 
+        for (Long cartItemId : cartItemIdList) {
             Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));
             if (Boolean.FALSE.equals(cartItemExist)) {
-                throw new RuntimeException("장바구니에서 삭제하려는 상품이 존재하지 않음"); //TODO 커스텀 예외처리
+                throw new NotFoundException(ErrorCode.PRODUCT_NOT_IN_CART);
             }
 
             redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));

@@ -45,6 +45,7 @@ public enum ErrorCode {
     ORDER_ITEM_NOT_IN_ORDER(HttpStatus.BAD_REQUEST, "해당 주문에 속하지 않은 상품입니다."),
     ORDER_ITEM_NOT_OWNED_BY_MEMBER(HttpStatus.FORBIDDEN, "해당 회원이 이 주문 항목의 소유자가 아닙니다."),
     NO_REFUNDING_ORDER_ITEM_FOUND(HttpStatus.NOT_FOUND, "환불중인 주문 항목이 없습니다."),
+    ORDER_PRICE_VALIDATION_FAILED(HttpStatus.CONFLICT, "주문 생성 중 가격 정합성 오류: 주문서 가격과 상품 가격이 일치하지 않습니다."),
 
     //장바구니 관련
     PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 삭제하려는 상품이 존재하지 않음"),
@@ -72,6 +73,7 @@ public enum ErrorCode {
     MINIO_INITIALIZATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "버킷 설정 중 문제 발생"),
     IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "이미지 업로드 중 문제가 발생하였습니다"),
     IMAGE_VIEW_FAILED(HttpStatus.BAD_GATEWAY, "이미지를 불러오는 도중 문제가 발생했습니다");
+    SOFT_LOCK_CANT_ACCESS(HttpStatus.CONFLICT, "현재 다른요청을 처리중임으로 접근할수없습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
