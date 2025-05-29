@@ -30,7 +30,7 @@ public class ReviewReport extends BaseEntity {
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "reason_code")
     private ReasonCode reasonCode;
 
     @Enumerated(EnumType.STRING)
