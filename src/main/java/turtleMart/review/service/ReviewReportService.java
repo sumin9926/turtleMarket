@@ -15,6 +15,7 @@ import turtleMart.review.dto.response.ReviewReportResponse;
 import turtleMart.review.dto.response.TemplateChoiceResponse;
 import turtleMart.review.entity.*;
 import turtleMart.review.repository.*;
+
 import java.util.List;
 
 @Service
@@ -30,42 +31,61 @@ public class ReviewReportService {
 
 
     @Transactional
-    public ReviewReportResponse createReviewReport(Long memberId, Long reviewId, CreateReviewReportRequest request){
+    public ReviewReportResponse createReviewReport(Long memberId, Long reviewId, CreateReviewReportRequest request) {
 
-        if(!memberRepository.existsById(memberId)){throw new RuntimeException("존재하지 않는 멤버입니다");}
+        if (!memberRepository.existsById(memberId)) {
+            throw new RuntimeException("존재하지 않는 멤버입니다");
+        }
         Member member = memberRepository.getReferenceById(memberId);
 
         Review review = reviewDslRepository.findByIdWithChoice(reviewId)
-                                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));
 
-        if(reviewReportRepository.existsByMemberIdAndReviewId(member.getId(), review.getId())){
+        if (reviewReportRepository.existsByMemberIdAndReviewId(member.getId(), review.getId())) {
             throw new RuntimeException("하나의 리뷰에 대한 신고는 한번만 가능합니다");
         }
 
-        if(!reasonCodeRepository.existsById(request.reasonCodeId())){throw new RuntimeException("존재하지 않는 신고 코드입니다");}
+        if (!reasonCodeRepository.existsById(request.reasonCodeId())) {
+            throw new RuntimeException("존재하지 않는 신고 코드입니다");
+        }
         ReasonCode reasonCode = reasonCodeRepository.getReferenceById(request.reasonCodeId());
 
         ReviewReport reviewReport = reviewReportRepository.save(ReviewReport.of(review, member, reasonCode, request.ReasonDetail()));
 
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
-        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
+        });
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
 
-    public ReviewReportResponse readById(Long reviewReportId){
+    public ReviewReportResponse readById(Long reviewReportId) {
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
 
         Review review = reviewReport.getReview();
-        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
+        });
 
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
-    public CursorPageResponse<ReviewReportResponse> readByCondition(String reviewReportStatus, String reasonCode, Long cursor){
-        return reviewReportDslRepository.findByReviewReportCondition(reviewReportStatus, reasonCode, cursor);
+    public CursorPageResponse<ReviewReportResponse> readByCondition(String reviewReportStatus, String reasonCode, Long cursor) {
+        List<ReviewReport> reviewReportList = reviewReportDslRepository.findByReviewReportCondition(reviewReportStatus, reasonCode, cursor);
+
+        List<ReviewReportResponse> reportResponseList = reviewReportList.stream().map(r -> {
+            Review review = r.getReview();
+            List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
+            });
+            List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
+
+            return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, r);
+        }).toList();
+
+        Long lastCursor = reviewReportList.get(reportResponseList.size() - 1).getId();
+
+        return CursorPageResponse.of(reportResponseList, lastCursor);
     }
 
     @Transactional
@@ -78,7 +98,8 @@ public class ReviewReportService {
         reviewReport.updateReviewReportStatus(reviewReportStatus);
 
         Review review = reviewReport.getReview();
-        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
+        });
 
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
@@ -86,11 +107,11 @@ public class ReviewReportService {
     }
 
     @Transactional
-    public void cancelReviewReport(Long reviewReportId, CancelReviewReportRequest request){
+    public void cancelReviewReport(Long reviewReportId, CancelReviewReportRequest request) {
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
 
-      reviewReport.cancel(request.cancelReason());
+        reviewReport.cancel(request.cancelReason());
     }
 
     //어디로 뺄지 고민중

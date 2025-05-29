@@ -44,7 +44,7 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
     }
 
     @Override
-    public CursorPageResponse<ReviewReportResponse> findByReviewReportCondition(String reviewReportStatus, String reviewReasonCode, Long cursor) {
+    public List<ReviewReport> findByReviewReportCondition(String reviewReportStatus, String reviewReasonCode, Long cursor) {
         BooleanBuilder builder = new BooleanBuilder();
 
         if (reviewReportStatus != null) {
@@ -55,6 +55,7 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
         if (reviewReasonCode != null) {
             builder.and(reviewReport.reasonCode.reason.eq(reviewReasonCode));
         }
+
         if (cursor != null) {
             builder.and(reviewReport.id.gt(cursor));
         }
@@ -69,19 +70,6 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
                 .limit(10)
                 .fetch();
 
-        List<ReviewReportResponse> reportResponseList = reviewReportList.stream().map(r -> {
-            Review review = r.getReview();
-            List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
-            });
-            List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
-            return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, r);
-        }).toList();
-
-        Long lastCursor = reviewReportList.isEmpty() ? 0 : reviewReportList.get(reviewReportList.size() - 1).getId();
-
-        CursorPageResponse<ReviewReportResponse> cursorResponse =
-                CursorPageResponse.of(reportResponseList, lastCursor);
-
-        return cursorResponse;
+       return reviewReportList;
     }
 }

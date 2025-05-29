@@ -26,32 +26,30 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
 
     @Override
     public Optional<Review> findByIdWithChoice(Long reviewId) {
-        List<TemplateChoice> templateChoiceList = jpaQueryFactory.select(templateChoice)
-                .from(templateChoice)
-                .join(templateChoice.review, review).fetchJoin()
-                .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(templateChoice.review.id.eq(reviewId))
-                .fetch();
-
-        return templateChoiceList.isEmpty() ? Optional.empty() : Optional.ofNullable(templateChoiceList.get(0).getReview());
+        return Optional.ofNullable(
+                jpaQueryFactory.select(review).distinct()
+                        .from(review)
+                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                        .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                        .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .where(review.id.eq(reviewId))
+                        .fetchOne());
     }
 
     @Override
     public Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable) {
-        List<Review> reviewList = jpaQueryFactory.select(templateChoice)
-                .from(templateChoice)
-                .join(templateChoice.review, review).fetchJoin()
-                .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(review.member.id.eq(memberId))
-                .orderBy(review.id.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch().stream()
-                .map(TemplateChoice::getReview)
-                .toList();
-
+        List<Review> reviewList =
+                jpaQueryFactory.select(review)
+                        .distinct()
+                        .from(review)
+                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                        .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                        .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .where(review.member.id.eq(memberId))
+                        .orderBy(review.id.desc())
+                        .offset(pageable.getOffset())
+                        .limit(pageable.getPageSize())
+                        .fetch();
 
 
         Long count = jpaQueryFactory
@@ -60,7 +58,7 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
                 .where(review.member.id.eq(memberId))
                 .fetchOne();
 
-        return new PageImpl<>(reviewList, pageable, count);
+        return new PageImpl<>(reviewList, pageable, count != null ? count : 0);
     }
 
 

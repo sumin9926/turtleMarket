@@ -12,5 +12,5 @@ public interface ReviewReportDslRepository {
     Optional<ReviewReport> findByIdWithReportCode(Long reviewReportId);
 
 
-    CursorPageResponse<ReviewReportResponse> findByReviewReportCondition(String reviewReportStatus, String reasonCode, Long cursor);
+    List<ReviewReport> findByReviewReportCondition(String reviewReportStatus, String reasonCode, Long cursor);
 }
