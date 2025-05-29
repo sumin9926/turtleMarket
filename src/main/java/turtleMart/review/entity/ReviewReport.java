@@ -9,7 +9,11 @@ import turtleMart.member.entity.Member;
 
 @Getter
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "review_id"}))
+@Table(
+        uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "review_id"}),
+        indexes = @Index(name = "idx_review_report_status_reason_code", columnList = "review_report_status, reason_code")
+)
+
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReviewReport extends BaseEntity {
 
@@ -30,6 +34,7 @@ public class ReviewReport extends BaseEntity {
     private ReasonCode reasonCode;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "review_report_status")
     private ReviewReportStatus reviewReportStatus = ReviewReportStatus.SUBMITTED;
 
     @Column(length = 255, nullable = false)
