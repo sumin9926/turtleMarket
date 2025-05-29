@@ -12,5 +12,5 @@ public interface ReviewDslRepository {
 
     Optional<Review> findByIdWithChoice(Long reviewId);
 
-    List<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable);
+    Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable);
 }
