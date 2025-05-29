@@ -72,7 +72,7 @@ public class ReviewService {
 
         reviewRepository.save(review);
 
-        List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }
 
@@ -81,7 +81,7 @@ public class ReviewService {
         Review review = findByIdElseThrow(reviewId);
 
         List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-        List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
 
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
@@ -91,7 +91,7 @@ public class ReviewService {
 
         return reviewPage.map(review -> {
             List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-            List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+            List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
 
             return ReviewResponse.of(review, imageUrlList, choiceResponseList);
         });
@@ -146,14 +146,4 @@ public class ReviewService {
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));// 메서드 추출
     }
 
-    //어디로 뺄지 고민중
-    private List<TemplateChoiceResponse> readTemplateChoiceByReview(Review review){
-
-        return review.getTemplateChoiceList().stream()
-                .map(t -> {
-                    ReviewTemplate reviewTemplate = t.getProductReviewTemplate().getReviewTemplate();
-                    return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(t.getChoseAnswer()));
-                })
-                .toList();
-    }
 }

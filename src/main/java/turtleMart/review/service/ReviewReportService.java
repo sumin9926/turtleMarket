@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.common.CursorPageResponse;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
@@ -46,7 +47,7 @@ public class ReviewReportService {
 
         ReviewReport reviewReport = reviewReportRepository.save(ReviewReport.of(review, member, reasonCode, request.ReasonDetail()));
 
-        List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
@@ -59,8 +60,12 @@ public class ReviewReportService {
         Review review = reviewReport.getReview();
         List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
 
-        List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
+    }
+
+    public CursorPageResponse<ReviewReportResponse> readByCondition(String reviewReportStatus, String reasonCode, Long cursor){
+        return reviewReportDslRepository.findByReviewReportCondition(reviewReportStatus, reasonCode, cursor);
     }
 
     @Transactional
@@ -75,7 +80,7 @@ public class ReviewReportService {
         Review review = reviewReport.getReview();
         List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
 
-        List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
 
     }
@@ -89,12 +94,5 @@ public class ReviewReportService {
     }
 
     //어디로 뺄지 고민중
-    private List<TemplateChoiceResponse> readTemplateChoiceByReview(Review review){
-       return review.getTemplateChoiceList().stream()
-                .map(t -> {
-                    ReviewTemplate reviewTemplate = t.getProductReviewTemplate().getReviewTemplate();
-                    return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(t.getChoseAnswer()));
-                })
-                .toList();
-    }
+
 }
