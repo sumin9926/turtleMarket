@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.member.dto.request.SellerRegisterRequest;
 
 @Entity
 @Getter
@@ -19,7 +20,32 @@ public class Seller {
     @JoinColumn
     private Member member;
 
+    private Authority authority;
+
+    private String businessName;
+
+    private String businessAddress;
+
     private String account;
 
     private String businessLicense;
+
+    public Seller(Member member, String businessName, String businessAddress, String account, String businessLicense) {
+        this.member = member;
+        this.authority = Authority.SELLER;
+        this.businessName = businessName;
+        this.businessAddress = businessAddress;
+        this.account = account;
+        this.businessLicense = businessLicense;
+    }
+
+    public static Seller of(SellerRegisterRequest request, Member member) {
+        return new Seller(
+                member,
+                request.businessName(),
+                request.businessAddress(),
+                request.account(),
+                request.businessLicense()
+        );
+    }
 }
