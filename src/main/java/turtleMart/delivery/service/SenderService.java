@@ -11,6 +11,9 @@ import turtleMart.delivery.entity.Courier;
 import turtleMart.delivery.entity.Sender;
 import turtleMart.delivery.repository.CourierRepository;
 import turtleMart.delivery.repository.SenderRepository;
+import turtleMart.global.exception.ConflictException;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 
 import java.util.List;
 
@@ -25,11 +28,11 @@ public class SenderService {
     @Transactional
     public SenderResponse createSender(CreateSenderRequest request) {
         if (senderRepository.existsByAddressAndDetailAddress(request.address(), request.detailAddress())) {
-            throw new RuntimeException("이미 존재하는 출고지(물류센터)입니다.");
+            throw new ConflictException(ErrorCode.SENDER_ALREADY_EXISTS);
         }
 
         if (!courierRepository.existsByIdAndIsDeletedFalse(request.courierId())) {
-            throw new RuntimeException("존재하지 않는 택배사입니다.");
+            throw new NotFoundException(ErrorCode.COURIER_NOT_FOUND);
         }
 
         Courier courier = courierRepository.getReferenceById(request.courierId());
@@ -50,16 +53,14 @@ public class SenderService {
     }
 
     public SenderResponse readSender(Long senderId) {
-        Sender sender = senderRepository.findById(senderId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 출고지(물류센터)입니다."));
+        Sender sender = getSender(senderId);
 
         return SenderResponse.from(sender);
     }
 
     @Transactional
     public UpdateSenderResponse updateSender(UpdateSenderRequest request, Long senderId) {
-        Sender sender = senderRepository.findById(senderId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 출고지(물류센터)입니다."));
+        Sender sender = getSender(senderId);
 
         sender.update(request);
 
@@ -68,9 +69,13 @@ public class SenderService {
 
     @Transactional
     public void deleteSender(Long senderId) {
-        Sender sender = senderRepository.findById(senderId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 출고지(물류센터)입니다."));
+        Sender sender = getSender(senderId);
 
         sender.delete();
+    }
+
+    private Sender getSender(Long senderId) {
+        return senderRepository.findById(senderId)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.SENDER_NOT_FOUND));
     }
 }

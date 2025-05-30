@@ -32,4 +32,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             );
 
     boolean existsByProductOptionCombinationId(Long productOptionCombinationId);
+
+    boolean existsByIdAndProductOptionCombination_Product_SellerId(Long orderItemId, Long SellerId);
 }

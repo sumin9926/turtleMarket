@@ -3,7 +3,7 @@ package turtleMart.member.service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import turtleMart.delivery.repository.AddressRepository;
+import turtleMart.member.repository.AddressRepository;
 import turtleMart.member.dto.request.AddressRegisterRequest;
 import turtleMart.member.dto.request.UpdateAddressRequest;
 import turtleMart.member.dto.response.AddressResponse;

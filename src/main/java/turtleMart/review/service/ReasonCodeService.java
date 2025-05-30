@@ -3,6 +3,9 @@ package turtleMart.review.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.review.dto.request.CreateReasonCodeRequest;
 import turtleMart.review.dto.request.UpdateReasonCodeRequest;
 import turtleMart.review.dto.response.ReasonCodeResponse;
@@ -31,9 +34,9 @@ public class ReasonCodeService {
     @Transactional
     public ReasonCodeResponse updateReasonCode(Long reasonCodeId, UpdateReasonCodeRequest request){
         ReasonCode reasonCode = reasonCodeRepository.findById(reasonCodeId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 신고코드입니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.REASON_CODE_NOT_FOUND));
 
-        if(reasonCode.isDeleted()){throw new RuntimeException("삭제된 신고코드입니다");}
+        if(reasonCode.isDeleted()){throw new BadRequestException(ErrorCode.ALREADY_DELETED_REASON_CODE);}
 
         reasonCode.update(request.reason());
         return ReasonCodeResponse.from(reasonCode);
@@ -42,9 +45,9 @@ public class ReasonCodeService {
     @Transactional
     public void delete(Long reasonCodeId){
         ReasonCode reasonCode = reasonCodeRepository.findById(reasonCodeId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 신고이유입니다"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.REASON_CODE_NOT_FOUND));
 
-        if(reasonCode.isDeleted()){throw new RuntimeException("삭제된 신고코드입니다");}
+        if(reasonCode.isDeleted()){throw new BadRequestException(ErrorCode.ALREADY_DELETED_REASON_CODE);}
 
         reasonCode.delete();
     }
