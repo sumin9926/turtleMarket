@@ -37,6 +37,9 @@ public enum ErrorCode {
     PRODUCT_OPTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "상품옵션그룹에 존재하지않는 상품옵션값입니다."),
     PRODUCT_OPTION_COMBINATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지않는 상품옵션 조합입니다."),
     PRODUCT_OPTION_COMBINATION_ALL_READY_SOLD(HttpStatus.BAD_REQUEST, "주문이 존재하는 상품옵션조합은 삭제할수없습니다."),
+    PRODUCT_NOT_BELONG_TO_SELLER(HttpStatus.FORBIDDEN, "상품이 판매자 소유가 아닙니다."),
+    REQUEST_OPTION_VALUE_NOT_FOUND(HttpStatus.BAD_REQUEST, "" ), /*TODO 성우님 대신 임시로 만들어둔 에러코드입니다.*/
+    REQUEST_OPTION_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 상품옵션그룹이 존재하지 않습니다."),
 
     //주문 관련
     ORDER_SHEET_NOT_FOUND(HttpStatus.NOT_FOUND, "주문서 내용이 존재하지 않습니다."),
@@ -72,7 +75,7 @@ public enum ErrorCode {
     //이미지 관련
     MINIO_INITIALIZATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "버킷 설정 중 문제 발생"),
     IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "이미지 업로드 중 문제가 발생하였습니다"),
-    IMAGE_VIEW_FAILED(HttpStatus.BAD_GATEWAY, "이미지를 불러오는 도중 문제가 발생했습니다");
+    IMAGE_VIEW_FAILED(HttpStatus.BAD_GATEWAY, "이미지를 불러오는 도중 문제가 발생했습니다"),
     SOFT_LOCK_CANT_ACCESS(HttpStatus.CONFLICT, "현재 다른요청을 처리중임으로 접근할수없습니다.");
 
     private final HttpStatus httpStatus;
