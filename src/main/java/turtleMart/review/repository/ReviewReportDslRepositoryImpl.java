@@ -67,8 +67,6 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
                 .limit(10)
                 .fetch();
 
-        log.info(reviewReportList.size() + "사이즈");
-
         return reviewReportList;
     }
 }
