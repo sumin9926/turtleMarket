@@ -1,4 +1,4 @@
-package turtleMart.global.config;
+package turtleMart.global.kafka.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

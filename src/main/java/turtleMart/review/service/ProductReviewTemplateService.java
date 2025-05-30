@@ -2,6 +2,11 @@ package turtleMart.review.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
+import turtleMart.global.exception.RoleMismatchException;
 import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.product.entity.Product;
@@ -25,48 +30,48 @@ public class ProductReviewTemplateService {
     private final ReviewTemplateRepository reviewTemplateRepository;
     private final ProductReviewTemplateDslRepositoryImpl productReviewTemplateDslRepository;
 
+    @Transactional
     public void createProductReviewTemplate(
              Long productId, CreateProductReviewTemplateRequest request){
 
-        if(!sellerRepository.existsById(request.sellerId())){throw new RuntimeException("존재하지 않는 판매자입니다");}
-        Seller seller = sellerRepository.getReferenceById(request.sellerId());
+        if(!sellerRepository.existsById(request.sellerId())){throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);}
+        if(!productRepository.existsById(productId)){throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);}
 
-        if(!productRepository.existsById(productId)){throw new RuntimeException("존재하지 않는 상품입니다");}
+        Seller seller = sellerRepository.getReferenceById(request.sellerId());
         Product product = productRepository.getReferenceById(productId);
 
         Long productSellerId = product.getSeller().getId();
-        if(!seller.getId().equals(productSellerId)){throw new RuntimeException("해당 상품에 대한 권한이 없습니다");}
+        if(!seller.getId().equals(productSellerId)){throw new RoleMismatchException(ErrorCode.FORBIDDEN);}
 
 
         List<ReviewTemplate> reviewTemplateList = reviewTemplateRepository.findAllById(request.reviewTemplateIdList());
         if(request.reviewTemplateIdList().size() != reviewTemplateList.size()){
-            throw new RuntimeException("존재하지 않는 리뷰템플릿을 선택하셨습니다");
+            throw new NotFoundException(ErrorCode.REVIEW_TEMPLATE_NOT_FOUND);
         }
 
         List<Long> reviewTemplateIdList =  reviewTemplateList.stream().mapToLong(ReviewTemplate::getId).boxed().toList();
         if(!productReviewTemplateDslRepository.existsByProductIdAndReviewTemplateId(product.getId(),reviewTemplateIdList)){
-            throw new RuntimeException("상품은 같은 리뷰템플릿을 여러개 선택할 수 없습니다");
+            throw new BadRequestException(ErrorCode.DUPLICATE_TEMPLATE_SELECTION);
         }
 
         List<ProductReviewTemplate> productReviewTemplateList = new ArrayList<>();
-
         reviewTemplateList.forEach(r -> productReviewTemplateList.add(ProductReviewTemplate.of(product, r)));
 
         productReviewTemplateRepository.saveAll(productReviewTemplateList);
     }
 
+    @Transactional
     public void deleteProductReviewTemplate(Long memberId, Long productReviewTemplateId){
-
         Seller seller = sellerRepository.findByMemberId(memberId)
-               .orElseThrow(() -> new RuntimeException("존재하지 않는 판매자입니다"));
+               .orElseThrow(() -> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
 
 
        ProductReviewTemplate productReviewTemplate = productReviewTemplateRepository.findById(productReviewTemplateId)
-                       .orElseThrow(() -> new RuntimeException("존재하지 않는 상품리뷰 템플릿입니다"));
+                       .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_REVIEW_TEMPLATE_NOT_FOUND));
 
        Long productSellerId = productReviewTemplate.getProduct().getSeller().getId();
        if(!seller.getId().equals(productSellerId)){
-           throw new RuntimeException("해당 상품에 대한 권한이 없습니다");
+           throw new RoleMismatchException(ErrorCode.FORBIDDEN);
        }
         productReviewTemplateRepository.deleteById(productReviewTemplateId);
     }

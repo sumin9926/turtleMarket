@@ -44,6 +44,19 @@ services:
     depends_on:
       - zookeeper
 
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # 웹 콘솔
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
 #  app:
 #    build:
 #      context: .
@@ -66,3 +79,4 @@ services:
 
 volumes:
   mysql_data:
+  minio_data:

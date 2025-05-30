@@ -33,17 +33,17 @@ public class ReviewController {
         ReviewResponse reviewResponse = reviewService.readReview(reviewId);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
-//
+
 //    @GetMapping("members/reviews")
-//    public ResponseEntity<List<ReviewResponse>> readByMemberId(//@RequestAttribute("memberId") Long memberId,
+//    public ResponseEntity<Page<ReviewResponse>> readByMemberId(//@RequestAttribute("memberId") Long memberId,
 //                                                               @RequestParam(name = "size", required = false, defaultValue = "10") int size,
 //                                                               @RequestParam(name = "page", required = false, defaultValue = "1" ) int page
 //    ) {
 //        Pageable pageable = PageRequest.of(page - 1 , size);
-//        List<ReviewResponse> reviewResponse = reviewService.readByMemberId(1L);
+//        Page<ReviewResponse> reviewResponse = reviewService.readByMemberId(1L);
 //        return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
 //    }
-//
+
 //    @GetMapping("/products/{productId}/reviews")
 //    public ResponseEntity<Page<ReviewResponse>> readByProductId(@PathVariable(name = "productId") Long productId,
 //                                                                @RequestParam(name = "size", required = false, defaultValue = "10") int size,

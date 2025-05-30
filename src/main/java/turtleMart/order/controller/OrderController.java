@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.order.dto.request.CartOrderSheetRequest;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
-import turtleMart.order.dto.request.OrderRequest;
+import turtleMart.order.dto.request.OrderWrapperRequest;
 import turtleMart.order.dto.response.MemberOrderListResponse;
 import turtleMart.order.dto.response.OrderDetailResponse;
 import turtleMart.order.dto.response.TotalOrderedQuantityResponse;
@@ -28,12 +28,12 @@ public class OrderController {
     @PostMapping("/orders")
     public ResponseEntity<Void> createOrder(
             @RequestParam String items, //상품옵션Id1:수량,상품옵션Id2:수량 형식으로 입력
-            @RequestBody OrderRequest request
+            @RequestBody OrderWrapperRequest request
             /*TODO JWT 통해서 회원 ID 가져오기*/
     ) {
         List<CartOrderSheetRequest> productNameAndQuantityList = CartOrderSheetRequest.splitItemIdAndQuantity(items);
 
-        orderService.createOrder(1L, productNameAndQuantityList, request);
+        orderService.tryOrder(1L, productNameAndQuantityList, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

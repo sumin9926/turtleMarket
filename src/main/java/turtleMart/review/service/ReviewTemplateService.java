@@ -3,6 +3,8 @@ package turtleMart.review.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ErrorCode;
 import turtleMart.review.dto.request.CreateReviewTemplateRequest;
 import turtleMart.review.dto.request.UpdateReviewTemplateRequest;
 import turtleMart.review.dto.response.ReviewTemplateResponse;
@@ -47,7 +49,7 @@ public class ReviewTemplateService {
     @Transactional
     public ReviewTemplateResponse updateReviewTemplate(UpdateReviewTemplateRequest request, Long reviewTemplateId){
         ReviewTemplate reviewTemplate = findByIdElseThrow(reviewTemplateId);
-        if(reviewTemplate.isDeleted()){throw new RuntimeException("삭제된 리뷰 템플릿입니다");}
+        if(reviewTemplate.isDeleted()){throw new BadRequestException(ErrorCode.ALREADY_DELETED_REVIEW_TEMPLATE);}
 
         reviewTemplate.update(request.question(), request.satisfaction_low(), request.satisfaction_medium(), request.high());
         return ReviewTemplateResponse.from(reviewTemplate);
@@ -57,12 +59,12 @@ public class ReviewTemplateService {
     public void deleteReviewTemplate(Long reviewTemplateId){
         ReviewTemplate reviewTemplate = findByIdElseThrow(reviewTemplateId);
 
-        if(reviewTemplate.isDeleted()){throw new RuntimeException("삭제된 리뷰 템플릿입니다");}
+        if(reviewTemplate.isDeleted()){throw new BadRequestException(ErrorCode.ALREADY_DELETED_REVIEW_TEMPLATE);}
         reviewTemplate.delete();
     }
 
     private ReviewTemplate findByIdElseThrow(Long reviewTemplateId){
       return reviewTemplateRepository.findByIdIsDeletedFalse(reviewTemplateId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰 템플릿입니다"));
+                .orElseThrow(() -> new BadRequestException(ErrorCode.ALREADY_DELETED_REVIEW_TEMPLATE));
     }
 }
