@@ -306,8 +306,11 @@ public class OrderService {
         // 장바구니 Redis 캐시 삭제
         removeCartItemFromRedis(member.getId(), cartItemIdList);
 
+        //주문 ID 담아주기
+        PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment(), order.getId());
+
         // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
-        PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(wrapperRequest.payment(), wrapperRequest.delivery());
+        PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, wrapperRequest.delivery());
         objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest);
     }
 
