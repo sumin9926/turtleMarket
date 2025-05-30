@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import turtleMart.member.dto.request.SellerRegisterRequest;
+import turtleMart.member.dto.request.UpdateSellerRequest;
 
 @Entity
 @Getter
@@ -47,5 +48,12 @@ public class Seller {
                 request.account(),
                 request.businessLicense()
         );
+    }
+
+    public void updateSeller(UpdateSellerRequest request) {
+        this.businessName = request.businessName() != null ? request.businessName() : this.businessName;
+        this.businessAddress = request.businessAddress() != null ? request.businessAddress() : this.businessAddress;
+        this.account = request.businessAddress() != null ? request.account() : this.account;
+        this.businessLicense = request.businessLicense() != null ? request.businessLicense() : this.businessLicense;
     }
 }

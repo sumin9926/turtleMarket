@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.member.dto.request.SellerRegisterRequest;
+import turtleMart.member.dto.request.UpdateSellerRequest;
 import turtleMart.member.dto.response.SellerResponse;
 import turtleMart.member.service.SellerService;
 import turtleMart.security.AuthUser;
@@ -41,5 +42,15 @@ public class SellerController {
     ) {
         SellerResponse mySellerProfile = sellerService.findMySellerProfile(authUser.memberId(), sellerId);
         return ResponseEntity.status(HttpStatus.OK).body(mySellerProfile);
+    }
+
+    @PatchMapping("/{sellerId}/me/modify")
+    public ResponseEntity<SellerResponse> updateMySellerProfile(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long sellerId,
+            @RequestBody @Valid UpdateSellerRequest request
+    ) {
+        SellerResponse sellerResponse = sellerService.updateSellerProfile(authUser.memberId(), sellerId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(sellerResponse);
     }
 }
