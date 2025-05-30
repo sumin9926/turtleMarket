@@ -1,4 +1,4 @@
-package turtleMart.member.conrtroller;
+package turtleMart.member.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

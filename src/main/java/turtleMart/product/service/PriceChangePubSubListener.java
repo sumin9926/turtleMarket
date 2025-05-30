@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.Message;
+import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
-public class PriceChangePubSubListener {
+public class PriceChangePubSubListener implements MessageListener {
 
     private final DeferredResultStore deferredResultStore;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -26,7 +27,7 @@ public class PriceChangePubSubListener {
     @Value("${server.id}")
     private String serverId;
 
-
+    @Override
     public void onMessage(Message message, byte[] pattern) {
         String payload = new String(message.getBody(), StandardCharsets.UTF_8);
         ProductOptionCombinationRedisDto productOptionCombinationRedisDto = JsonHelper.fromJson(payload, ProductOptionCombinationRedisDto.class);

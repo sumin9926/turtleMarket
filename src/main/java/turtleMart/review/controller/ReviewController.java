@@ -39,7 +39,7 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 
-    @GetMapping("members/reviews")
+    @GetMapping("/members/reviews")
     public ResponseEntity<Page<ReviewResponse>> readByMemberId(//@RequestAttribute("memberId") Long memberId,
                                                                @RequestParam(name = "size", required = false, defaultValue = "10") int size,
                                                                @RequestParam(name = "page", required = false, defaultValue = "1" ) int page
