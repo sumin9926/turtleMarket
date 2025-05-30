@@ -31,6 +31,7 @@ public class OrderItem {
 
     private Integer quantity;
 
+    @Enumerated(EnumType.STRING)
     private OrderItemStatus orderItemStatus;
 
     private OrderItem(Order order, ProductOptionCombination productOptionCombination, Integer price, String name, Integer quantity, OrderItemStatus orderItemStatus) {
