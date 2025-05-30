@@ -23,6 +23,8 @@ import turtleMart.review.entity.*;
 import turtleMart.review.repository.ProductReviewTemplateDslRepositoryImpl;
 import turtleMart.review.repository.ReviewDslRepositoryImpl;
 import turtleMart.review.repository.ReviewRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -80,7 +82,9 @@ public class ReviewService {
 
         Review review = findByIdElseThrow(reviewId);
 
-        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
+                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
 
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
@@ -90,7 +94,9 @@ public class ReviewService {
         Page<Review> reviewPage = reviewDslRepositoryImpl.findByMemberIdWithPagination(memberId, pageable);
 
         return reviewPage.map(review -> {
-            List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
+                    : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+
             List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
 
             return ReviewResponse.of(review, imageUrlList, choiceResponseList);
