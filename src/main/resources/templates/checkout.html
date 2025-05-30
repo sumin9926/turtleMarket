@@ -18,7 +18,7 @@
 <!-- 결제하기 버튼 -->
 <button class="button" id="payment-button" style="margin-top: 30px">결제하기</button>
 
-<script>
+<script th:inline="javascript">
     main();
 
     async function main() {
@@ -32,13 +32,19 @@
         const widgets = tossPayments.widgets({
             customerKey,
         });
+        const orderId = [[${order.orderId}]];
+        const amount = [[${order.totalAmount}]];
+        const orderName = "[[${order.orderName}]]";
+        const customerName = "[[${order.customerName}]]";
+        const customerEmail = "[[${order.customerEmail}]]";
+        const customerPhone = "[[${order.customerPhoneNumber}]]";
         // 비회원 결제
         // const widgets = tossPayments.widgets({ customerKey: TossPayments.ANONYMOUS });
 
         // ------ 주문의 결제 금액 설정 ------
         await widgets.setAmount({
             currency: "KRW",
-            value: 50000,
+            value: amount,
         });
 
         await Promise.all([
@@ -56,7 +62,7 @@
             if (coupon.checked) {
                 await widgets.setAmount({
                     currency: "KRW",
-                    value: 50000 - 5000,
+                    value: amount - 5000,
                 });
 
                 return;
@@ -64,20 +70,21 @@
 
             await widgets.setAmount({
                 currency: "KRW",
-                value: 50000,
+                value: amount,
             });
         });
 
         // ------ '결제하기' 버튼 누르면 결제창 띄우기 ------
         button.addEventListener("click", async function () {
             await widgets.requestPayment({
-                orderId: "VJX7qEY8F6HAAk56adem5",
-                orderName: "토스 티셔츠 외 2건",
+                // orderId: "VJX7qEY8F6HAAk56adem5",
+                orderId : orderId,
+                orderName: orderName,
                 successUrl: window.location.origin + "/success.html",
                 failUrl: window.location.origin + "/fail.html",
-                customerEmail: "customer123@gmail.com",
-                customerName: "김토스",
-                customerMobilePhone: "01012341234",
+                customerEmail: customerEmail,
+                customerName: customerName,
+                customerMobilePhone: customerPhone,
             });
         });
     }
