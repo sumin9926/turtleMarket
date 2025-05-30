@@ -108,7 +108,7 @@ public class ProductOptionCombinationController {
         return getResponseEntityDeferredResult(operationId);
     }
 
-    @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
+    @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}/soft")
     public DeferredResult<ResponseEntity<?>> softDeleteProductOptionCombination(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long productOptionCombinationId
@@ -118,7 +118,7 @@ public class ProductOptionCombinationController {
         return getResponseEntityDeferredResult(operationId);
     }
 
-    @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}")
+    @DeleteMapping("/seller/me/products-option-combination/{productOptionCombinationId}/hard")
     public ResponseEntity<Void> hardDeleteProductOptionCombination(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long productOptionCombinationId
