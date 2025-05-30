@@ -19,7 +19,7 @@ public class ProductProducer {
     private String topic;
 
     public void sendStockDecreaseMessage(KafkaMessage<InventoryDecreasePayload> message) {
-        log.info("Sending stock decrease message: {}", message);
+        log.info("\uD83D\uDCE4 Kafka 재고 감소 메시지 전송: {}", message);
         kafkaTemplate.send(topic, message.payload().orderId().toString(), message);
     }
 }
