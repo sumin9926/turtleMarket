@@ -3,8 +3,8 @@ package turtleMart.order.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.ForbiddenException;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.dto.response.RefundApplyResultResponse;
@@ -34,7 +34,7 @@ public class RefundService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND));
 
         if (!orderItem.getOrder().getMember().getId().equals(memberId)) {
-            throw new BadRequestException(ErrorCode.ORDER_ITEM_NOT_OWNED_BY_MEMBER);
+            throw new ForbiddenException(ErrorCode.ORDER_ITEM_NOT_OWNED_BY_MEMBER);
         }
 
         //갱신 가능 여부 체크
