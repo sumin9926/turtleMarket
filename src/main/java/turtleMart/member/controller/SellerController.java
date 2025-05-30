@@ -5,10 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import turtleMart.member.dto.request.SellerRegisterRequest;
 import turtleMart.member.dto.response.SellerResponse;
 import turtleMart.member.service.SellerService;
@@ -27,5 +24,22 @@ public class SellerController {
     ) {
         SellerResponse sellerResponse = sellerService.registerSeller(authUser.memberId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(sellerResponse);
+    }
+
+    @GetMapping("/{sellerId}")
+    public ResponseEntity<SellerResponse> getSeller(
+            @PathVariable Long sellerId
+    ) {
+        SellerResponse seller = sellerService.findSellerInfo(sellerId);
+        return ResponseEntity.status(HttpStatus.OK).body(seller);
+    }
+
+    @GetMapping("/{sellerId}/me")
+    public ResponseEntity<SellerResponse> getMySellerProfile(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long sellerId
+    ) {
+        SellerResponse mySellerProfile = sellerService.findMySellerProfile(authUser.memberId(), sellerId);
+        return ResponseEntity.status(HttpStatus.OK).body(mySellerProfile);
     }
 }
