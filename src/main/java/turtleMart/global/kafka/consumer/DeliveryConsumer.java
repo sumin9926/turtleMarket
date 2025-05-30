@@ -16,7 +16,7 @@ public class DeliveryConsumer {
     private final DeliveryService deliveryService;
 
 
-    @KafkaListener(topics = "${kafka.topic.delivery}", groupId = "${spring.kafka.consumer.delivery.group-id}") // todo groupId 추가 예정
+    @KafkaListener(topics = "${kafka.topic.delivery}", groupId = "${spring.kafka.consumer.delivery.group-id}")
     public void listen(ConsumerRecord<String, CreateDeliveryRequest> record) {
         CreateDeliveryRequest request = record.value();
         log.info("📥 Kafka 배송 생성 메시지 수신: {}", request);
