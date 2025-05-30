@@ -2,6 +2,7 @@ package turtleMart.review.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,8 +24,11 @@ import turtleMart.review.entity.*;
 import turtleMart.review.repository.ProductReviewTemplateDslRepositoryImpl;
 import turtleMart.review.repository.ReviewDslRepositoryImpl;
 import turtleMart.review.repository.ReviewRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -95,6 +99,22 @@ public class ReviewService {
 
             return ReviewResponse.of(review, imageUrlList, choiceResponseList);
         });
+    }
+
+    public List<ReviewResponse> readByProductIdWithSearch(Long productId, String keyWord, Integer rating){
+        List<Review> reviewList = reviewDslRepositoryImpl.findByProductWithSearch(productId, keyWord, rating);
+
+        log.info("여기까지 왔나보자");
+
+        return reviewList.stream().map(review -> {
+            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>() :
+                    JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+
+            List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
+
+            return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+        }).toList();
+
     }
 
 

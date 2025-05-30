@@ -49,15 +49,14 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 
-//    @GetMapping("/products/{productId}/reviews")
-//    public ResponseEntity<Page<ReviewResponse>> readByProductId(@PathVariable(name = "productId") Long productId,
-//                                                                @RequestParam(name = "size", required = false, defaultValue = "10") int size,
-//                                                                @RequestParam(name = "page", required = false, defaultValue = "1" ) int page
-//    ){
-//        Pageable pageable = PageRequest.of(page, size);
-//        Page<ReviewResponse> reviewResponse = reviewService.readByProductId(productId, pageable);
-//        return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
-//    }
+    @GetMapping("/products/{productId}/reviews")
+    public ResponseEntity<List<ReviewResponse>> readByProductId(@PathVariable(name = "productId") Long productId,
+                                                                @RequestParam(name = "keyWord", required = false) String keyWord,
+                                                                @RequestParam(name = "rating", required = false) Integer rating
+    ){
+        List<ReviewResponse> reviewResponse = reviewService.readByProductIdWithSearch(productId, keyWord, rating);
+        return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
+    }
 
     @PatchMapping("/reviews/{reviewId}")
     public ResponseEntity<ReviewResponse> updateReview(

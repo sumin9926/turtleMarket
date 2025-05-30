@@ -13,4 +13,6 @@ public interface ReviewDslRepository {
     Optional<Review> findByIdWithChoice(Long reviewId);
 
     Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable);
+
+    List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating);
 }
