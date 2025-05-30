@@ -1,30 +1,23 @@
 package turtleMart.review.repository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
-import turtleMart.global.common.CursorPageResponse;
-import turtleMart.global.utill.JsonHelper;
-import turtleMart.review.dto.response.ReviewReportResponse;
-import turtleMart.review.dto.response.TemplateChoiceResponse;
-import turtleMart.review.entity.Review;
 import turtleMart.review.entity.ReviewReport;
 import turtleMart.review.entity.ReviewReportStatus;
-import turtleMart.review.entity.TemplateChoice;
 
 import java.util.List;
 import java.util.Optional;
-
-import static turtleMart.review.entity.QProductReviewTemplate.productReviewTemplate;
+;import static turtleMart.review.entity.QProductReviewTemplate.productReviewTemplate;
 import static turtleMart.review.entity.QReasonCode.reasonCode;
 import static turtleMart.review.entity.QReview.review;
 import static turtleMart.review.entity.QReviewReport.reviewReport;
 import static turtleMart.review.entity.QReviewTemplate.reviewTemplate;
 import static turtleMart.review.entity.QTemplateChoice.templateChoice;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository {
@@ -33,14 +26,18 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
 
     @Override
     public Optional<ReviewReport> findByIdWithReportCode(Long reviewReportId) {
-        return Optional.ofNullable(jpaQueryFactory.selectFrom(reviewReport)
+        Optional<ReviewReport> reviewReport1 = Optional.ofNullable(jpaQueryFactory.select(reviewReport)
+                .distinct()
+                .from(reviewReport)
                 .join(reviewReport.reasonCode, reasonCode).fetchJoin()
                 .join(reviewReport.review, review).fetchJoin()
-                .join(review.templateChoiceList, templateChoice).fetchJoin()
-                .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
                 .where(reviewReport.id.eq(reviewReportId))
                 .fetchOne());
+
+        return reviewReport1;
     }
 
     @Override
@@ -63,13 +60,15 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
         List<ReviewReport> reviewReportList = jpaQueryFactory.selectFrom(reviewReport)
                 .join(reviewReport.reasonCode, reasonCode).fetchJoin()
                 .join(reviewReport.review, review).fetchJoin()
-                .join(review.templateChoiceList, templateChoice).fetchJoin()
-                .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
                 .where(builder)
                 .limit(10)
                 .fetch();
 
-       return reviewReportList;
+        log.info(reviewReportList.size() + "사이즈");
+
+        return reviewReportList;
     }
 }

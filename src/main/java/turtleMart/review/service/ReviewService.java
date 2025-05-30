@@ -141,7 +141,6 @@ public class ReviewService {
     }
 
     private Review findByIdElseThrow(Long reviewId) {
-
         return reviewDslRepositoryImpl.findByIdWithChoice(reviewId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 리뷰입니다"));// 메서드 추출
     }

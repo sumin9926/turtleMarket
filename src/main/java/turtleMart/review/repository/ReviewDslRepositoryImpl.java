@@ -29,11 +29,11 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
         return Optional.ofNullable(
                 jpaQueryFactory.select(review).distinct()
                         .from(review)
-                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
-                        .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                        .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .leftJoin(review.templateChoiceList, templateChoice)
+                        .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate)
+                        .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate)
                         .where(review.id.eq(reviewId))
-                        .fetchOne());
+                        .fetchFirst());
     }
 
     @Override

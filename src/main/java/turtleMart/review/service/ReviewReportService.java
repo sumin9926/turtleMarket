@@ -2,6 +2,7 @@ package turtleMart.review.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.common.CursorPageResponse;
@@ -16,8 +17,10 @@ import turtleMart.review.dto.response.TemplateChoiceResponse;
 import turtleMart.review.entity.*;
 import turtleMart.review.repository.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -64,10 +67,12 @@ public class ReviewReportService {
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 신고건입니다"));
 
         Review review = reviewReport.getReview();
-        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
-        });
+
+        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
+                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
 
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
+
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
@@ -76,8 +81,10 @@ public class ReviewReportService {
 
         List<ReviewReportResponse> reportResponseList = reviewReportList.stream().map(r -> {
             Review review = r.getReview();
-            List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
-            });
+
+            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
+                    : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+
             List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
 
             return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, r);
