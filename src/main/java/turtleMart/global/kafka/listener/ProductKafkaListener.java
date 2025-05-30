@@ -24,18 +24,20 @@ public class ProductKafkaListener {
     private final RedisTemplate<String, Object> redisTemplate;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
+    // TODO kafka send 성공 여부 로그로 남기기
+
     @KafkaListener(topics = "order_make_topic", groupId = "order-group")
     public void listen(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
         try {
             OperationWrapperDto wrapperDto = JsonHelper.fromJson(value, OperationWrapperDto.class);
             OperationType type = wrapperDto.operationType();
 
-            switch (type) {
+            switch (type) { // TODO 각 케이스 내부 로직으로 메서드로 추출해라 (단일 책임 원칙)
                 case PRICE_CHANGE -> {
                     String lockKey = "softLock:priceChange:combination:" + key;
                     if (Boolean.FALSE.equals(redisTemplate.hasKey(lockKey))) {
                         // 소프트락이 없으면 걸고 재발송
-                        redisTemplate.opsForValue().set(lockKey, false, Duration.ofMinutes(4));
+                        redisTemplate.opsForValue().set(lockKey, false, Duration.ofMinutes(4)); //TODO Duration.ofMinutes(4) 하드코딩 피하기 수정필요하면 매번 찾아서 수정해야하니까 파이널 상수로 빼던가 프로퍼디스에 넘기던가.
                         Thread.sleep(1000);
                         kafkaTemplate.send("order_make_topic", key, value);
                     } else {
@@ -59,7 +61,7 @@ public class ProductKafkaListener {
                 }
                 default -> log.error("알 수 없는 타입이 입력되었습니다.");
             }
-        } catch (Exception e) {
+        } catch (Exception e) {// TODO 어떤 오류를 잡을것인지 세분화해라.
             log.error("Kafka message handling error", e);
         }
     }

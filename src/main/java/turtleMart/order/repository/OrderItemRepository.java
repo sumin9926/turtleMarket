@@ -25,7 +25,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     )
     AND oi.order_item_status <> :status
 """, nativeQuery = true)
-    Long countTotalOrderedBySellerAndProduct(
+    Long countTotalOrderedBySellerAndProduct( //TODO 쿼리명 직관적으로 이해되게 바꾸기
             @Param("sellerId")Long sellerId, @Param("productId")Long productId,
             @Param("startDate")LocalDateTime startDateTime, @Param("endDate")LocalDateTime endDateTime,
             @Param("status")OrderItemStatus status

@@ -229,7 +229,6 @@ public class OrderService {
         return TotalOrderedQuantityResponse.from(productId, totalOrderedQuantity);
     }
 
-    @Transactional
     public void tryOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderWrapperRequest wrapperRequest) {
         if (!memberRepository.existsById(memberId)) {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
@@ -245,7 +244,7 @@ public class OrderService {
         String payload = JsonHelper.toJson(newWrapperRequest);
         String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
 
-        stringKafkaTemplate.send("order_make_topic", key, value);
+        stringKafkaTemplate.send("order_make_topic", key, value); // kafka에 적용되는 트랜젝션이 있다. 트랜젝성 싱크로나이제이션 에프터 커밋을 하면 커밋 후에 전송되도록 할 수도 있다.
     }
 
     @Transactional
@@ -266,7 +265,8 @@ public class OrderService {
                         Function.identity()
                 ));
 
-        // 가격 정합성 검증
+        // TODO MAP 으로 필요한 데이터 미리 캐싱 해두고 불필요한 조회 줄이기 (findAllById로 하면 ID를 List로 던져서 모든 정보를 조회 가능)
+        // TODO 가격 정합성 검증 다른 클래스나 매서드 단위로 분리해버리기
         for(Long productOptionId : orderSheetMap.keySet()){
             Integer quantity = orderSheetMap.get(productOptionId).quantity();
             OrderRequest order = orderMap.get(productOptionId);
@@ -303,6 +303,7 @@ public class OrderService {
                 .map(OrderRequest::cartItemId)
                 .toList();
 
+        // TODO 메서드로 빼는건 좋은데 트랜젝션 내부에서 접근하기 때문에 장바구니 삭제에 실패하면 모든 노력이 헛수고가 된다. 레디스도 별도 트랜젝션으로 분리하기.
         // 장바구니 Redis 캐시 삭제
         removeCartItemFromRedis(member.getId(), cartItemIdList);
 
