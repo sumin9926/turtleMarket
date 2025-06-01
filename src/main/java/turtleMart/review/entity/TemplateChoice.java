@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.review.dto.response.TemplateChoiceResponse;
+
+import java.util.List;
 
 @Getter
 @Table @Entity
@@ -40,4 +43,13 @@ public class TemplateChoice {
     }
 
     public void update(TemplateChoiceGrade choseAnswer){this.choseAnswer = choseAnswer;}
+
+    public static List<TemplateChoiceResponse> changeResponseByReview(Review review){
+        return review.getTemplateChoiceList().stream()
+                .map(t -> {
+                    ReviewTemplate reviewTemplate = t.getProductReviewTemplate().getReviewTemplate();
+                    return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(t.getChoseAnswer()));
+                })
+                .toList();
+    }
 }

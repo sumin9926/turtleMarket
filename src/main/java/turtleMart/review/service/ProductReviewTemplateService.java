@@ -51,7 +51,7 @@ public class ProductReviewTemplateService {
 
         List<Long> reviewTemplateIdList =  reviewTemplateList.stream().mapToLong(ReviewTemplate::getId).boxed().toList();
         if(!productReviewTemplateDslRepository.existsByProductIdAndReviewTemplateId(product.getId(),reviewTemplateIdList)){
-            throw new BadRequestException(ErrorCode.DUPLICATE_TEMPLATE_SELECTION);
+            throw new BadRequestException(ErrorCode.DUPLICATE_TEMPLATE_SELECTION); // 같은 리뷰 템플릿 두번 선택하려고 할 경우
         }
 
         List<ProductReviewTemplate> productReviewTemplateList = new ArrayList<>();
