@@ -29,6 +29,8 @@ public class ProductOptionCombination {
 
     private String uniqueKey;
 
+    private CombinationStatus combinationStatus;
+
     @OneToMany(mappedBy = "productOptionCombination", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductOptionMap> productOptionMapList = new ArrayList<>();
 
@@ -37,6 +39,7 @@ public class ProductOptionCombination {
         this.price = price;
         this.inventory = inventory;
         this.uniqueKey = uniqueKey;
+        this.combinationStatus = CombinationStatus.READY;
     }
 
     public static ProductOptionCombination of(Product product, Integer price, Integer inventory,String uniqueKey) {
@@ -45,6 +48,10 @@ public class ProductOptionCombination {
 
     public void addOptionMap(ProductOptionMap productOptionMap) {
         this.productOptionMapList.add(productOptionMap);
+    }
+
+    public void updateStatus(CombinationStatus combinationStatus) {
+        this.combinationStatus = combinationStatus;
     }
 
     public void decreaseInventory(Integer quantity) {

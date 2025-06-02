@@ -11,6 +11,7 @@ import turtleMart.global.exception.RoleMismatchException;
 import turtleMart.member.entity.Authority;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
+import turtleMart.product.dto.PromoteOptionGroupDto;
 import turtleMart.product.dto.request.ProductOptionGroupRequest;
 import turtleMart.product.dto.request.ProductOptionGroupRequestUpdate;
 import turtleMart.product.dto.request.ProductOptionValueRequest;
@@ -18,6 +19,7 @@ import turtleMart.product.dto.request.ProductOptionValueUpdateRequest;
 import turtleMart.product.dto.response.ProductOptionGroupResponse;
 import turtleMart.product.dto.response.ProductOptionGroupResponseUpdate;
 import turtleMart.product.entity.ProductOptionGroup;
+import turtleMart.product.repository.ProductOptionGroupDslRepository;
 import turtleMart.product.repository.ProductOptionGroupRepository;
 
 import java.util.List;
@@ -31,6 +33,7 @@ public class ProductOptionGroupService {
     private final MemberRepository memberRepository;
     private final ProductOptionGroupRepository productOptionGroupRepository;
     private final ProductOptionValueService productOptionValueService;
+    private final ProductOptionGroupDslRepository productOptionGroupDslRepository;
 
     @Transactional
     public ProductOptionGroupResponse createProductOptionGroup(ProductOptionGroupRequest productOptionGroupRequest, Long memberId) {
@@ -52,7 +55,7 @@ public class ProductOptionGroupService {
     }
 
     public Page<ProductOptionGroupResponse> getAllProductOptionGroup(Pageable pageable) {
-        return productOptionGroupRepository.findAll(pageable).map(ProductOptionGroupResponse::from);
+        return productOptionGroupDslRepository.findAllWithValue(pageable).map(ProductOptionGroupResponse::from);
     }
 
     @Transactional
@@ -115,4 +118,13 @@ public class ProductOptionGroupService {
         }
 
     }
+
+    @Transactional
+    public ProductOptionGroupResponse promoteOptionGroup(PromoteOptionGroupDto promoteOptionGroupDto) {
+        ProductOptionGroup productOptionGroup = ProductOptionGroup.of(promoteOptionGroupDto.optionGroupName());
+        productOptionValueService.createProductOptionValue(promoteOptionGroupDto.optionValueNameList(), productOptionGroup);
+        productOptionGroupRepository.save(productOptionGroup);
+        return ProductOptionGroupResponse.from(productOptionGroup);
+    }
+
 }
