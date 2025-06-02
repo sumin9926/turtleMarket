@@ -8,8 +8,6 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
-import turtleMart.global.kafka.dto.InventoryDecreasePayload;
-import turtleMart.global.kafka.dto.KafkaMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,15 +31,6 @@ public class KafkaProducerConfig {
     }
 
     @Bean
-    public ProducerFactory<String, KafkaMessage<InventoryDecreasePayload>> kafkaMessageProducerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        return new DefaultKafkaProducerFactory<>(props);
-    }
-
-    @Bean
     public KafkaTemplate<String, Object> objectKafkaTemplate() {
         return new KafkaTemplate<>(producerFactoryForObject());
     }
@@ -49,10 +38,5 @@ public class KafkaProducerConfig {
     @Bean
     public KafkaTemplate<String, String> stringKafkaTemplate() {
         return new KafkaTemplate<>(producerFactoryForString());
-    }
-
-    @Bean
-    public KafkaTemplate<String, KafkaMessage<InventoryDecreasePayload>> kafkaTemplate() {
-        return new KafkaTemplate<>(kafkaMessageProducerFactory());
     }
 }

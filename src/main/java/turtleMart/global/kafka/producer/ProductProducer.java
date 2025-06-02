@@ -13,7 +13,7 @@ import turtleMart.global.kafka.dto.InventoryDecreasePayload;
 @RequiredArgsConstructor
 public class ProductProducer {
 
-    private final KafkaTemplate<String, KafkaMessage<InventoryDecreasePayload>> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${kafka.topic.stock}")
     private String topic;
