@@ -14,5 +14,5 @@ public interface ReviewDslRepository {
 
     Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable);
 
-    List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating);
+    List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating, Integer cursor);
 }

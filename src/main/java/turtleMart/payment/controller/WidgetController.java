@@ -1,6 +1,7 @@
 package turtleMart.payment.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -8,10 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import turtleMart.order.entity.Order;
+import turtleMart.order.repository.OrderRepository;
+import turtleMart.payment.dto.PaymentInfoTransfer;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -20,9 +25,50 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @Controller
+@RequiredArgsConstructor
 public class WidgetController {
-
+    private final OrderRepository orderRepository;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    @GetMapping("/checkout")
+    public String checkoutPage(@RequestParam Long orderId, Model model) throws Exception {
+        Order order = orderRepository.findById(orderId).orElseThrow(
+                () -> new RuntimeException(""));
+        PaymentInfoTransfer dto = PaymentInfoTransfer.from(order);
+        model.addAttribute("order", dto);
+        return "checkout";
+    }
+
+    /**
+     * 인증성공처리
+     * @param request
+     * @param model
+     * @return
+     * @throws Exception
+     */
+    @GetMapping("/success")
+    public String paymentRequest(HttpServletRequest request, Model model) throws Exception {
+        return "success";
+    }
+
+    /**
+     * 인증실패처리
+     * @param request
+     * @param model
+     * @return
+     * @throws Exception
+     */
+    @GetMapping("/fail")
+    public String failPayment(HttpServletRequest request, Model model) throws Exception {
+        String failCode = request.getParameter("code");
+        String failMessage = request.getParameter("message");
+
+        model.addAttribute("code", failCode);
+        model.addAttribute("message", failMessage);
+
+        return "fail";
+    }
+
 
     @RequestMapping(value = "/confirm")
     public ResponseEntity<JSONObject> confirmPayment(@RequestBody String jsonBody) throws Exception {
@@ -48,7 +94,7 @@ public class WidgetController {
 
         // 토스페이먼츠 API는 시크릿 키를 사용자 ID로 사용하고, 비밀번호는 사용하지 않습니다.
         // 비밀번호가 없다는 것을 알리기 위해 시크릿 키 뒤에 콜론을 추가합니다.
-        String widgetSecretKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
+        String widgetSecretKey = "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6";
         Base64.Encoder encoder = Base64.getEncoder();
         byte[] encodedBytes = encoder.encode((widgetSecretKey + ":").getBytes(StandardCharsets.UTF_8));
         String authorizations = "Basic " + new String(encodedBytes);
@@ -77,38 +123,8 @@ public class WidgetController {
         return ResponseEntity.status(code).body(jsonObject);
     }
 
-    /**
-     * 인증성공처리
-     * @param request
-     * @param model
-     * @return
-     * @throws Exception
-     */
-    @RequestMapping(value = "/success", method = RequestMethod.GET)
-    public String paymentRequest(HttpServletRequest request, Model model) throws Exception {
-        return "/success";
-    }
-
-    @RequestMapping(value = "/", method = RequestMethod.GET)
-    public String index(HttpServletRequest request, Model model) throws Exception {
-        return "/checkout";
-    }
-
-    /**
-     * 인증실패처리
-     * @param request
-     * @param model
-     * @return
-     * @throws Exception
-     */
-    @RequestMapping(value = "/fail", method = RequestMethod.GET)
-    public String failPayment(HttpServletRequest request, Model model) throws Exception {
-        String failCode = request.getParameter("code");
-        String failMessage = request.getParameter("message");
-
-        model.addAttribute("code", failCode);
-        model.addAttribute("message", failMessage);
-
-        return "/fail";
-    }
+    //    @GetMapping("/")
+    //    public String index(HttpServletRequest request, Model model) throws Exception {
+    //        return "/checkout";
+    //    }
 }

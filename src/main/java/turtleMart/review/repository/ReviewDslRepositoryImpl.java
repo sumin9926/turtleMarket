@@ -1,13 +1,11 @@
 package turtleMart.review.repository;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -21,10 +19,10 @@ import java.util.Optional;
 
 import static turtleMart.review.entity.QProductReviewTemplate.productReviewTemplate;
 import static turtleMart.review.entity.QReview.review;
+import static turtleMart.review.entity.QReviewReport.reviewReport;
 import static turtleMart.review.entity.QReviewTemplate.reviewTemplate;
 import static turtleMart.review.entity.QTemplateChoice.templateChoice;
 
-@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class ReviewDslRepositoryImpl implements ReviewDslRepository {
@@ -33,31 +31,30 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
 
     @Override
     public Optional<Review> findByIdWithChoice(Long reviewId) {
-        List<TemplateChoice> templateChoiceList = jpaQueryFactory.select(templateChoice)
-                .from(templateChoice)
-                .join(templateChoice.review, review).fetchJoin()
-                .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(templateChoice.review.id.eq(reviewId))
-                .fetch();
-
-        return templateChoiceList.isEmpty() ? Optional.empty() : Optional.ofNullable(templateChoiceList.get(0).getReview());
+        return Optional.ofNullable(
+                jpaQueryFactory.select(review).distinct()
+                        .from(review)
+                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                        .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                        .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .where(review.id.eq(reviewId))
+                        .fetchOne());
     }
 
     @Override
     public Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable) {
-        List<Review> reviewList = jpaQueryFactory.select(templateChoice)
-                .from(templateChoice)
-                .join(templateChoice.review, review).fetchJoin()
-                .join(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(review.member.id.eq(memberId))
-                .orderBy(review.id.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch().stream()
-                .map(TemplateChoice::getReview)
-                .toList();
+        List<Review> reviewList =
+                jpaQueryFactory.select(review)
+                        .distinct()
+                        .from(review)
+                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                        .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                        .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .where(review.member.id.eq(memberId))
+                        .orderBy(review.id.desc())
+                        .offset(pageable.getPageSize() * pageable.getPageNumber())
+                        .limit(pageable.getPageSize())
+                        .fetch();
 
         Long count = jpaQueryFactory
                 .select(review.count())
@@ -65,11 +62,11 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
                 .where(review.member.id.eq(memberId))
                 .fetchOne();
 
-        return new PageImpl<>(reviewList, pageable, count);
+        return new PageImpl<>(reviewList, pageable, count != null ? count : 0);
     }
 
     @Override // mysql fulltext사용
-    public List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating) {
+    public List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating, Integer cursor) {
         //키워드를 가지고 리뷰의 제목과 컨텐츠를 풀텍스트 인덱스를 사용하여 검색해야함,
         //rating을 이용해서 별점만 구분
 
@@ -83,13 +80,16 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
 
         if(rating != null){booleanBuilder.and(review.rating.eq(rating));}
 
+        if (cursor != null) {
+            booleanBuilder.and(reviewReport.id.gt(cursor));
+        }
+
         return jpaQueryFactory.select(review)
                 .from(review)
                 .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
                 .leftJoin(templateChoice.productReviewTemplate).fetchJoin()
                 .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
                 .where(booleanBuilder)
-                .offset(0)
                 .limit(10)
                 .fetch();
     }
