@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import turtleMart.member.dto.request.DeleteSellerRequest;
 import turtleMart.member.dto.request.SellerRegisterRequest;
 import turtleMart.member.dto.request.UpdateSellerRequest;
 import turtleMart.member.dto.response.SellerResponse;
@@ -52,5 +53,15 @@ public class SellerController {
     ) {
         SellerResponse sellerResponse = sellerService.updateSellerProfile(authUser.memberId(), sellerId, request);
         return ResponseEntity.status(HttpStatus.OK).body(sellerResponse);
+    }
+
+    @DeleteMapping("/{sellerId}/me/close")
+    public ResponseEntity<String> withdrawSeller(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long sellerId,
+            @RequestBody @Valid DeleteSellerRequest request
+    ) {
+        String resultMessage = sellerService.deleteSeller(authUser.memberId(), sellerId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(resultMessage);
     }
 }
