@@ -14,7 +14,7 @@ import turtleMart.delivery.service.DeliveryService;
 
 import java.util.List;
 
-@RequestMapping("/api/deliveries")
+@RequestMapping("/deliveries")
 @RestController
 @RequiredArgsConstructor
 public class DeliveryController {
