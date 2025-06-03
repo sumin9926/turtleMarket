@@ -10,7 +10,7 @@ public record PaymentRequest(
         @NotNull Long memberId,
         @Min(value = 100, message = "100원 이상 결제하셔야 합니다.") int amount,
         @NotNull PaymentMethod paymentMethod,
-        @NotBlank String cardCompany,
+        String cardCompany,
         int installmentMonth
 ) {
     public static PaymentRequest updateOrderId(PaymentRequest paymentRequest, Long orderId){
@@ -19,7 +19,7 @@ public record PaymentRequest(
                 paymentRequest.memberId(),
                 paymentRequest.amount(),
                 paymentRequest.paymentMethod(),
-                paymentRequest.cardCompany(),
+                paymentRequest.cardCompany() == null ? null : paymentRequest.cardCompany(),
                 paymentRequest.installmentMonth()
         );
     }
