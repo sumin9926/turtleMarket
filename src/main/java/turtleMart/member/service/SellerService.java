@@ -3,6 +3,9 @@ package turtleMart.member.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.dto.request.DeleteSellerRequest;
 import turtleMart.member.dto.request.SellerRegisterRequest;
 import turtleMart.member.dto.request.UpdateSellerRequest;
@@ -72,18 +75,21 @@ public class SellerService {
 
     private Seller findSeller(Long sellerId) {
         return sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new RuntimeException("판매자를 찾을 수 없습니다."));
+//                .orElseThrow(() -> new RuntimeException("판매자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
     }
 
-    private static void validSellerById(Long authId, Seller seller) {
+    private void validSellerById(Long authId, Seller seller) {
         if (!seller.getMember().getId().equals(authId)) {
-            throw new RuntimeException("판매자로 등록된 회원이 아닙니다.");
+//            throw new RuntimeException("판매자로 등록된 회원이 아닙니다.");
+            throw new BadRequestException(ErrorCode.SELLER_NOT_REGISTER);
         }
     }
 
     private void validPassword(String requestPassword, Seller seller) {
         if (!passwordEncoder.matches(requestPassword, seller.getMember().getPassword())) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+//            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+            throw new BadRequestException(ErrorCode.INVALID_PASSWORD);
         }
     }
 }

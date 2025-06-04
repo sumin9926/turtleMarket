@@ -1,13 +1,14 @@
 package turtleMart.member.service;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import turtleMart.member.repository.AddressRepository;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.dto.request.AddressRegisterRequest;
 import turtleMart.member.dto.request.UpdateAddressRequest;
 import turtleMart.member.dto.response.AddressResponse;
 import turtleMart.member.entity.Address;
+import turtleMart.member.repository.AddressRepository;
 
 import java.util.List;
 
@@ -29,10 +30,13 @@ public class AddressService {
 
     public List<AddressResponse> getAddressList() {
         List<Address> addressList = addressRepository.findAll();
+        if (addressList.isEmpty()) {
+            throw new NotFoundException(ErrorCode.ADDRESS_NOT_REGISTER);
+        }
         return addressList.stream().map(AddressResponse::from).toList();
     }
 
-    public AddressResponse modifyAddress(Long addressId, @Valid UpdateAddressRequest request) {
+    public AddressResponse modifyAddress(Long addressId, UpdateAddressRequest request) {
         Address foundAddress = findAddress(addressId);
         foundAddress.updateAddress(request);
         addressRepository.save(foundAddress);
@@ -47,6 +51,7 @@ public class AddressService {
 
     private Address findAddress(Long addressId) {
         return addressRepository.findById(addressId)
-                .orElseThrow(() -> new RuntimeException("등록된 주소가 없습니다."));
+//                .orElseThrow(() -> new RuntimeException("등록된 주소가 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ADDRESS_NOT_FOUND));
     }
 }
