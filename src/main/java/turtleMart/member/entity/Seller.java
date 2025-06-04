@@ -33,7 +33,7 @@ public class Seller {
 
     public Seller(Member member, String businessName, String businessAddress, String account, String businessLicense) {
         this.member = member;
-        this.authority = Authority.SELLER;
+        this.authority = member.getAuthority();
         this.businessName = businessName;
         this.businessAddress = businessAddress;
         this.account = account;

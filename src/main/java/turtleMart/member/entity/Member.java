@@ -60,4 +60,8 @@ public class Member {
     public void updatePassword(String password) {
         this.password = password;
     }
+
+    public void registerSeller() {
+        this.authority = Authority.SELLER;
+    }
 }

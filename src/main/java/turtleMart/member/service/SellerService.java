@@ -14,6 +14,7 @@ import turtleMart.member.entity.Member;
 import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
+import turtleMart.security.JwtUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -21,16 +22,20 @@ public class SellerService {
     private final SellerRepository sellerRepository;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     /**
      * 판매자 등록
      */
-    public SellerResponse registerSeller(Long authId, SellerRegisterRequest request) {
+    public String registerSeller(Long authId, SellerRegisterRequest request) {
         Member foundMember = memberRepository.findById(authId)
                 .orElseThrow(() -> new RuntimeException(""));
+        foundMember.registerSeller();
         Seller seller = Seller.of(request, foundMember);
         sellerRepository.save(seller);
-        return SellerResponse.from(seller);
+        String token = jwtUtil.createToken(foundMember.getId(), foundMember.getAuthority());
+        return jwtUtil.removePrefix(token);
+//        return SellerResponse.from(seller);
     }
 
     /**

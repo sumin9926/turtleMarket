@@ -20,12 +20,12 @@ public class SellerController {
     private final SellerService sellerService;
 
     @PostMapping("register")
-    public ResponseEntity<SellerResponse> registerSeller(
+    public ResponseEntity<String> registerSeller(
             @AuthenticationPrincipal AuthUser authUser,
             @RequestBody @Valid SellerRegisterRequest request
     ) {
-        SellerResponse sellerResponse = sellerService.registerSeller(authUser.memberId(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(sellerResponse);
+        String token = sellerService.registerSeller(authUser.memberId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(token);
     }
 
     @GetMapping("/{sellerId}")
