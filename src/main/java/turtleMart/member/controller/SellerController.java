@@ -61,7 +61,7 @@ public class SellerController {
             @PathVariable Long sellerId,
             @RequestBody @Valid DeleteSellerRequest request
     ) {
-        String resultMessage = sellerService.deleteSeller(authUser.memberId(), sellerId, request);
-        return ResponseEntity.status(HttpStatus.OK).body(resultMessage);
+        String token = sellerService.deleteSeller(authUser.memberId(), sellerId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(token);
     }
 }

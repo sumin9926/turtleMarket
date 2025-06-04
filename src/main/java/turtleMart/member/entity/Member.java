@@ -64,4 +64,8 @@ public class Member {
     public void registerSeller() {
         this.authority = Authority.SELLER;
     }
+
+    public void unregisterSeller() {
+        this.authority = Authority.CUSTOMER;
+    }
 }

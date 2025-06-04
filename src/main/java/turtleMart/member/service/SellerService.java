@@ -31,6 +31,7 @@ public class SellerService {
         Member foundMember = memberRepository.findById(authId)
                 .orElseThrow(() -> new RuntimeException(""));
         foundMember.registerSeller();
+        memberRepository.save(foundMember);
         Seller seller = Seller.of(request, foundMember);
         sellerRepository.save(seller);
         String token = jwtUtil.createToken(foundMember.getId(), foundMember.getAuthority());
@@ -74,8 +75,11 @@ public class SellerService {
         Seller foundSeller = findSeller(sellerId);
         validSellerById(authId, foundSeller);
         validPassword(request.password(), foundSeller);
+        foundSeller.getMember().unregisterSeller();
+        memberRepository.save(foundSeller.getMember());
         sellerRepository.delete(foundSeller);
-        return "판매자 해지가 완료되었습니다.";
+        String token = jwtUtil.createToken(foundSeller.getMember().getId(), foundSeller.getMember().getAuthority());
+        return jwtUtil.removePrefix(token);
     }
 
     private Seller findSeller(Long sellerId) {
