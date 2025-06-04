@@ -10,9 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
-import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.entity.Review;
-import turtleMart.review.entity.TemplateChoice;
 
 import java.util.List;
 import java.util.Optional;
@@ -97,7 +95,7 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
     }
 
     @Override
-    public List<Review> findByIdInWithChoice(List<Long> reviewIdList) {
+    public List<Review> findByIdInWithPagination(List<Long> reviewIdList) {
         return
                 jpaQueryFactory.select(review).distinct()
                         .from(review)

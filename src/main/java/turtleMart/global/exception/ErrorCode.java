@@ -78,6 +78,9 @@ public enum ErrorCode {
     IMAGE_VIEW_FAILED(HttpStatus.BAD_GATEWAY, "이미지를 불러오는 도중 문제가 발생했습니다"),
     SOFT_LOCK_CANT_ACCESS(HttpStatus.CONFLICT, "현재 다른요청을 처리중임으로 접근할수없습니다.");
 
+    //엘라스틱서치 관련
+
+
     private final HttpStatus httpStatus;
     private final String message;
 }

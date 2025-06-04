@@ -72,6 +72,10 @@ services:
       - "9300:9300"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+#      - /c/Users/jmgpt/Desktop/project/elasticsearch/stopwords:/usr/share/elasticsearch/config/stopwords
+
+
+
     command: >
       bash -c "if [ ! -f /usr/share/elasticsearch/plugins/analysis-nori/plugin-descriptor.properties ]; then
       elasticsearch-plugin install --batch analysis-nori; fi && /usr/local/bin/docker-entrypoint.sh"

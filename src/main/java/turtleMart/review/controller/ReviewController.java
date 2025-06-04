@@ -50,7 +50,7 @@ public class ReviewController {
     }
 
     @GetMapping("/products/{productId}/reviews")
-    public ResponseEntity<List<ReviewResponse>> readByProductId(@PathVariable(name = "productId") Long productId,
+    public ResponseEntity<List<ReviewResponse>> readByProductIdAndCondition(@PathVariable(name = "productId") Long productId,
                                                                 @RequestParam(name = "keyWord", required = false) String keyWord,
                                                                 @RequestParam(name = "rating", required = false) Integer rating,
                                                                 @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,

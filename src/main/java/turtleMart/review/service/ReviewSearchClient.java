@@ -30,10 +30,10 @@ public class ReviewSearchClient {
 
         Map<String, Object> updateFiledMap = new HashMap<>();
 
-        if (request.title() != null && request.title().isEmpty()) {
+        if (request.title() != null && !request.title().isEmpty()) {
             updateFiledMap.put("title", request.title());
         }
-        if (request.content() != null && request.content().isEmpty()) {
+        if (request.content() != null && !request.content().isEmpty()) {
             updateFiledMap.put("content", request.content());
         }
         if (request.rating() != null) {
@@ -41,16 +41,17 @@ public class ReviewSearchClient {
         }
 
         UpdateRequest<ReviewDocument, Map<String, Object>> updateRequest = UpdateRequest.of(b -> b
-                .index("members")
-                .id("1")
-                .doc(updateFiledMap)  // 동적으로 Map 주입 가능!
+                .index("review")
+                .id(String.valueOf(id))
+                .doc(updateFiledMap)
+                .detectNoop(true)
                 .docAsUpsert(true)
         );
 
         try {
             client.update(updateRequest, Void.class);
-        } catch (Exception ex) {
-            log.error("review document를 업데이트 중 문제가 발생하였습니다. id: +" + id);
+        } catch (IOException ex) {
+            log.error("review document 업데이트 중 문제가 발생하였습니다. reviewId: {}" , id);
         }
     }
 
@@ -61,7 +62,7 @@ public class ReviewSearchClient {
 
         builder.filter(Query.of(q -> q.term(m -> m.field("productId").value(productId))));
 
-        if (keyword != null && !keyword.isEmpty()) {
+        if (keyword != null && !keyword.isEmpty()) {// 키워드가 공백이거나 특수문자면 유효하지 않은 요청으로 처리
             builder.should(Query.of(q -> q.match(m -> m.field("title").query(keyword))));
             builder.should(Query.of(q -> q.match(m -> m.field("content").query(keyword))));
             builder.minimumShouldMatch("1");
@@ -82,7 +83,7 @@ public class ReviewSearchClient {
            return searchResponse.hits().hits().stream().map(h -> Long.parseLong(h.id())).toList();
 
         } catch (IOException ex) {
-         throw new RuntimeException("검색 중 문제 발생");
+         throw new RuntimeException("검색 중 알수 없는 예외가 발생하였습니다.");
         }
     }
 

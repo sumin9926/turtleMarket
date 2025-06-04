@@ -5,10 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
@@ -49,7 +47,7 @@ public class ReviewService {
     private final ProductReviewTemplateDslRepositoryImpl productReviewTemplateDslRepositoryImpl;
     private final ReviewDslRepositoryImpl reviewDslRepositoryImpl;
     private final ReviewElasticSearchRepository reviewElsaRepository;
-    private final ReviewSearchClient reviewSearchClientl;
+    private final ReviewSearchClient reviewSearchClient;
 
     @Transactional
     public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request) {
@@ -104,9 +102,7 @@ public class ReviewService {
         reviewElsaRepository.save(reviewDocument);
 
         List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList() != null ? new ArrayList<>() : TemplateChoice.changeResponseByReview(review);
-        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
-        });
+        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>() : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
         return ReviewResponse.of(review, imageUrlList , choiceResponseList);
     }
 
@@ -114,11 +110,9 @@ public class ReviewService {
 
         Review review = findByIdElseThrow(reviewId);
 
-        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
-        });
+        List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList() != null ? new ArrayList<>() : TemplateChoice.changeResponseByReview(review);
+        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>() : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
 
-        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
 
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
@@ -138,20 +132,10 @@ public class ReviewService {
     }
 
     public List<ReviewResponse> readByProductIdWithSearch(Long productId, String keyWord, Integer rating, Pageable pageable) {
-//        List<Review> reviewList = reviewDslRepositoryImpl.findByProductWithSearch(productId, keyWord, rating, cursor);
-//
-//        return reviewList.stream().map(review -> {
-//            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>() :
-//                    JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-//
-//            List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
-//
-//            return ReviewResponse.of(review, imageUrlList, choiceResponseList);
-//        }).toList();
 
-        List<Long> resultList = reviewSearchClientl.searchByCondition(keyWord, productId, rating, pageable);
+        List<Long> resultList = reviewSearchClient.searchByCondition(keyWord, productId, rating, pageable);
 
-        List<ReviewResponse> reviewList = reviewDslRepositoryImpl.findByIdInWithChoice(resultList).stream().map(review -> {
+        List<ReviewResponse> reviewList = reviewDslRepositoryImpl.findByIdInWithPagination(resultList).stream().map(review -> {
             List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
                     : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
             });
@@ -192,6 +176,8 @@ public class ReviewService {
                 })
                 .toList();
 
+        reviewSearchClient.updateReviewDocument(reviewId, request);
+
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }
 
@@ -213,6 +199,7 @@ public class ReviewService {
         }
 
         review.delete();
+        reviewElsaRepository.deleteById(reviewId);
     }
 
     private Review findByIdElseThrow(Long reviewId) {

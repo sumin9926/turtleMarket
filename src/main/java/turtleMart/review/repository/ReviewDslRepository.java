@@ -15,5 +15,5 @@ public interface ReviewDslRepository {
 
     List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating, Integer cursor);
 
-    List<Review> findByIdInWithChoice(List<Long> reviewIdList);
+    List<Review> findByIdInWithPagination(List<Long> reviewIdList);
 }
