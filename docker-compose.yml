@@ -72,8 +72,8 @@ services:
       - "9300:9300"
     volumes:
       - es_data:/usr/share/elasticsearch/data
-#      - /c/Users/jmgpt/Desktop/project/elasticsearch/stopwords:/usr/share/elasticsearch/config/stopwords
-
+#      - C:/Users/jmgpt/Desktop/project/elasticsearch/stopwords:/usr/share/elasticsearch/config/stopwords
+#  불용어파일 마운트바인드로 관리
 
 
     command: >
