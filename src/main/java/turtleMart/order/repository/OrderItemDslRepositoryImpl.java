@@ -14,6 +14,7 @@ import turtleMart.product.entity.QProduct;
 import turtleMart.product.entity.QProductOptionCombination;
 import turtleMart.product.repository.ProductOptionValueRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -65,5 +66,27 @@ public class OrderItemDslRepositoryImpl implements OrderItemDslRepository{
                         r.totalPrice()
                 ))
                 .toList();
+    }
+
+    @Override
+    public Long getTotalOrderedQuantity(
+            Long sellerId, Long productId, LocalDateTime startDateTime, LocalDateTime endDateTime, OrderItemStatus status
+    ) {
+       Long total = queryFactory
+                .select(orderItem.quantity.sum().longValue())
+                .from(orderItem)
+                .join(orderItem.productOptionCombination, combination)
+                .join(combination.product, product)
+                .join(orderItem.order, order)
+                .where(
+                        product.id.eq(productId),
+                        product.seller.id.eq(sellerId),
+                        order.orderedAt.goe(startDateTime),
+                        order.orderedAt.lt(endDateTime),
+                        orderItem.orderItemStatus.ne(status)
+                )
+                .fetchOne();
+
+       return total != null ? total : 0L;
     }
 }
