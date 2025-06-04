@@ -53,9 +53,11 @@ public class ReviewController {
     public ResponseEntity<List<ReviewResponse>> readByProductId(@PathVariable(name = "productId") Long productId,
                                                                 @RequestParam(name = "keyWord", required = false) String keyWord,
                                                                 @RequestParam(name = "rating", required = false) Integer rating,
-                                                                @RequestParam(name = "cursor", required = false) Integer cursor
+                                                                @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,
+                                                                @RequestParam(name = "size", required = false, defaultValue = "10") Integer size
     ){
-        List<ReviewResponse> reviewResponse = reviewService.readByProductIdWithSearch(productId, keyWord, rating, cursor);
+        Pageable pageable = PageRequest.of(page - 1, size);
+        List<ReviewResponse> reviewResponse = reviewService.readByProductIdWithSearch(productId, keyWord, rating, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 

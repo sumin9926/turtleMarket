@@ -74,11 +74,13 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
 
         booleanBuilder.and(review.product.id.eq(productId));
 
-        if(keyWord != null && !keyWord.isEmpty()){
+        if (keyWord != null && !keyWord.isEmpty()) {
             booleanBuilder.and(fullTextQuery(keyWord));
         }
 
-        if(rating != null){booleanBuilder.and(review.rating.eq(rating));}
+        if (rating != null) {
+            booleanBuilder.and(review.rating.eq(rating));
+        }
 
         if (cursor != null) {
             booleanBuilder.and(reviewReport.id.gt(cursor));
@@ -94,9 +96,21 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
                 .fetch();
     }
 
-    private Predicate fullTextQuery(String keyword){
+    @Override
+    public List<Review> findByIdInWithChoice(List<Long> reviewIdList) {
+        return
+                jpaQueryFactory.select(review).distinct()
+                        .from(review)
+                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                        .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                        .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .where(review.id.in(reviewIdList))
+                        .fetch();
+    }
+
+    private Predicate fullTextQuery(String keyword) {
         NumberTemplate<Double> score = Expressions.numberTemplate(
-                Double.class, "function('match',{0},{1},{2})", review.title, review.content,  Expressions.constant(keyword));
+                Double.class, "function('match',{0},{1},{2})", review.title, review.content, Expressions.constant(keyword));
 
         return score.gt(0);
     }

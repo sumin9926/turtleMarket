@@ -2,7 +2,6 @@ package turtleMart.review.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.entity.Review;
 
 import java.util.List;
@@ -15,4 +14,6 @@ public interface ReviewDslRepository {
     Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable);
 
     List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating, Integer cursor);
+
+    List<Review> findByIdInWithChoice(List<Long> reviewIdList);
 }
