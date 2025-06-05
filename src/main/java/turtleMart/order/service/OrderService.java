@@ -2,6 +2,7 @@ package turtleMart.order.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -229,7 +231,6 @@ public class OrderService {
         return TotalOrderedQuantityResponse.from(productId, totalOrderedQuantity);
     }
 
-    @Transactional
     public void tryOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderWrapperRequest wrapperRequest) {
         if (!memberRepository.existsById(memberId)) {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
@@ -245,12 +246,12 @@ public class OrderService {
         String payload = JsonHelper.toJson(newWrapperRequest);
         String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
 
-        stringKafkaTemplate.send("order_make_topic", key, value);
+        stringKafkaTemplate.send("order_make_topic", key, value); // kafka에 적용되는 트랜젝션이 있다. 트랜젝성 싱크로나이제이션 에프터 커밋을 하면 커밋 후에 전송되도록 할 수도 있다.
     }
 
     @Transactional
-    public void createOrder(OrderWrapperRequest wrapperRequest){
-        // 카프카 통과해서 오면 실행되는 로직
+    public void createOrder(OrderWrapperRequest wrapperRequest){ // 카프카 통과해서 오면 실행되는 로직
+        // 데이터 전처리
         List<OrderRequest> orderRequestList = wrapperRequest.orderList();
         List<CartOrderSheetRequest> orderSheetRequestList = wrapperRequest.itemList();
         PaymentRequest paymentRequest = wrapperRequest.payment();
@@ -266,64 +267,91 @@ public class OrderService {
                         Function.identity()
                 ));
 
-        // 가격 정합성 검증
-        for(Long productOptionId : orderSheetMap.keySet()){
-            Integer quantity = orderSheetMap.get(productOptionId).quantity();
-            OrderRequest order = orderMap.get(productOptionId);
-            ProductOptionCombination optionCombination = productOptionCombinationRepository.findById(productOptionId).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
-            );
-            Integer currentPrice = optionCombination.getPrice();
-            Integer snapShotPrice = order.price();
+        List<Long> productOptionIdList = orderSheetRequestList.stream().map(CartOrderSheetRequest::productOptionId).toList();
+        List<ProductOptionCombination> optionCombinationList = productOptionCombinationRepository.findAllById(productOptionIdList);
+        Map<Long, ProductOptionCombination> optionMap = optionCombinationList.stream()
+                .collect(Collectors.toMap(
+                        ProductOptionCombination::getId,
+                        Function.identity()
+                ));
 
-            if(!snapShotPrice.equals(currentPrice) || !order.totalPrice().equals(currentPrice*quantity)){
-                throw new ConflictRequestException(ErrorCode.ORDER_PRICE_VALIDATION_FAILED);
-            }
-        }
+        // 가격 정합성 검사
+        validatePrice(orderSheetMap, orderMap, optionMap);
 
-        // 정합성 문제 없을 경우 결재 계속 진행
+        // 정합성 문제 없을 경우 order, orderItem Table 생성
         Member member = memberRepository.findById(paymentRequest.memberId()).orElseThrow(
                 () -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND)
         );
         Order order = Order.of(member, new ArrayList<>(), 0);
 
         orderSheetMap.keySet().forEach(productOptionId -> {
-            ProductOptionCombination productOptionCombination = productOptionCombinationRepository.findById(productOptionId).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
-            );
-            OrderItem orderItem = OrderItem.of(order, productOptionCombination, productOptionCombination.getPrice(),
-                    productOptionCombination.getProduct().getName(), orderSheetMap.get(productOptionId).quantity());
+            ProductOptionCombination optionCombination = optionMap.get(productOptionId);
+            if (null == optionCombination) {
+                throw new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND);
+            }
+            OrderItem orderItem = OrderItem.of(order, optionCombination, optionCombination.getPrice(),
+                    optionCombination.getProduct().getName(), orderSheetMap.get(productOptionId).quantity());
             order.addOrderItem(orderItem);
         });
 
         order.calculateTotalPrice();
         orderRepository.save(order);
 
-        List<Long> cartItemIdList = orderRequestList.stream()
-                .map(OrderRequest::cartItemId)
-                .toList();
+        // 주문 완료된 장바구니 상품 삭제
+        removeCartItemFromRedisCart(orderRequestList, member);
 
-        // 장바구니 Redis 캐시 삭제
-        removeCartItemFromRedis(member.getId(), cartItemIdList);
+        // kafka topic에 결제, 배달 정보 발행
+        sendPaymentRequest(wrapperRequest, order);
+    }
 
+    private void sendPaymentRequest(OrderWrapperRequest wrapperRequest, Order order) {
         //주문 ID 담아주기
         PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment(), order.getId());
 
         // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
         PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, wrapperRequest.delivery());
         objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest);
+        log.info("결재 처리 kafka 토픽에 메세지 발행 성공! TopicName: {}", paymentTopic);
     }
 
-    private void removeCartItemFromRedis(Long memberId, List<Long> cartItemIdList) {
-        String key = "cart:" + memberId;
+    private void removeCartItemFromRedisCart(List<OrderRequest> orderRequestList, Member member) {
+        List<Long> cartItemIdList = orderRequestList.stream()
+                .map(OrderRequest::cartItemId)
+                .toList();
+
+        // 장바구니 Redis 캐시 삭제 (삭제에 실패한 데이터는 정보를 따로 저장해뒀다가 나중에 따로 재처리 시도. UX 고려, 장바구니 삭제 실패로 전체 주문 로직이 실패하는 경우 방지)
+        String key = "cart:" + member.getId();
 
         for (Long cartItemId : cartItemIdList) {
-            Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));
-            if (Boolean.FALSE.equals(cartItemExist)) {
-                throw new NotFoundException(ErrorCode.PRODUCT_NOT_IN_CART);
+            try{
+                Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));
+                if (Boolean.TRUE.equals(cartItemExist)) {
+                    redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));
+                }else{
+                    log.warn("삭제 시도한 장바구니 항목이 이미 없음: cartItemId={}", cartItemId);
+                }
+            } catch (Exception e) {
+                log.error("Redis 삭제 실패, 추후 재시도 필요! cartItemId={}", cartItemId, e);
+                // TODO 재시도 큐 구현 고려
+            }
+        }
+    }
+
+    private void validatePrice(Map<Long, CartOrderSheetRequest> orderSheetMap, Map<Long, OrderRequest> orderMap, Map<Long, ProductOptionCombination> optionMap) {
+        for(Long productOptionId : orderSheetMap.keySet()){
+            Integer quantity = orderSheetMap.get(productOptionId).quantity();
+            OrderRequest order = orderMap.get(productOptionId);
+            ProductOptionCombination optionCombination = optionMap.get(productOptionId);
+            if (null == optionCombination) {
+                throw new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND);
             }
 
-            redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));
+            Integer currentPrice = optionCombination.getPrice();
+            Integer snapShotPrice = order.price();
+
+            if(!snapShotPrice.equals(currentPrice) || !order.totalPrice().equals(currentPrice*quantity)){
+                throw new ConflictRequestException(ErrorCode.ORDER_PRICE_VALIDATION_FAILED);
+            }
         }
     }
 }
