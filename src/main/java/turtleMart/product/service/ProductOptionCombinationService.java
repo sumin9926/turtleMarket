@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.common.OperationType;
 import turtleMart.global.exception.*;
+import turtleMart.global.slack.SlackNotifier;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.SellerRepository;
@@ -17,7 +18,6 @@ import turtleMart.product.dto.ProductOptionCombinationDeleteDto;
 import turtleMart.product.dto.ProductOptionCombinationInventoryDto;
 import turtleMart.product.dto.ProductOptionCombinationPriceDto;
 import turtleMart.product.dto.ProductOptionCombinationStatusDto;
-import turtleMart.product.dto.response.DuplicateList;
 import turtleMart.product.dto.request.ProductOptionCombinationRequest;
 import turtleMart.product.dto.response.DuplicateList;
 import turtleMart.product.dto.response.ProductOptionCombinationResponse;
@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +46,7 @@ public class ProductOptionCombinationService {
     private final RedisTemplate<String, Boolean> redisTemplate;
     private final ProductDslRepository productDslRepository;
     private final SellerRepository sellerRepository;
+    private final SlackNotifier slackNotifier;
 
     @Value("${server.id}")
     private String serverId;
@@ -181,6 +183,13 @@ public class ProductOptionCombinationService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND));
 
             if (productOptionCombination.getInventory() < quantity) {
+                slackNotifier.sendInventoryDecreaseFailureAlert(
+                    orderId,
+                    orderItem.getOrder().getMember().getName(),
+                    productOptionCombination.getProduct().getId().toString(),
+                    productOptionCombination.getProduct().getName(),
+                    ErrorCode.PRODUCT_OPTION_COMBINATION_OUT_OF_INVENTORY.getMessage());
+
                 throw new ConflictException(ErrorCode.PRODUCT_OPTION_COMBINATION_OUT_OF_INVENTORY);
             }
 

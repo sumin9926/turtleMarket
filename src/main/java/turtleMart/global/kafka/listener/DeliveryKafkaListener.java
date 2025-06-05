@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.delivery.service.DeliveryService;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.utill.JsonHelper;
 
@@ -31,7 +32,12 @@ public class DeliveryKafkaListener {
         CreateDeliveryRequest request = JsonHelper.fromJson(payload, CreateDeliveryRequest.class);
         log.info("📥 Kafka 배송 생성 메시지 수신: {}", request);
 
-        deliveryService.createDelivery(request);
-        log.info("👉 배송 생성 성공! 배송 생성이 정상적으로 처리되었습니다.");
+        try {
+            deliveryService.createDelivery(request);
+            log.info("👉 배송 생성 성공! 배송 생성이 정상적으로 처리되었습니다.");
+        } catch (NotFoundException e) {
+            log.warn("⚠️ 필수 데이터 누락으로 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+        }
+
     }
 }

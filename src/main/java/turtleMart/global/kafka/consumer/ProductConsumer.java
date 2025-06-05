@@ -10,8 +10,12 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.global.exception.ConflictException;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.InventoryDecreasePayload;
 import turtleMart.global.kafka.dto.KafkaMessage;
+import turtleMart.global.kafka.dto.OperationWrapperDto;
+import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.utill.JsonHelper;
 import turtleMart.product.service.ProductOptionCombinationService;
 
 @Slf4j
@@ -21,7 +25,6 @@ public class ProductConsumer {
 
     private final ProductOptionCombinationService productOptionCombinationService;
     private final ObjectMapper objectMapper;
-//    private final DeliveryProducer deliveryProducer;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${kafka.topic.delivery}")
@@ -35,9 +38,7 @@ public class ProductConsumer {
         try {
             switch (message.type()) {
                 case "INVENTORY_DECREASE" -> {
-                    InventoryDecreasePayload payload = objectMapper.convertValue(
-                        message.payload(), InventoryDecreasePayload.class
-                    );
+                    InventoryDecreasePayload payload = objectMapper.convertValue(message.payload(), InventoryDecreasePayload.class);
 
                     productOptionCombinationService.decreaseProductOptionCombinationInventory(payload.orderId());
 
@@ -50,8 +51,12 @@ public class ProductConsumer {
                         payload.senderId(),
                         payload.addressId(),
                         payload.deliveryRequest());
-                    kafkaTemplate.send(deliveryTopic, request);
-                    log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", request);
+
+                    OperationWrapperDto wrapperDto = new OperationWrapperDto(OperationType.DELIVERY_CREATE, JsonHelper.toJson(request));
+
+                    String value = JsonHelper.toJson(wrapperDto);
+                    kafkaTemplate.send(deliveryTopic, String.valueOf(payload.orderId()), value);
+                    log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", wrapperDto);
                 }
 
                 case "PRICE_CHANGE" -> {
@@ -62,6 +67,10 @@ public class ProductConsumer {
             }
         } catch (ConflictException e) {
             log.warn("⚠️ 재고 부족으로 메시지 처리 실패: {}", e.getMessage());
+        } catch (NotFoundException e) {
+            log.warn("⚠️ 필수 데이터 누락으로 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("Kafka message handling error", e);
         }
     }
 }
