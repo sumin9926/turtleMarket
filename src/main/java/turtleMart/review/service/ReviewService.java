@@ -26,10 +26,7 @@ import turtleMart.review.dto.request.UpdateTemplateChoiceRequest;
 import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.dto.response.TemplateChoiceResponse;
 import turtleMart.review.entity.*;
-import turtleMart.review.repository.ProductReviewTemplateDslRepositoryImpl;
-import turtleMart.review.repository.ReviewDslRepositoryImpl;
-import turtleMart.review.repository.ReviewElasticSearchRepository;
-import turtleMart.review.repository.ReviewRepository;
+import turtleMart.review.repository.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +44,7 @@ public class ReviewService {
     private final ProductReviewTemplateDslRepositoryImpl productReviewTemplateDslRepositoryImpl;
     private final ReviewDslRepositoryImpl reviewDslRepositoryImpl;
     private final ReviewElasticSearchRepository reviewElsaRepository;
-    private final ReviewSearchClient reviewSearchClient;
+    private final ReviewElasticSearchQueryClient elasticSearchQueryClient;
 
     @Transactional
     public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request) {
@@ -93,13 +90,8 @@ public class ReviewService {
             });
         }
 
-
         reviewRepository.save(review);
-
-        ReviewDocument reviewDocument = ReviewDocument.of(
-                review.getId(), review.getProduct().getId(), review.getTitle(), review.getContent(), review.getRating()
-        );
-        reviewElsaRepository.save(reviewDocument);
+        elasticSearchQueryClient.createReviewDocument(review);
 
         List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList() != null ? new ArrayList<>() : TemplateChoice.changeResponseByReview(review);
         List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>() : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
@@ -133,7 +125,7 @@ public class ReviewService {
 
     public List<ReviewResponse> readByProductIdWithSearch(Long productId, String keyWord, Integer rating, Pageable pageable) {
 
-        List<Long> resultList = reviewSearchClient.searchByCondition(keyWord, productId, rating, pageable);
+        List<Long> resultList = elasticSearchQueryClient.searchByCondition(keyWord, productId, rating, pageable);
 
         List<ReviewResponse> reviewList = reviewDslRepositoryImpl.findByIdInWithPagination(resultList).stream().map(review -> {
             List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
@@ -176,7 +168,7 @@ public class ReviewService {
                 })
                 .toList();
 
-        reviewSearchClient.updateReviewDocument(reviewId, request);
+        elasticSearchQueryClient.updateReviewDocument(reviewId, request);
 
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }
@@ -199,11 +191,10 @@ public class ReviewService {
         }
 
         review.delete();
-        reviewElsaRepository.deleteById(reviewId);
+        elasticSearchQueryClient.deleteReviewDocument(reviewId);
     }
 
     private Review findByIdElseThrow(Long reviewId) {
-
         return reviewDslRepositoryImpl.findByIdWithChoice(reviewId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_NOT_FOUND));
     }

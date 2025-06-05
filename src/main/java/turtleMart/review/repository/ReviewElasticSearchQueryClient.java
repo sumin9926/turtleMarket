@@ -1,4 +1,4 @@
-package turtleMart.review.service;
+package turtleMart.review.repository;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
@@ -11,7 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.ExternalServiceException;
 import turtleMart.review.dto.request.UpdateReviewRequest;
+import turtleMart.review.entity.Review;
 import turtleMart.review.entity.ReviewDocument;
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,9 +24,17 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ReviewSearchClient {
+public class ReviewElasticSearchQueryClient {
 
     private final ElasticsearchClient client;
+    private final ReviewElasticSearchRepository reviewElasticSearchRepository;
+
+    public void createReviewDocument(Review review){
+        ReviewDocument reviewDocument = ReviewDocument.of(
+                review.getId(), review.getProduct().getId(), review.getTitle(), review.getContent(), review.getRating()
+        );
+        reviewElasticSearchRepository.save(reviewDocument);
+    }
 
     public void updateReviewDocument(Long id, UpdateReviewRequest request) {
 
@@ -60,7 +71,7 @@ public class ReviewSearchClient {
             builder.filter(Query.of(q -> q.term(m -> m.field("rating").value(rating))));
         }
 
-        if (keyword != null && !keyword.isEmpty()) {// 키워드가 공백이거나 특수문자면 유효하지 않은 요청으로 처리
+        if (keyword != null && !keyword.isEmpty()) {
             builder.should(Query.of(q -> q.match(m -> m.field("title").fuzziness("2").query(keyword))));
             builder.should(Query.of(q -> q.match(m -> m.field("content").fuzziness("2").query(keyword))));
             builder.minimumShouldMatch("1");
@@ -77,9 +88,11 @@ public class ReviewSearchClient {
            return searchResponse.hits().hits().stream().map(h -> Long.parseLong(h.id())).toList();
 
         } catch (IOException ex) {
-         throw new RuntimeException("검색 중 알수 없는 예외가 발생하였습니다.");
+         throw new ExternalServiceException(ErrorCode.SEARCH_ERROR_RETRY_LATER);
         }
     }
 
-
+    public void deleteReviewDocument(Long reviewId){
+        reviewElasticSearchRepository.deleteById(reviewId);
+    }
 }

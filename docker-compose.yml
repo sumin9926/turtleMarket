@@ -73,9 +73,6 @@ services:
       - "9300:9300"
     volumes:
       - es_data:/usr/share/elasticsearch/data
-#      - C:/Users/jmgpt/Desktop/project/elasticsearch/stopwords:/usr/share/elasticsearch/config/stopwords
-##  불용어파일 마운트바인드로 관리
-
 
     command: >
       bash -c "if [ ! -f /usr/share/elasticsearch/plugins/analysis-nori/plugin-descriptor.properties ]; then
