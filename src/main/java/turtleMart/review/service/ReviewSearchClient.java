@@ -13,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import turtleMart.review.dto.request.UpdateReviewRequest;
 import turtleMart.review.entity.ReviewDocument;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -30,17 +29,12 @@ public class ReviewSearchClient {
 
         Map<String, Object> updateFiledMap = new HashMap<>();
 
-        if (request.title() != null && !request.title().isEmpty()) {
-            updateFiledMap.put("title", request.title());
-        }
-        if (request.content() != null && !request.content().isEmpty()) {
-            updateFiledMap.put("content", request.content());
-        }
-        if (request.rating() != null) {
-            updateFiledMap.put("rating", request.rating());
-        }
+        if (request.title() != null && !request.title().isEmpty()) {updateFiledMap.put("title", request.title());}
+        if (request.content() != null && !request.content().isEmpty()) {updateFiledMap.put("content", request.content());}
+        if (request.rating() != null) {updateFiledMap.put("rating", request.rating());}
 
-        UpdateRequest<ReviewDocument, Map<String, Object>> updateRequest = UpdateRequest.of(b -> b
+        UpdateRequest<ReviewDocument, Map<String, Object>> updateRequest =
+                UpdateRequest.of(b -> b
                 .index("review")
                 .id(String.valueOf(id))
                 .doc(updateFiledMap)
@@ -51,7 +45,7 @@ public class ReviewSearchClient {
         try {
             client.update(updateRequest, Void.class);
         } catch (IOException ex) {
-            log.error("review document 업데이트 중 문제가 발생하였습니다. reviewId: {}" , id);
+            log.error("review document 업데이트 중 문제가 발생하였습니다. reviewId: {}" , id);// 이경우 비동기처리하는것 고려중,,
         }
     }
 
@@ -62,14 +56,14 @@ public class ReviewSearchClient {
 
         builder.filter(Query.of(q -> q.term(m -> m.field("productId").value(productId))));
 
-        if (keyword != null && !keyword.isEmpty()) {// 키워드가 공백이거나 특수문자면 유효하지 않은 요청으로 처리
-            builder.should(Query.of(q -> q.match(m -> m.field("title").query(keyword))));
-            builder.should(Query.of(q -> q.match(m -> m.field("content").query(keyword))));
-            builder.minimumShouldMatch("1");
-        }
-
         if (rating != null) {
             builder.filter(Query.of(q -> q.term(m -> m.field("rating").value(rating))));
+        }
+
+        if (keyword != null && !keyword.isEmpty()) {// 키워드가 공백이거나 특수문자면 유효하지 않은 요청으로 처리
+            builder.should(Query.of(q -> q.match(m -> m.field("title").fuzziness("2").query(keyword))));
+            builder.should(Query.of(q -> q.match(m -> m.field("content").fuzziness("2").query(keyword))));
+            builder.minimumShouldMatch("1");
         }
 
         SearchRequest searchRequest = new SearchRequest.Builder()
