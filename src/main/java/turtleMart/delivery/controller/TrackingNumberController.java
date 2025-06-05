@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import turtleMart.delivery.dto.reqeust.CreateTrackingNumberRequest;
 import turtleMart.delivery.service.TrackingNumberService;
 
-@RequestMapping("/api/tracking-numbers")
+@RequestMapping("/tracking-numbers")
 @RestController
 @RequiredArgsConstructor
 public class TrackingNumberController {
