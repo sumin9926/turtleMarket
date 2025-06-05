@@ -58,11 +58,12 @@ services:
       - minio_data:/data
 
   elasticsearch:
-    image: 'elasticsearch:8.15.1'
+    build:
+      context: .
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false  # 보안 비활성화 (테스트용)
+      - xpack.security.enabled=false
       - http.cors.enabled=true
       - http.cors.allow-origin="*"
       - http.cors.allow-methods=OPTIONS,HEAD,GET,POST,PUT,DELETE
@@ -73,7 +74,7 @@ services:
     volumes:
       - es_data:/usr/share/elasticsearch/data
 #      - C:/Users/jmgpt/Desktop/project/elasticsearch/stopwords:/usr/share/elasticsearch/config/stopwords
-#  불용어파일 마운트바인드로 관리
+##  불용어파일 마운트바인드로 관리
 
 
     command: >
