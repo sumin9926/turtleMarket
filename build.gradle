@@ -58,6 +58,9 @@ dependencies {
 
 	//Minio
 	implementation 'io.minio:minio:8.5.7'
+
+	//JavaMailSender
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 }
 
 def generated = file('build/generated/querydsl')
