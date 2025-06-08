@@ -3,6 +3,7 @@ package turtleMart.member.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
@@ -27,6 +28,7 @@ public class SellerService {
     /**
      * 판매자 등록
      */
+    @Transactional
     public String registerSeller(Long authId, SellerRegisterRequest request) {
         Member foundMember = memberRepository.findById(authId)
                 .orElseThrow(() -> new RuntimeException(""));
@@ -42,6 +44,7 @@ public class SellerService {
     /**
      * 판매자 조회
      */
+    @Transactional(readOnly = true)
     public SellerResponse findSellerInfo(Long sellerId) {
         Seller foundSeller = findSeller(sellerId);
         return SellerResponse.from(foundSeller);
@@ -50,6 +53,7 @@ public class SellerService {
     /**
      * 판매자 조회(판매자 전용)
      */
+    @Transactional(readOnly = true)
     public SellerResponse findMySellerProfile(Long authId, Long sellerId) {
         Seller foundSeller = findSeller(sellerId);
         validSellerById(authId, foundSeller);
@@ -59,6 +63,7 @@ public class SellerService {
     /**
      * 판매자 수정
      */
+    @Transactional
     public SellerResponse updateSellerProfile(Long authId, Long sellerId, UpdateSellerRequest request) {
         Seller foundSeller = findSeller(sellerId);
         validSellerById(authId, foundSeller);
@@ -71,6 +76,7 @@ public class SellerService {
     /**
      * 판매자 삭제
      */
+    @Transactional
     public String deleteSeller(Long authId, Long sellerId, DeleteSellerRequest request) {
         Seller foundSeller = findSeller(sellerId);
         validSellerById(authId, foundSeller);

@@ -3,6 +3,7 @@ package turtleMart.member.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
@@ -23,6 +24,7 @@ public class AuthService {
     /**
      * 회원가입
      */
+    @Transactional
     public String signup(SignupRequest request) {
         if (memberRepository.existsByEmail(request.email())) {
 //            throw new RuntimeException("이미 가입된 이메일입니다.");
@@ -37,6 +39,7 @@ public class AuthService {
     /**
      * 로그인
      */
+    @Transactional
     public String login(LoginRequest request) {
         Member member = memberRepository.findMemberByEmail(request.email())
 //                .orElseThrow(() -> new RuntimeException("가입된 이메일이 아닙니다."));

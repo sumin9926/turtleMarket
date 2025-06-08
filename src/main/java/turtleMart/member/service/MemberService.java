@@ -3,6 +3,7 @@ package turtleMart.member.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.member.dto.request.MemberWithdrawRequest;
@@ -18,11 +19,13 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional(readOnly = true)
     public MemberResponse getMyProfile(Long authId) {
         Member foundMember = getMember(authId);
         return MemberResponse.from(foundMember);
     }
 
+    @Transactional
     public MemberResponse updateProfile(Long authId, updateProfileRequest request) {
         Member foundMember = getMember(authId);
         verifyPassword(request.password(), foundMember);
@@ -35,6 +38,7 @@ public class MemberService {
         return MemberResponse.from(foundMember);
     }
 
+    @Transactional
     public String updatePassword(Long authId, updatePasswordRequest request) {
         Member foundMember = getMember(authId);
         verifyPassword(request.oldPassword(), foundMember);
@@ -45,6 +49,7 @@ public class MemberService {
     }
 
     // Todo: 소프트딜리트로 바꿔야 할지...
+    @Transactional
     public String withdrawMember(Long authId, MemberWithdrawRequest request) {
         Member foundMember = getMember(authId);
         verifyPassword(request.password(), foundMember);

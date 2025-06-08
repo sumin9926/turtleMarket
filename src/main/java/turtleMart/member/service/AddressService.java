@@ -2,6 +2,7 @@ package turtleMart.member.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.dto.request.AddressRegisterRequest;
@@ -17,17 +18,20 @@ import java.util.List;
 public class AddressService {
     private final AddressRepository addressRepository;
 
+    @Transactional
     public AddressResponse registerAddress(AddressRegisterRequest request) {
         Address address = Address.of(request);
         Address savedAddress = addressRepository.save(address);
         return AddressResponse.from(savedAddress);
     }
 
+    @Transactional(readOnly = true)
     public AddressResponse getAddress(Long addressId) {
         Address foundAddress = findAddress(addressId);
         return AddressResponse.from(foundAddress);
     }
 
+    @Transactional(readOnly = true)
     public List<AddressResponse> getAddressList() {
         List<Address> addressList = addressRepository.findAll();
         if (addressList.isEmpty()) {
@@ -36,6 +40,7 @@ public class AddressService {
         return addressList.stream().map(AddressResponse::from).toList();
     }
 
+    @Transactional
     public AddressResponse modifyAddress(Long addressId, UpdateAddressRequest request) {
         Address foundAddress = findAddress(addressId);
         foundAddress.updateAddress(request);
@@ -43,6 +48,7 @@ public class AddressService {
         return AddressResponse.from(foundAddress);
     }
 
+    @Transactional
     public String deleteAddress(Long addressId) {
         Address foundAddress = findAddress(addressId);
         addressRepository.delete(foundAddress);
