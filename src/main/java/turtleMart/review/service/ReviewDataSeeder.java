@@ -36,7 +36,7 @@
 //            reviewPage = reviewRepository.findAll(pageable); // JPA에서 데이터 가져옴
 //
 //            List<ReviewDocument> esDocs = reviewPage.getContent().stream()
-//                    .map(r -> ReviewDocument.of(r.getId(), r.getProduct().getId(),  r.getTitle(), r.getContent(), r.getRating())) // -> Elasticsearch 문서로 변환
+//                    .map(r -> ReviewDocument.from(r)) // -> Elasticsearch 문서로 변환
 //                    .toList();
 //
 //            reviewElasticSearchRepository.saveAll(esDocs); // Elasticsearch 저장

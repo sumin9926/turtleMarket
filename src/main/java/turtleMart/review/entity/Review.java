@@ -8,11 +8,13 @@ import turtleMart.global.common.BaseEntity;
 import turtleMart.member.entity.Member;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.product.entity.Product;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
-@Entity @Table
+@Entity
+@Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Review extends BaseEntity {
 
@@ -32,7 +34,7 @@ public class Review extends BaseEntity {
     @JoinColumn
     private OrderItem orderItem;
 
-    @OneToMany(mappedBy = "review", cascade =  CascadeType.ALL)
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL)
     List<TemplateChoice> templateChoiceList = new ArrayList<>();
 
     @Column(length = 20, nullable = false)
@@ -49,6 +51,8 @@ public class Review extends BaseEntity {
 
     private boolean isDeleted = false;
 
+    private boolean syncRequired = false; // 엘라스틱서치 데이터 동기화 필요 여부
+
     private Review(Member member, Product product, OrderItem orderItem, String title, String content, Integer rating, String imageUrl) {
         this.member = member;
         this.product = product;
@@ -64,11 +68,14 @@ public class Review extends BaseEntity {
     }
 
     public void update(String title, String content, Integer rating, String imageUrl) {
-        if(title != null && !title.isEmpty()){this.title = title;}
-        if(content != null && !content.isEmpty()){this.content = content;}
-        if(rating != null ){this.rating = rating;}
-        if(imageUrl != null && !imageUrl.isEmpty()){this.imageUrl = imageUrl;}
+        this.title = title;
+        this.content = content;
+        this.rating = rating;
+        this.imageUrl = imageUrl;
+        this.syncRequired = true;
     }
 
-    public void delete(){this.isDeleted = true;}
+    public void delete() {
+        this.isDeleted = true;
+    }
 }

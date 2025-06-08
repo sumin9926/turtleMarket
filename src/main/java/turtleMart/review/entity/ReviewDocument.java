@@ -35,7 +35,7 @@ public class ReviewDocument {
         this.rating = rating;
     }
 
-    public static ReviewDocument of(Long id, Long productId, String title, String content, Integer rating){
-        return new ReviewDocument(id, productId, title, content, rating);
+    public static ReviewDocument from(Review review){
+        return new ReviewDocument(review.getId(), review.getProduct().getId(), review.getTitle(), review.getContent(), review.getRating());
     }
 }

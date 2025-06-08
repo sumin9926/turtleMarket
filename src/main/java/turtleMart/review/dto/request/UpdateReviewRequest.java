@@ -8,9 +8,9 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-public record UpdateReviewRequest(String title,
-                                  String content,
-                                  Integer rating,
+public record UpdateReviewRequest(@NotBlank @Size(max = 20) String title,
+                                  @NotBlank @Size(max = 255) String content,
+                                  @NotNull @Max(5) Integer rating,
                                   List<String> imageUrlList,
                                   List<@Valid UpdateTemplateChoiceRequest> templateChoiceList) {
 }

@@ -10,8 +10,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import turtleMart.global.common.CursorPageResponse;
 import turtleMart.review.entity.Review;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,24 +67,14 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
 
     @Override // mysql fulltext사용
     public List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating, Integer cursor) {
-        //키워드를 가지고 리뷰의 제목과 컨텐츠를 풀텍스트 인덱스를 사용하여 검색해야함,
-        //rating을 이용해서 별점만 구분
 
         BooleanBuilder booleanBuilder = new BooleanBuilder();
 
         booleanBuilder.and(review.product.id.eq(productId));
 
-        if (keyWord != null && !keyWord.isEmpty()) {
-            booleanBuilder.and(fullTextQuery(keyWord));
-        }
-
-        if (rating != null) {
-            booleanBuilder.and(review.rating.eq(rating));
-        }
-
-        if (cursor != null) {
-            booleanBuilder.and(reviewReport.id.gt(cursor));
-        }
+        if (keyWord != null && !keyWord.isEmpty()) {booleanBuilder.and(fullTextQuery(keyWord));}
+        if (rating != null) {booleanBuilder.and(review.rating.eq(rating));}
+        if (cursor != null) {booleanBuilder.and(reviewReport.id.gt(cursor));}
 
         return jpaQueryFactory.select(review)
                 .from(review)
@@ -104,6 +96,32 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
                         .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
                         .where(review.id.in(reviewIdList))
                         .fetch();
+    }
+
+    @Override
+    public CursorPageResponse<Review> findAllPendingSync(LocalDateTime lastSyncedAt, LocalDateTime startSyncTime,  Long lastCursor) {
+        List<Review> reviewList = jpaQueryFactory.select(review)
+                .from(review)
+                .where(
+                        review.updatedAt.between(lastSyncedAt, startSyncTime),
+                        review.syncRequired.eq(true),
+                        review.isDeleted.eq(false),
+                        review.id.gt(lastCursor)
+                )
+                .limit(1000)
+                .fetch();
+
+        Long cursor = reviewList.get(reviewList.size() - 1).getId();
+
+        return CursorPageResponse.of(reviewList, cursor,  true);
+    }
+
+    @Override
+    public void updateSyncStatus(List<Long> reviewIdList) {
+        jpaQueryFactory.update(review)
+                .set(review.syncRequired, false)
+                .where(review.id.in(reviewIdList))
+                .execute();
     }
 
     private Predicate fullTextQuery(String keyword) {

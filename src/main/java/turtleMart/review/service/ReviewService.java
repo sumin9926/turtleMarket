@@ -149,9 +149,7 @@ public class ReviewService {
 
         Review review = findByIdElseThrow(reviewId);
 
-        if (!member.getId().equals(review.getMember().getId())) {
-            throw new BadRequestException(ErrorCode.FORBIDDEN);
-        }
+        if (!member.getId().equals(review.getMember().getId())) {throw new BadRequestException(ErrorCode.FORBIDDEN);}
 
         String dbImageList = JsonHelper.toJson(request.imageUrlList());
         review.update(request.title(), request.content(), request.rating(), dbImageList);
@@ -167,8 +165,6 @@ public class ReviewService {
                     return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(c.getChoseAnswer()));
                 })
                 .toList();
-
-        elasticSearchQueryClient.updateReviewDocument(reviewId, request);
 
         return ReviewResponse.of(review, request.imageUrlList(), choiceResponseList);
     }

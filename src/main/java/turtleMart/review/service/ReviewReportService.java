@@ -89,7 +89,7 @@ public class ReviewReportService {
 
         Long lastCursor = reviewReportList.get(reportResponseList.size() - 1).getId();
 
-        return CursorPageResponse.of(reportResponseList, lastCursor);
+        return CursorPageResponse.of(reportResponseList, lastCursor, true); //TODO
     }
 
     @Transactional

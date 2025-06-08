@@ -16,10 +16,9 @@ import turtleMart.global.exception.ExternalServiceException;
 import turtleMart.review.dto.request.UpdateReviewRequest;
 import turtleMart.review.entity.Review;
 import turtleMart.review.entity.ReviewDocument;
+
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -29,37 +28,12 @@ public class ReviewElasticSearchQueryClient {
     private final ElasticsearchClient client;
     private final ReviewElasticSearchRepository reviewElasticSearchRepository;
 
-    public void createReviewDocument(Review review){
-        ReviewDocument reviewDocument = ReviewDocument.of(
-                review.getId(), review.getProduct().getId(), review.getTitle(), review.getContent(), review.getRating()
-        );
+    private final String REVIEW_INDEX = "review";
+
+    public void createReviewDocument(Review review) {
+        ReviewDocument reviewDocument = ReviewDocument.from(review);
         reviewElasticSearchRepository.save(reviewDocument);
     }
-
-    public void updateReviewDocument(Long id, UpdateReviewRequest request) {
-
-        Map<String, Object> updateFiledMap = new HashMap<>();
-
-        if (request.title() != null && !request.title().isEmpty()) {updateFiledMap.put("title", request.title());}
-        if (request.content() != null && !request.content().isEmpty()) {updateFiledMap.put("content", request.content());}
-        if (request.rating() != null) {updateFiledMap.put("rating", request.rating());}
-
-        UpdateRequest<ReviewDocument, Map<String, Object>> updateRequest =
-                UpdateRequest.of(b -> b
-                .index("review")
-                .id(String.valueOf(id))
-                .doc(updateFiledMap)
-                .detectNoop(true)
-                .docAsUpsert(true)
-        );
-
-        try {
-            client.update(updateRequest, Void.class);
-        } catch (IOException ex) {
-            log.error("review document 업데이트 중 문제가 발생하였습니다. reviewId: {}" , id);// 이경우 비동기처리하는것 고려중,,
-        }
-    }
-
 
     public List<Long> searchByCondition(String keyword, Long productId, Integer rating, Pageable pageable) {
 
@@ -84,15 +58,26 @@ public class ReviewElasticSearchQueryClient {
                 .query(q -> q.bool(builder.build())).build();
 
         try {
-           SearchResponse<ReviewDocument> searchResponse = client.search(searchRequest, ReviewDocument.class);
-           return searchResponse.hits().hits().stream().map(h -> Long.parseLong(h.id())).toList();
+            SearchResponse<ReviewDocument> searchResponse = client.search(searchRequest, ReviewDocument.class);
+            return searchResponse.hits().hits().stream().map(h -> Long.parseLong(h.id())).toList();
 
         } catch (IOException ex) {
-         throw new ExternalServiceException(ErrorCode.SEARCH_ERROR_RETRY_LATER);
+            throw new ExternalServiceException(ErrorCode.SEARCH_ERROR_RETRY_LATER);
         }
     }
 
-    public void deleteReviewDocument(Long reviewId){
+    public void deleteReviewDocument(Long reviewId) {
         reviewElasticSearchRepository.deleteById(reviewId);
+    }
+
+    public void updateDocumentRetry(ReviewDocument reviewDocument) throws IOException{
+        UpdateRequest<ReviewDocument, ReviewDocument> request =  UpdateRequest.of(b -> b
+                .index(REVIEW_INDEX)
+                .id(String.valueOf(reviewDocument.getId()))
+                .doc(reviewDocument)
+                .detectNoop(true)
+                .docAsUpsert(true)
+        );
+        client.update(request, Void.class);
     }
 }
