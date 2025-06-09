@@ -59,6 +59,7 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
     EMAIL_ALREADY_EXIST(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다."),
     EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "가입된 이메일이 아닙니다."),
+    PHONE_NUMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "가입된 휴대폰 번호가 아닙니다."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 잘못되었습니다."),
 
     //여러가지 관련
