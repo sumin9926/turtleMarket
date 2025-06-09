@@ -40,6 +40,7 @@ public enum ErrorCode {
     PRODUCT_NOT_BELONG_TO_SELLER(HttpStatus.FORBIDDEN, "상품이 판매자 소유가 아닙니다."),
     REQUEST_OPTION_VALUE_NOT_FOUND(HttpStatus.BAD_REQUEST, "" ), /*TODO 성우님 대신 임시로 만들어둔 에러코드입니다.*/
     REQUEST_OPTION_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 상품옵션그룹이 존재하지 않습니다."),
+    PRODUCT_OPTION_COMBINATION_OUT_OF_INVENTORY(HttpStatus.CONFLICT, "해당 상품의 재고가 부족합니다."),
 
     //주문 관련
     ORDER_SHEET_NOT_FOUND(HttpStatus.NOT_FOUND, "주문서 내용이 존재하지 않습니다."),

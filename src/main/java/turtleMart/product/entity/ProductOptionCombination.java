@@ -53,4 +53,8 @@ public class ProductOptionCombination {
     public void updateStatus(CombinationStatus combinationStatus) {
         this.combinationStatus = combinationStatus;
     }
+
+    public void decreaseInventory(Integer quantity) {
+        this.inventory -= quantity;
+    }
 }
