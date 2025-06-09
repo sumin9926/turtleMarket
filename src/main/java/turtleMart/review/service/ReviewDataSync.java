@@ -63,8 +63,6 @@ public class ReviewDataSync {
 
         reviewService.successDataStatusChange(response.items());
 
-        if (response.errors()) {sendFailMessage(response, reviewDocumentMap);}
-
         lastSyncTime = startSyncTime;
     }
 
@@ -86,16 +84,4 @@ public class ReviewDataSync {
             reviewDocumentMap.put(reviewDocument.getId(), reviewDocument);
         }
     }
-
-    private void sendFailMessage(BulkResponse response, Map<Long, ReviewDocument> reviewDocumentMap) {
-        List<ReviewDocument> errorLogList = response.items().stream()//에러가 발생한 도큐먼트를 뽑아온다
-                .filter(r -> r.error() != null)
-                .map(i -> reviewDocumentMap.get(Long.parseLong(i.id())))
-                .toList();
-
-        errorLogList.forEach(r -> {
-            String payload = JsonHelper.toJson(r);
-            stringKafkaTemplate.send(KafkaConst.REVIEW_SYNC_TOPIC, payload);
-        });
-    }//동기화 실패 후 처리
 }
