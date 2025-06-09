@@ -15,6 +15,7 @@ import turtleMart.delivery.entity.Sender;
 import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.delivery.repository.SenderRepository;
 import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ConflictException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.slack.SlackNotifier;
@@ -49,6 +50,17 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.ORDER_NOT_FOUND);
         }
+
+        // 해당 주문에 대한 배송이 존재할 경우 예외 처리
+        if (deliveryRepository.existsByOrderId(request.orderId())) {
+            slackNotifier.sendDeliveryCreateFailureAlert(
+                request.orderId(),
+                "DELIVERY_ALREADY_EXISTS",
+                "ID가 " + request.orderId() + "인 주문에 대한 배송이 이미 존재하여 배송 생성에 실패했습니다.");
+
+            throw new ConflictException(ErrorCode.DELIVERY_ALREADY_EXISTS);
+        }
+
         if (!sellerRepository.existsById(request.sellerId())) {
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -57,6 +69,7 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
         }
+
         if (!senderRepository.existsById(request.senderId())) {
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -65,6 +78,7 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.SENDER_NOT_FOUND);
         }
+
         if (!addressRepository.existsById(request.addressId())) {
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -73,6 +87,7 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.ADDRESS_NOT_FOUND);
         }
+
         Order order = orderRepository.getReferenceById(request.orderId());
         Seller seller = sellerRepository.getReferenceById(request.sellerId());
         Sender sender = senderRepository.getReferenceById(request.senderId());
@@ -84,6 +99,7 @@ public class DeliveryService {
 
         deliveryRepository.save(delivery);
 
+        // 슬랙 알림 메시지 전송
         slackNotifier.sendDeliveryCreateAlert(
             request.orderId(),
             delivery.getOrder().getMember().getName(),
@@ -101,6 +117,17 @@ public class DeliveryService {
         Delivery delivery = getDelivery(deliveryId);
 
         delivery.updateTrackingNumber(request.trackingNumber());
+
+        // 슬랙 알림 메시지 전송
+        slackNotifier.sendShippedCompleteAlert(
+            delivery.getOrder().getId(),
+            delivery.getTrackingNumber(),
+            delivery.getOrder().getMember().getName(),
+            delivery.getOrder().getMember().getPhoneNumber(),
+            delivery.getReceiverName(),
+            delivery.getReceiverPhone(),
+            delivery.getReceiverAddress(),
+            delivery.getReceiverDetailAddress());
 
         return UpdateDeliveryResponse.from(delivery);
     }
