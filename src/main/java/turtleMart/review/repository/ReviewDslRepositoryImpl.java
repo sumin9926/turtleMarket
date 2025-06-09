@@ -111,7 +111,7 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
                 .limit(1000)
                 .fetch();
 
-        Long cursor = reviewList.get(reviewList.size() - 1).getId();
+        Long cursor = reviewList.isEmpty() ? 0 : reviewList.get(reviewList.size() - 1).getId();
 
         return CursorPageResponse.of(reviewList, cursor,  true);
     }
