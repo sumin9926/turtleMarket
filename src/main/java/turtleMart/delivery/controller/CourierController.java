@@ -13,7 +13,7 @@ import turtleMart.delivery.service.CourierService;
 
 import java.util.List;
 
-@RequestMapping("/api/couriers")
+@RequestMapping("/couriers")
 @RestController
 @RequiredArgsConstructor
 public class CourierController {
