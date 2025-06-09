@@ -61,6 +61,9 @@ dependencies {
 
 	//JavaMailSender
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	//webclient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }
 
 def generated = file('build/generated/querydsl')
