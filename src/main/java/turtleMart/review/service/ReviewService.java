@@ -1,5 +1,6 @@
 package turtleMart.review.service;
 
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -188,6 +189,18 @@ public class ReviewService {
 
         review.delete();
         elasticSearchQueryClient.deleteReviewDocument(reviewId);
+    }
+
+    @Transactional
+    public void successDataStatusChange(List<BulkResponseItem> responseItemList){
+        List<Long> successIdList = new ArrayList<>(
+                responseItemList.stream()
+                        .filter(r -> r.error() == null)
+                        .map(i ->Long.parseLong(i.id()))
+                        .toList()
+        );
+
+        reviewDslRepositoryImpl.updateSyncStatus(successIdList);
     }
 
     private Review findByIdElseThrow(Long reviewId) {

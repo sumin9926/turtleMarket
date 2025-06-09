@@ -3,26 +3,22 @@ package turtleMart.review.service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.common.CursorPageResponse;
+import turtleMart.global.kafka.enums.KafkaConst;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.review.entity.Review;
 import turtleMart.review.entity.ReviewDocument;
 import turtleMart.review.repository.ReviewDslRepositoryImpl;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @Component
@@ -30,6 +26,7 @@ import static java.util.stream.Collectors.toList;
 public class ReviewDataSync {
 
     private final ReviewDslRepositoryImpl reviewDslRepository;
+    private final ReviewService reviewService;
     private final ElasticsearchClient client;
     private final KafkaTemplate<String, String> stringKafkaTemplate;
 
@@ -38,8 +35,9 @@ public class ReviewDataSync {
     // 맨 처음 시간을 뭘로 설정해야하는거지? - 서버를 다시 띄울때에도 유효해야하는거잖아 그러면 어딘가에다가 저장해야하나?
 
 
-    @Scheduled(cron = "0 10 12 * * *")
+    @Scheduled(cron = "0 42 3 * * *")
     public void elsaDataSync() {
+        log.info("동기화 시작");
         Long lastCursor = 0L;
         LocalDateTime startSyncTime = LocalDateTime.now();
         BulkRequest.Builder requestBuilder = new BulkRequest.Builder();
@@ -63,7 +61,8 @@ public class ReviewDataSync {
             return;
         }
 
-        successDataStatusChange(response.items());
+        reviewService.successDataStatusChange(response.items());
+
         if (response.errors()) {sendFailMessage(response, reviewDocumentMap);}
 
         lastSyncTime = startSyncTime;
@@ -75,29 +74,17 @@ public class ReviewDataSync {
 
             bulkQueryCreator.operations(op -> op
                     .update(upd -> upd
-                            .index(REVIEW_INDEX)
+                            .index("dont")
                             .id(review.getId().toString())
                             .action(a -> a
                                     .doc(reviewDocument)
                                     .detectNoop(true)
-                                    .docAsUpsert(true)
+                                    .docAsUpsert(false)
                             )
                     )
             );
             reviewDocumentMap.put(reviewDocument.getId(), reviewDocument);
         }
-    }
-
-    @Transactional
-    public void successDataStatusChange(List<BulkResponseItem> responseItemList){
-        List<Long> successIdList = new ArrayList<>(
-                responseItemList.stream()
-                        .filter(r -> r.error() == null)
-                        .map(i ->Long.parseLong(i.id()))
-                        .toList()
-        );
-
-        reviewDslRepository.updateSyncStatus(successIdList);
     }
 
     private void sendFailMessage(BulkResponse response, Map<Long, ReviewDocument> reviewDocumentMap) {
@@ -106,9 +93,9 @@ public class ReviewDataSync {
                 .map(i -> reviewDocumentMap.get(Long.parseLong(i.id())))
                 .toList();
 
-//        errorLogList.forEach(r -> {
-//            String payload = JsonHelper.toJson(r);
-//            stringKafkaTemplate.send(REVIEW_SYNC_TOPIC, payload);
-//        });
+        errorLogList.forEach(r -> {
+            String payload = JsonHelper.toJson(r);
+            stringKafkaTemplate.send(KafkaConst.REVIEW_SYNC_TOPIC, payload);
+        });
     }//동기화 실패 후 처리
 }

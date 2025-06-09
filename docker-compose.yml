@@ -94,6 +94,18 @@ services:
     depends_on:
       - elasticsearch
 
+#  logstash:
+#    build:
+#      context: ./elasticsearch/logstash
+#      dockerfile: Dockerfile
+#    container_name: logstash
+#    depends_on:
+#      - kafka
+#      - elasticsearch
+#    volumes:
+#      - ./elasticsearch/logstash/sync/pipeline:/usr/share/logstash/pipeline
+#      - ./elasticsearch/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+
 
 #  app:
 #    build:
