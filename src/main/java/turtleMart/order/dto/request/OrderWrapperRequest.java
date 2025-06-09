@@ -7,9 +7,10 @@ import turtleMart.payment.dto.request.PaymentRequest;
 import java.util.List;
 
 public record OrderWrapperRequest(
+        String orderKey, //정보 입력 불필요. tryOrder 에서 업데이트 할 예정
         @NotNull(message = "주문상품 관련 정보 입력은 필수입니다.")
         List<OrderRequest> orderList,
-        List<CartOrderSheetRequest> itemList, //정보 입력 불필요
+        List<CartOrderSheetRequest> itemList, //정보 입력 불필요. tryOrder 에서 업데이트 할 예정
 
         @NotNull(message = "결재 관련 정보 입력은 필수입니다.")
         PaymentRequest payment,
@@ -17,12 +18,15 @@ public record OrderWrapperRequest(
         @NotNull(message = "배송 관련 정보 입력은 필수입니다.")
         CreateDeliveryRequest delivery
 ) {
-        public static OrderWrapperRequest updateItemList(OrderWrapperRequest wrapperRequest, List<CartOrderSheetRequest> itemList){
+        public static OrderWrapperRequest updateOrderKeyAndItemList(
+                OrderWrapperRequest wrapperRequest, List<CartOrderSheetRequest> itemList, String orderKey
+        ){
                 return new OrderWrapperRequest(
-                        wrapperRequest.orderList,
+                        orderKey,
+                        wrapperRequest.orderList(),
                         itemList,
-                        wrapperRequest.payment,
-                        wrapperRequest.delivery
+                        wrapperRequest.payment(),
+                        wrapperRequest.delivery()
                 );
         }
 }
