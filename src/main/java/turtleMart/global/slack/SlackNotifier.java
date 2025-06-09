@@ -38,6 +38,12 @@ public class SlackNotifier {
         sendPayload(message);
     }
 
+    public void sendShippedCompleteAlert(Long orderId, String trackingNumber, String memberName, String phoneNumber, String receiver, String receiverPhone, String address, String detailAddress) {
+        String message = slackFormatter.formatShippedCompleteMessage(orderId, trackingNumber, memberName, phoneNumber, receiver, receiverPhone, address, detailAddress, LocalDateTime.now());
+
+        sendPayload(message);
+    }
+
     private void sendPayload(String payload) {
         webClient.post()
             .uri(slackWebhookUrl)
