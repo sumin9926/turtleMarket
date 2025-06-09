@@ -39,6 +39,10 @@ public class WidgetController {
     private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    /**
+     * POST /checkout에서 Order, payment 객체 만들고, GET /checkout 리다이렉트 하면서 결제 로직 시작.<br>
+     * 세션에 배송 관련 정보 담아뒀다가 /confirm에서 꺼내서 카프카로 이벤트 발행
+     */
     //TODO : /checkout 메서드 안에 수민님 Order 로직 넣기
     @PostMapping("/checkout")
     public String createAndRedirect(
