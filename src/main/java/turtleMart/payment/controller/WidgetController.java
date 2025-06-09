@@ -1,6 +1,7 @@
 package turtleMart.payment.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -9,14 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import turtleMart.order.dto.request.OrderWrapperRequest;
 import turtleMart.order.entity.Order;
 import turtleMart.order.repository.OrderRepository;
 import turtleMart.payment.dto.PaymentInfoTransfer;
+import turtleMart.payment.service.EmailService;
+import turtleMart.payment.service.PaymentService;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -28,7 +29,21 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class WidgetController {
     private final OrderRepository orderRepository;
+    private final EmailService emailService;
+    private final PaymentService paymentService;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    //TODO : /checkout 메서드 안에 수민님 Order 로직 넣기
+    @PostMapping("/checkout")
+    public String createAndRedirect(
+            @RequestBody OrderWrapperRequest dto,
+            @RequestParam Long orderId,
+            HttpSession session){
+
+        paymentService.createPayment(dto.payment());
+        session.setAttribute("delivery", dto.delivery());
+        return "redirect:/checkout?orderId=" + orderId;
+    }
 
     @GetMapping("/checkout")
     public String checkoutPage(@RequestParam Long orderId, Model model) throws Exception {
@@ -71,7 +86,7 @@ public class WidgetController {
 
 
     @RequestMapping(value = "/confirm")
-    public ResponseEntity<JSONObject> confirmPayment(@RequestBody String jsonBody) throws Exception {
+    public ResponseEntity<JSONObject> confirmPayment(@RequestBody String jsonBody, HttpSession session) throws Exception {
 
         JSONParser parser = new JSONParser();
         String orderId;
@@ -119,6 +134,9 @@ public class WidgetController {
         Reader reader = new InputStreamReader(responseStream, StandardCharsets.UTF_8);
         JSONObject jsonObject = (JSONObject) parser.parse(reader);
         responseStream.close();
+
+        Long rawOrderId = Long.parseLong(orderId.substring(6));
+        emailService.sendPaymentCompleteEmail(rawOrderId);
 
         return ResponseEntity.status(code).body(jsonObject);
     }

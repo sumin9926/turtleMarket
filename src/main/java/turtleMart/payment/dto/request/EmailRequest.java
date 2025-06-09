@@ -20,7 +20,7 @@ public record EmailRequest(
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         return new EmailRequest(
                 order.getMember().getEmail(),
-                orderName + " 결제 완료 안내 메일입니다.",
+                "[터틀마트] 결제 완료 안내 메일입니다.",
                 """
                 상품명 : %s
                 결제 금액 : %d KRW
