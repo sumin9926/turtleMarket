@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import turtleMart.member.dto.request.SignupRequest;
 import turtleMart.member.dto.request.LoginRequest;
+import turtleMart.member.dto.response.TokenResponse;
 import turtleMart.member.service.AuthService;
 
 @RestController
@@ -24,11 +25,11 @@ public class AuthController {
      * 회원가입
      */
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(
+    public ResponseEntity<TokenResponse> signup(
             @RequestBody @Valid SignupRequest request
     ) {
-        String token = authService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(token);
+        TokenResponse response = authService.signup(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
@@ -36,10 +37,10 @@ public class AuthController {
      * 로그인
      */
     @PostMapping("/login")
-    public ResponseEntity<String> login(
+    public ResponseEntity<TokenResponse> login(
             @RequestBody @Valid LoginRequest request
     ) {
-        String token = authService.login(request);
-        return ResponseEntity.status(HttpStatus.OK).body(token);
+        TokenResponse response = authService.login(request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

@@ -10,6 +10,7 @@ import turtleMart.member.dto.request.DeleteSellerRequest;
 import turtleMart.member.dto.request.SellerRegisterRequest;
 import turtleMart.member.dto.request.UpdateSellerRequest;
 import turtleMart.member.dto.response.SellerResponse;
+import turtleMart.member.dto.response.TokenResponse;
 import turtleMart.member.service.SellerService;
 import turtleMart.security.AuthUser;
 
@@ -20,12 +21,12 @@ public class SellerController {
     private final SellerService sellerService;
 
     @PostMapping("register")
-    public ResponseEntity<String> registerSeller(
+    public ResponseEntity<TokenResponse> registerSeller(
             @AuthenticationPrincipal AuthUser authUser,
             @RequestBody @Valid SellerRegisterRequest request
     ) {
-        String token = sellerService.registerSeller(authUser.memberId(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(token);
+        TokenResponse response = sellerService.registerSeller(authUser.memberId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{sellerId}")
@@ -56,12 +57,12 @@ public class SellerController {
     }
 
     @DeleteMapping("/{sellerId}/me/close")
-    public ResponseEntity<String> withdrawSeller(
+    public ResponseEntity<TokenResponse> withdrawSeller(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long sellerId,
             @RequestBody @Valid DeleteSellerRequest request
     ) {
-        String token = sellerService.deleteSeller(authUser.memberId(), sellerId, request);
-        return ResponseEntity.status(HttpStatus.OK).body(token);
+        TokenResponse response = sellerService.deleteSeller(authUser.memberId(), sellerId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

@@ -9,6 +9,7 @@ import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.dto.request.LoginRequest;
 import turtleMart.member.dto.request.SignupRequest;
+import turtleMart.member.dto.response.TokenResponse;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.security.JwtUtil;
@@ -25,22 +26,22 @@ public class AuthService {
      * 회원가입
      */
     @Transactional
-    public String signup(SignupRequest request) {
+    public TokenResponse signup(SignupRequest request) {
         if (memberRepository.existsByEmail(request.email())) {
 //            throw new RuntimeException("이미 가입된 이메일입니다.");
             throw new BadRequestException(ErrorCode.EMAIL_ALREADY_EXIST);
         }
         Member member = Member.of(request, passwordEncoder.encode(request.password()));
         memberRepository.save(member);
-        String token = jwtUtil.createToken(member.getId(), member.getAuthority());
-        return jwtUtil.removePrefix(token);
+        String token = createToken(member);
+        return TokenResponse.from("회원가입이 완료되었습니다.", token);
     }
 
     /**
      * 로그인
      */
     @Transactional
-    public String login(LoginRequest request) {
+    public TokenResponse login(LoginRequest request) {
         Member member = memberRepository.findMemberByEmail(request.email())
 //                .orElseThrow(() -> new RuntimeException("가입된 이메일이 아닙니다."));
                 .orElseThrow(() -> new NotFoundException(ErrorCode.EMAIL_NOT_FOUND));
@@ -48,6 +49,11 @@ public class AuthService {
 //            throw new RuntimeException("비밀번호가 잘못되었습니다.");
             throw new BadRequestException(ErrorCode.INVALID_PASSWORD);
         }
+        String token = createToken(member);
+        return TokenResponse.from("로그인이 완료되었습니다.", token);
+    }
+
+    private String createToken(Member member) {
         String token = jwtUtil.createToken(member.getId(), member.getAuthority());
         return jwtUtil.removePrefix(token);
     }
