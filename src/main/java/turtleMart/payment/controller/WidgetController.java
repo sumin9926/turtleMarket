@@ -8,10 +8,15 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.ui.Model;
+import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
+import turtleMart.global.kafka.dto.OperationWrapperDto;
+import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.utill.JsonHelper;
 import turtleMart.order.dto.request.OrderWrapperRequest;
 import turtleMart.order.entity.Order;
 import turtleMart.order.repository.OrderRepository;
@@ -31,6 +36,7 @@ public class WidgetController {
     private final OrderRepository orderRepository;
     private final EmailService emailService;
     private final PaymentService paymentService;
+    private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     //TODO : /checkout 메서드 안에 수민님 Order 로직 넣기
@@ -137,6 +143,13 @@ public class WidgetController {
 
         Long rawOrderId = Long.parseLong(orderId.substring(6));
         emailService.sendPaymentCompleteEmail(rawOrderId);
+
+        CreateDeliveryRequest request = (CreateDeliveryRequest) session.getAttribute("delivery");
+        String payload = JsonHelper.toJson(request);
+        String key = "";
+        String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.INVENTORY_DECREASE, payload));
+
+        stringKafkaTemplate.send("order_make_topic", key, value);
 
         return ResponseEntity.status(code).body(jsonObject);
     }
