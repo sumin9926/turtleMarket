@@ -51,12 +51,14 @@ public enum ErrorCode {
     ORDER_ITEM_NOT_OWNED_BY_MEMBER(HttpStatus.FORBIDDEN, "해당 회원이 이 주문 항목의 소유자가 아닙니다."),
     NO_REFUNDING_ORDER_ITEM_FOUND(HttpStatus.NOT_FOUND, "환불중인 주문 항목이 없습니다."),
     ORDER_PRICE_VALIDATION_FAILED(HttpStatus.CONFLICT, "주문 생성 중 가격 정합성 오류: 주문서 가격과 상품 가격이 일치하지 않습니다."),
+    DUPLICATE_ORDER_REQUEST(HttpStatus.BAD_REQUEST, "이미 처리 중인 주문 요청입니다."),
 
     //장바구니 관련
     PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 삭제하려는 상품이 존재하지 않음"),
 
     //유저 관련
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
+
     //여러가지 관련
     TIME_OUT(HttpStatus.INTERNAL_SERVER_ERROR, "응답 대기시간을 초과하였습니다."),
     INTERRUPT(HttpStatus.INTERNAL_SERVER_ERROR, "인터럽"),

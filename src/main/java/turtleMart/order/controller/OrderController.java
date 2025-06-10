@@ -6,12 +6,14 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 import turtleMart.order.dto.request.CartOrderSheetRequest;
 import turtleMart.order.dto.request.OrderItemStatusRequest;
 import turtleMart.order.dto.request.OrderWrapperRequest;
 import turtleMart.order.dto.response.MemberOrderListResponse;
 import turtleMart.order.dto.response.OrderDetailResponse;
 import turtleMart.order.dto.response.TotalOrderedQuantityResponse;
+import turtleMart.order.service.OrderWaiter;
 import turtleMart.order.service.OrderService;
 
 import java.time.LocalDate;
@@ -24,18 +26,21 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderWaiter orderWaiter;
 
     @PostMapping("/orders")
-    public ResponseEntity<Void> createOrder(
+    public DeferredResult<ResponseEntity<OrderWrapperRequest>> createOrder(
             @RequestParam String items, //상품옵션Id1:수량,상품옵션Id2:수량 형식으로 입력
-            @RequestBody OrderWrapperRequest request
+            @RequestBody OrderWrapperRequest request,
+            @RequestHeader("Idempotency-key") String idempotencyKey
             /*TODO JWT 통해서 회원 ID 가져오기*/
     ) {
         List<CartOrderSheetRequest> productNameAndQuantityList = CartOrderSheetRequest.splitItemIdAndQuantity(items);
 
-        orderService.tryOrder(1L, productNameAndQuantityList, request);
+        DeferredResult<ResponseEntity<OrderWrapperRequest>> result = orderWaiter.createWaiter(idempotencyKey);
+        orderService.tryOrder(1L, productNameAndQuantityList, request, idempotencyKey);
 
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return result; //ResponseEntity<OrderWrapperRequest>를 반환함
     }
 
     @GetMapping("/{orderId}")
