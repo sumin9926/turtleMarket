@@ -5,12 +5,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartItemQuantityRequest;
 import turtleMart.order.dto.response.AddCartItemResponse;
 import turtleMart.order.dto.response.CartItemResponse;
 import turtleMart.order.service.CartService;
+import turtleMart.security.AuthUser;
 
 import java.util.List;
 
@@ -21,53 +23,51 @@ public class CartController {
 
     private final CartService cartService;
 
-    /*TODO 전체 메서드에 회원 권한 추가*/
-
     @PostMapping()
     public ResponseEntity<AddCartItemResponse> addCartItem(
-            @Valid @RequestBody AddCartItemRequest request
-            /*TODO JWT 통해서 회원 ID 가져오기*/
+            @Valid @RequestBody AddCartItemRequest request,
+            @AuthenticationPrincipal AuthUser authUser
     ) throws JsonProcessingException {
-        AddCartItemResponse response = cartService.addItemsToCart(1L, request);
+        AddCartItemResponse response = cartService.addItemsToCart(authUser.memberId(), request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/my")
     public ResponseEntity<List<CartItemResponse>> getMyCartItem(
-            /*TODO JWT 통해서 회원 ID 가져오기*/
+            @AuthenticationPrincipal AuthUser authUser
     ) {
-        List<CartItemResponse> responseList = cartService.getItemsFromCart(1L);
+        List<CartItemResponse> responseList = cartService.getItemsFromCart(authUser.memberId());
 
         return ResponseEntity.status(HttpStatus.OK).body(responseList);
     }
 
     @PatchMapping("/cart-items/{cartItemId}")
     public ResponseEntity<AddCartItemResponse> updateCartItemQuantity(
-            /*TODO JWT 통해서 회원 ID 가져오기*/
+            @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody CartItemQuantityRequest request,
             @PathVariable Long cartItemId
     ) {
-        AddCartItemResponse response = cartService.updateCartItemQuantity(1L, request, cartItemId);
+        AddCartItemResponse response = cartService.updateCartItemQuantity(authUser.memberId(), request, cartItemId);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @DeleteMapping("/cart-items/{cartItemId}")
     public ResponseEntity<Void> deleteCartItemById(
-            /*TODO JWT 통해서 회원 ID 가져오기*/
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long cartItemId
     ) {
-        cartService.deleteCartItem(1L, cartItemId);
+        cartService.deleteCartItem(authUser.memberId(), cartItemId);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @DeleteMapping()
     public ResponseEntity<Void> clearCart(
-            /*TODO JWT 통해서 회원 ID 가져오기*/
+            @AuthenticationPrincipal AuthUser authUser
     ) {
-        cartService.deleteAllCartItem(1L);
+        cartService.deleteAllCartItem(authUser.memberId());
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
