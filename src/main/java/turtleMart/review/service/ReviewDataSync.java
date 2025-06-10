@@ -10,6 +10,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import turtleMart.global.common.CursorPageResponse;
+import turtleMart.global.common.ElasticSearchConst;
 import turtleMart.review.entity.Review;
 import turtleMart.review.entity.ReviewDocument;
 import turtleMart.review.repository.ReviewDslRepositoryImpl;
@@ -34,10 +35,9 @@ public class ReviewDataSync {
     private final RetryTemplate retryTemplate = new RetryTemplate();
 
     private LocalDateTime lastSyncTime;
-    private final String REVIEW_INDEX = "review";
     private final String LAST_SYNC_CHECK_POINT = "lastSyncTime";
 
-    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 0 2 * * *")
     public void elsaDataSync() {
         Long lastCursor = 0L;
 
@@ -82,7 +82,7 @@ public class ReviewDataSync {
 
             bulkQueryCreator.operations(op -> op
                     .update(upd -> upd
-                            .index(REVIEW_INDEX)
+                            .index(ElasticSearchConst.REVIEW_INDEX)
                             .id(review.getId().toString())
                             .action(a -> a
                                     .doc(reviewDocument)

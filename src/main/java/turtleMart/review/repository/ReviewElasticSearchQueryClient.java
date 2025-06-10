@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import turtleMart.global.common.ElasticSearchConst;
+import turtleMart.global.exception.CustomRuntimeException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.ExternalServiceException;
 import turtleMart.review.dto.request.UpdateReviewRequest;
@@ -27,8 +29,6 @@ public class ReviewElasticSearchQueryClient {
 
     private final ElasticsearchClient client;
     private final ReviewElasticSearchRepository reviewElasticSearchRepository;
-
-    private final String REVIEW_INDEX = "review";
 
     public void createReviewDocument(Review review) {
         ReviewDocument reviewDocument = ReviewDocument.from(review);
@@ -52,7 +52,7 @@ public class ReviewElasticSearchQueryClient {
         }
 
         SearchRequest searchRequest = new SearchRequest.Builder()
-                .index("review")
+                .index(ElasticSearchConst.REVIEW_INDEX)
                 .from(pageable.getPageNumber() * pageable.getPageSize())
                 .size(pageable.getPageSize())
                 .query(q -> q.bool(builder.build())).build();
@@ -70,14 +70,20 @@ public class ReviewElasticSearchQueryClient {
         reviewElasticSearchRepository.deleteById(reviewId);
     }
 
-    public void updateDocumentRetry(ReviewDocument reviewDocument) throws IOException{
+    public void updateDocumentRetry(ReviewDocument reviewDocument) {
         UpdateRequest<ReviewDocument, ReviewDocument> request =  UpdateRequest.of(b -> b
-                .index(REVIEW_INDEX)
+                .index(ElasticSearchConst.REVIEW_INDEX)
                 .id(String.valueOf(reviewDocument.getId()))
                 .doc(reviewDocument)
                 .detectNoop(true)
                 .docAsUpsert(true)
         );
-        client.update(request, Void.class);
+
+        try{
+            client.update(request, Void.class);
+        }catch (IOException ex){
+            log.info("동기화 중 알수 없는 문제 발생");
+        }
+
     }
 }
