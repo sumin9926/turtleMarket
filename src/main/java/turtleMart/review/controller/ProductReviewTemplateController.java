@@ -3,9 +3,11 @@ package turtleMart.review.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.review.dto.request.CreateProductReviewTemplateRequest;
 import turtleMart.review.service.ProductReviewTemplateService;
+import turtleMart.security.AuthUser;
 
 @RestController
 @RequiredArgsConstructor// 사장 전용
@@ -24,10 +26,10 @@ public class ProductReviewTemplateController {
 
     @DeleteMapping("/product-review-template/{productReviewTemplateId}")
     public ResponseEntity<Void> deleteProductReviewTemplate(
-            //@RequestAttribute("memberId") Long memberId,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable(name = "productReviewTemplateId") Long productReviewTemplateId) {
 
-        productReviewTemplateService.deleteProductReviewTemplate(1L, productReviewTemplateId);
+        productReviewTemplateService.deleteProductReviewTemplate(authUser.memberId(), productReviewTemplateId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }
