@@ -22,6 +22,8 @@ import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.kakao.KakaoMessageService;
+import turtleMart.global.kakao.dto.UserNotification;
 import turtleMart.global.slack.SlackNotifier;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Address;
@@ -44,6 +46,7 @@ public class DeliveryService {
     private final SenderRepository senderRepository;
     private final AddressRepository addressRepository;
     private final SlackNotifier slackNotifier;
+    private final KakaoMessageService kakaoMessageService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${kafka.topic.product}")
@@ -157,16 +160,9 @@ public class DeliveryService {
 
         delivery.updateTrackingNumber(request.trackingNumber());
 
-        // 슬랙 알림 메시지 전송
-        slackNotifier.sendShippedCompleteAlert(
-            delivery.getOrder().getId(),
-            delivery.getTrackingNumber(),
-            delivery.getOrder().getMember().getName(),
-            delivery.getOrder().getMember().getPhoneNumber(),
-            delivery.getReceiverName(),
-            delivery.getReceiverPhone(),
-            delivery.getReceiverAddress(),
-            delivery.getReceiverDetailAddress());
+        // 카카오톡 알림 메시지 전송
+        UserNotification userNotification = UserNotification.from(delivery);
+        kakaoMessageService.sendMessage(userNotification);
 
         return UpdateDeliveryResponse.from(delivery);
     }
