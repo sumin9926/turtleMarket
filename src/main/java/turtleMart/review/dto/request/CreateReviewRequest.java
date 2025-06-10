@@ -14,6 +14,6 @@ public record CreateReviewRequest(@NotNull Long orderItemId,
                                   @NotBlank @Size(max = 20) String title,
                                   @NotBlank @Size(max = 255) String content,
                                   @NotNull @Max(5) Integer rating,
-                                  List<String> imageUrlList,
+                                  @Size(max = 10, message = "이미지는 최대 10개 업로드 가능합니다.") List<String> imageUrlList,
                                   List<@Valid CreateTemplateChoiceRequest> templateChoiceList) {
 }
