@@ -42,6 +42,7 @@ public enum ErrorCode {
     PRODUCT_NOT_BELONG_TO_SELLER(HttpStatus.FORBIDDEN, "상품이 판매자 소유가 아닙니다."),
     REQUEST_OPTION_VALUE_NOT_FOUND(HttpStatus.BAD_REQUEST, "" ), /*TODO 성우님 대신 임시로 만들어둔 에러코드입니다.*/
     REQUEST_OPTION_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 상품옵션그룹이 존재하지 않습니다."),
+    PRODUCT_OPTION_COMBINATION_OUT_OF_INVENTORY(HttpStatus.CONFLICT, "해당 상품의 재고가 부족합니다."),
 
     //주문 관련
     ORDER_SHEET_NOT_FOUND(HttpStatus.NOT_FOUND, "주문서 내용이 존재하지 않습니다."),
@@ -51,6 +52,7 @@ public enum ErrorCode {
     ORDER_ITEM_NOT_OWNED_BY_MEMBER(HttpStatus.FORBIDDEN, "해당 회원이 이 주문 항목의 소유자가 아닙니다."),
     NO_REFUNDING_ORDER_ITEM_FOUND(HttpStatus.NOT_FOUND, "환불중인 주문 항목이 없습니다."),
     ORDER_PRICE_VALIDATION_FAILED(HttpStatus.CONFLICT, "주문 생성 중 가격 정합성 오류: 주문서 가격과 상품 가격이 일치하지 않습니다."),
+    DUPLICATE_ORDER_REQUEST(HttpStatus.BAD_REQUEST, "이미 처리 중인 주문 요청입니다."),
 
     //장바구니 관련
     PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 삭제하려는 상품이 존재하지 않음"),

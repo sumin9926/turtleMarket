@@ -1,8 +1,11 @@
 package turtleMart.order.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.lettuce.core.RedisCommandTimeoutException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -25,9 +28,11 @@ import turtleMart.order.dto.response.*;
 import turtleMart.order.entity.Order;
 import turtleMart.order.entity.OrderItem;
 import turtleMart.order.entity.OrderItemStatus;
+import turtleMart.order.repository.OrderItemDslRepository;
 import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.order.repository.OrderRepository;
 import turtleMart.payment.dto.request.PaymentRequest;
+import turtleMart.payment.entity.PaymentMethod;
 import turtleMart.product.entity.Product;
 import turtleMart.product.entity.ProductOptionCombination;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
@@ -40,6 +45,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -51,13 +57,16 @@ public class OrderService {
     private final SellerRepository sellerRepository;
     private final ProductOptionCombinationRepository productOptionCombinationRepository;
     private final ProductOptionValueRepository productOptionValueRepository;
+    private final OrderItemDslRepository orderItemDslRepository;
     private final CartService cartService;
-    private final RedisTemplate<String, String> redisTemplate;
     private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final KafkaTemplate<String, Object> objectKafkaTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Value("${kafka.topic.payment}")
     private String paymentTopic;
+    private static final String KAFKA_ORDER_MAKE_TOPIC = "order_make_topic"; //TODO properties 로 이동 시키기
+    private static final String KAFKA_DELETE_CART_ITEM_TOPIC = "delete_cart_item_topic"; //TODO properties 로 이동 시키기
 
     @Transactional(readOnly = true)
     public List<OrderSheetResponse> getOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
@@ -222,20 +231,19 @@ public class OrderService {
             throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
         }
 
-        Long totalOrderedQuantity = orderItemRepository.countTotalOrderedBySellerAndProduct(
+        Long totalOrderedQuantity = orderItemDslRepository.getTotalOrderedQuantity(
                 sellerId, productId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay(), OrderItemStatus.REFUNDED
         );
 
         return TotalOrderedQuantityResponse.from(productId, totalOrderedQuantity);
     }
 
-    @Transactional
-    public void tryOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderWrapperRequest wrapperRequest) {
+    public void tryOrder(Long memberId, List<CartOrderSheetRequest> itemList, OrderWrapperRequest wrapperRequest, String orderKey) {
         if (!memberRepository.existsById(memberId)) {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
-        // 일단 DTO 먼저 만든다. (OrderWrapperRequest - OrderRequest+결재요청DTO+배송요청Dto)
-        OrderWrapperRequest newWrapperRequest = OrderWrapperRequest.updateItemList(wrapperRequest, itemList);
+        // 일단 DTO 먼저 만든다. (OrderWrapperRequest = 주문요청Dto+결재요청Dto+배송요청Dto+orderKey+itemList)
+        OrderWrapperRequest newWrapperRequest = OrderWrapperRequest.updateOrderKeyAndItemList(wrapperRequest, itemList, orderKey);
         // 주문 요청이 들어오면 kafka 'order~' 토픽으로 일단 넘긴다.(그러면 그쪽에서 가격 상태 변경 상태인지 아닌지 검증한다.)
         List<Long> productOptionCombinationIdList = itemList.stream()
                 .map(CartOrderSheetRequest::productOptionId)
@@ -245,12 +253,18 @@ public class OrderService {
         String payload = JsonHelper.toJson(newWrapperRequest);
         String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
 
-        stringKafkaTemplate.send("order_make_topic", key, value);
+        try {
+            stringKafkaTemplate.send(KAFKA_ORDER_MAKE_TOPIC, key, value);
+            log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", KAFKA_ORDER_MAKE_TOPIC);
+        } catch (Exception e) {
+            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
+            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
+        }
     }
 
     @Transactional
-    public void createOrder(OrderWrapperRequest wrapperRequest){
-        // 카프카 통과해서 오면 실행되는 로직
+    public void createOrder(OrderWrapperRequest wrapperRequest) { // 카프카 통과해서 오면 실행되는 로직
+        // 데이터 전처리
         List<OrderRequest> orderRequestList = wrapperRequest.orderList();
         List<CartOrderSheetRequest> orderSheetRequestList = wrapperRequest.itemList();
         PaymentRequest paymentRequest = wrapperRequest.payment();
@@ -266,64 +280,111 @@ public class OrderService {
                         Function.identity()
                 ));
 
-        // 가격 정합성 검증
-        for(Long productOptionId : orderSheetMap.keySet()){
-            Integer quantity = orderSheetMap.get(productOptionId).quantity();
-            OrderRequest order = orderMap.get(productOptionId);
-            ProductOptionCombination optionCombination = productOptionCombinationRepository.findById(productOptionId).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
-            );
-            Integer currentPrice = optionCombination.getPrice();
-            Integer snapShotPrice = order.price();
+        List<Long> productOptionIdList = orderSheetRequestList.stream().map(CartOrderSheetRequest::productOptionId).toList();
+        List<ProductOptionCombination> optionCombinationList = productOptionCombinationRepository.findAllById(productOptionIdList);
+        Map<Long, ProductOptionCombination> optionMap = optionCombinationList.stream()
+                .collect(Collectors.toMap(
+                        ProductOptionCombination::getId,
+                        Function.identity()
+                ));
 
-            if(!snapShotPrice.equals(currentPrice) || !order.totalPrice().equals(currentPrice*quantity)){
-                throw new ConflictRequestException(ErrorCode.ORDER_PRICE_VALIDATION_FAILED);
-            }
-        }
+        // 가격 정합성 검사
+        validatePrice(orderSheetMap, orderMap, optionMap);
 
-        // 정합성 문제 없을 경우 결재 계속 진행
+        // 정합성 문제 없을 경우 order, orderItem Table 생성
         Member member = memberRepository.findById(paymentRequest.memberId()).orElseThrow(
                 () -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND)
         );
         Order order = Order.of(member, new ArrayList<>(), 0);
 
         orderSheetMap.keySet().forEach(productOptionId -> {
-            ProductOptionCombination productOptionCombination = productOptionCombinationRepository.findById(productOptionId).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
-            );
-            OrderItem orderItem = OrderItem.of(order, productOptionCombination, productOptionCombination.getPrice(),
-                    productOptionCombination.getProduct().getName(), orderSheetMap.get(productOptionId).quantity());
+            ProductOptionCombination optionCombination = optionMap.get(productOptionId);
+            if (null == optionCombination) {
+                throw new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND);
+            }
+            OrderItem orderItem = OrderItem.of(order, optionCombination, optionCombination.getPrice(),
+                    optionCombination.getProduct().getName(), orderSheetMap.get(productOptionId).quantity());
             order.addOrderItem(orderItem);
         });
 
         order.calculateTotalPrice();
         orderRepository.save(order);
 
+        // Redis에 결과 발행
+        redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(wrapperRequest));
+
+        // 주문 완료된 장바구니 상품 삭제
+        removeCartItemFromRedisCart(orderRequestList, member);
+
+        // 결제 수단이 토스가 아닌 경우에만 결제쪽으로 kafka 메세지 전송
+        if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) {
+            sendPaymentRequest(wrapperRequest, order);
+        }
+    }
+
+    private void removeCartItemFromRedisCart(List<OrderRequest> orderRequestList, Member member) {
         List<Long> cartItemIdList = orderRequestList.stream()
                 .map(OrderRequest::cartItemId)
                 .toList();
 
-        // 장바구니 Redis 캐시 삭제
-        removeCartItemFromRedis(member.getId(), cartItemIdList);
+        // 장바구니 Redis 캐시 삭제 (삭제에 실패한 데이터는 정보를 따로 저장해뒀다가 나중에 따로 재처리 시도. UX 고려, 장바구니 삭제 실패로 전체 주문 로직이 실패하는 경우 방지)
+        String key = "cart:" + member.getId();
 
+        for (Long cartItemId : cartItemIdList) {
+            try {
+                redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));
+            } catch (RedisConnectionFailureException | RedisCommandTimeoutException e) {
+                log.warn("장바구니 삭제 실패 - 재시도 대상: cartItemId={}", cartItemId, e);
+                sendCartItemDeleteRetryMessageToKafka(cartItemId, key);
+            } catch (Exception e) {
+                log.error("장바구니 삭제 실패 - Redis 직렬화 문제(재시도 대상 x): cartItemId={}", cartItemId, e);
+            }
+        }
+    }
+
+    private void sendCartItemDeleteRetryMessageToKafka(Long cartItemId, String key) {
+        CartItemDeleteRetryMessage message = new CartItemDeleteRetryMessage(String.valueOf(cartItemId), key, 1);
+        try {
+            objectKafkaTemplate.send(KAFKA_DELETE_CART_ITEM_TOPIC, message);
+            log.info("장바구니 삭제 재시도 kafka 토픽에 메세지 발행 성공! TopicName: {}", KAFKA_DELETE_CART_ITEM_TOPIC);
+        } catch (Exception e) {
+            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
+            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
+        }
+    }
+
+    private void validatePrice(Map<Long, CartOrderSheetRequest> orderSheetMap, Map<Long, OrderRequest> orderMap, Map<Long, ProductOptionCombination> optionMap) {
+        for (Long productOptionId : orderSheetMap.keySet()) {
+            Integer quantity = orderSheetMap.get(productOptionId).quantity();
+            OrderRequest order = orderMap.get(productOptionId);
+            ProductOptionCombination optionCombination = optionMap.get(productOptionId);
+            if (null == optionCombination) {
+                throw new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND);
+            }
+
+            Integer currentPrice = optionCombination.getPrice();
+            Integer snapShotPrice = order.price();
+
+            if (!snapShotPrice.equals(currentPrice) || !order.totalPrice().equals(currentPrice * quantity)) {
+                throw new ConflictRequestException(ErrorCode.ORDER_PRICE_VALIDATION_FAILED);
+            }
+        }
+    }
+
+    private void sendPaymentRequest(OrderWrapperRequest wrapperRequest, Order order) {
         //주문 ID 담아주기
         PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment(), order.getId());
 
         // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
         PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, wrapperRequest.delivery());
-        objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest);
-    }
 
-    private void removeCartItemFromRedis(Long memberId, List<Long> cartItemIdList) {
-        String key = "cart:" + memberId;
-
-        for (Long cartItemId : cartItemIdList) {
-            Boolean cartItemExist = redisTemplate.opsForHash().hasKey(key, String.valueOf(cartItemId));
-            if (Boolean.FALSE.equals(cartItemExist)) {
-                throw new NotFoundException(ErrorCode.PRODUCT_NOT_IN_CART);
-            }
-
-            redisTemplate.opsForHash().delete(key, String.valueOf(cartItemId));
+        try {
+            objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest);
+            log.info("결재 처리 kafka 토픽에 메세지 발행 성공! TopicName: {}", paymentTopic);
+        } catch (Exception e) {
+            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
+            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
         }
     }
+
 }

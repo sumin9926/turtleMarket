@@ -3,6 +3,8 @@ package turtleMart.review.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +30,8 @@ import turtleMart.review.entity.*;
 import turtleMart.review.repository.ProductReviewTemplateDslRepositoryImpl;
 import turtleMart.review.repository.ReviewDslRepositoryImpl;
 import turtleMart.review.repository.ReviewRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -79,7 +83,7 @@ public class ReviewService {
 
         reviewRepository.save(review);
 
-        List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         List<String> imageUrlList = JsonHelper.fromJsonToList(dbImageList, new TypeReference<>() {});
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
@@ -88,14 +92,25 @@ public class ReviewService {
 
         Review review = findByIdElseThrow(reviewId);
 
-        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-        List<TemplateChoiceResponse> choiceResponseList = readTemplateChoiceByReview(review);
+        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
+                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
 
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
 
-    public Page<ReviewResponse> readByMemberId(Long memberId){
-        return null;
+    public Page<ReviewResponse> readByMemberId(Long memberId, Pageable pageable){
+        Page<Review> reviewPage = reviewDslRepositoryImpl.findByMemberIdWithPagination(memberId, pageable);
+
+        return reviewPage.map(review -> {
+            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
+                    : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+
+            List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
+
+        return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+        });
     }
 
 
@@ -147,14 +162,4 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_NOT_FOUND));
     }
 
-    //어디로 뺄지 고민중
-    private List<TemplateChoiceResponse> readTemplateChoiceByReview(Review review){
-
-        return review.getTemplateChoiceList().stream()
-                .map(t -> {
-                    ReviewTemplate reviewTemplate = t.getProductReviewTemplate().getReviewTemplate();
-                    return TemplateChoiceResponse.of(reviewTemplate.getQuestion(), reviewTemplate.getChoice(t.getChoseAnswer()));
-                })
-                .toList();
-    }
 }

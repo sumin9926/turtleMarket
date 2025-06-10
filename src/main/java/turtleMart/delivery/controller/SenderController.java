@@ -12,7 +12,7 @@ import turtleMart.delivery.service.SenderService;
 
 import java.util.List;
 
-@RequestMapping("/api/senders")
+@RequestMapping("/senders")
 @RestController
 @RequiredArgsConstructor
 public class SenderController {
