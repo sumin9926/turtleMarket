@@ -16,6 +16,9 @@ import turtleMart.product.repository.ProductOptionValueRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class OrderItemDslRepositoryImpl implements OrderItemDslRepository{
 
     @Override
     public List<RefundResponse> findAllOrderItemBySellerIdAndStatusRefunding(Long sellerId, OrderItemStatus status) {
-        List<RefundResponse> results =  queryFactory
+        List<RefundResponse> resultList =  queryFactory
                 .select(Projections.constructor(
                         RefundResponse.class,
                         member.id,
@@ -54,13 +57,19 @@ public class OrderItemDslRepositoryImpl implements OrderItemDslRepository{
                 )
                 .fetch();
 
-        return results.stream()
+        Set<String> uniqueKeySet = resultList.stream()
+                .map(RefundResponse::optionInfo)
+                .collect(Collectors.toSet());
+
+        Map<String, String> optionDisplayMap = OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
+
+        return resultList.stream()
                 .map(r -> new RefundResponse(
                         r.memberId(),
                         r.orderId(),
                         r.orderItemId(),
                         r.productName(),
-                        OptionDisplayUtils.buildOptionDisplay(r.optionInfo(), productOptionValueRepository), // uniqueKey → optionInfo 변환
+                        optionDisplayMap.getOrDefault(r.optionInfo(), "(옵션 정보 없음)"), // uniqueKey → optionInfo 변환
                         r.quantity(),
                         r.price(),
                         r.totalPrice()
@@ -87,6 +96,6 @@ public class OrderItemDslRepositoryImpl implements OrderItemDslRepository{
                 )
                 .fetchOne();
 
-       return total != null ? total : 0L;
+       return total != null ? total : 0L; //coalesce() 를 사용할까 했지만, 타입 캐스팅 때문에 오히려 복잡해져서 그냥 상항연산자 사용하는 것으로 했습니다.
     }
 }

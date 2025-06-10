@@ -1,5 +1,5 @@
 package turtleMart.payment.entity;
 
 public enum PaymentMethod {
-    CARD, BANK_TRANSFER
+    CARD, BANK_TRANSFER, TOSS
 }
