@@ -128,7 +128,7 @@ String[]itemName = {
 
 
 
-
+@Transactional
     public void generatorOrderItem(int repeat){
 
         Order order = orderRepository.getReferenceById(1L);

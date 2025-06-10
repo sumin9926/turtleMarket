@@ -24,8 +24,8 @@
 //
 //    @Override
 //    public void run(String... args) {
-////        orderItemGenerator.generatorOrderItem(30000);
-////        generator.generate(30000, 100); // 총 100개의 상품에 대해 10,000개의 리뷰 생성
+//        orderItemGenerator.generatorOrderItem(1000000);
+//        generator.generate(1000000, 100); // 총 100개의 상품에 대해 10,000개의 리뷰 생성
 //
 //        int page = 0;
 //        int size = 1000;
