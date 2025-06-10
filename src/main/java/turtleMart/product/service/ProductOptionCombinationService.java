@@ -1,6 +1,7 @@
 package turtleMart.product.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -32,6 +33,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductOptionCombinationService {
@@ -195,5 +197,24 @@ public class ProductOptionCombinationService {
 
             productOptionCombination.decreaseInventory(quantity);
         }
+    }
+
+    @Transactional
+    public void increaseProductOptionCombinationInventory(Long orderId) {
+        List<OrderItem> orderItemList = orderItemRepository.findAllByOrderId(orderId);
+
+        for (OrderItem orderItem : orderItemList) {
+            Long productOptionCombinationId = orderItem.getProductOptionCombination().getId();
+            Integer quantity = orderItem.getQuantity();
+
+            ProductOptionCombination productOptionCombination = productOptionCombinationRepository
+                .findByIdWithPessimisticLock(productOptionCombinationId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND));
+
+            productOptionCombination.increaseInventory(quantity);
+
+            log.info("✅ [{}]의 재고가 {}개 복원되었습니다! (OptionCombinationId: {})", orderItem.getName(), quantity, productOptionCombinationId);
+        }
+        log.info("✅ 주문 ID {}의 모든 재고 복원 작업이 완료되었습니다.", orderId);
     }
 }

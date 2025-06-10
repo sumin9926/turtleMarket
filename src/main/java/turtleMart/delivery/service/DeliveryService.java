@@ -1,6 +1,8 @@
 package turtleMart.delivery.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
@@ -18,7 +20,10 @@ import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ConflictException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
+import turtleMart.global.kafka.dto.OperationWrapperDto;
+import turtleMart.global.kafka.enums.OperationType;
 import turtleMart.global.slack.SlackNotifier;
+import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Address;
 import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.AddressRepository;
@@ -39,10 +44,20 @@ public class DeliveryService {
     private final SenderRepository senderRepository;
     private final AddressRepository addressRepository;
     private final SlackNotifier slackNotifier;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Value("${kafka.topic.product}")
+    private String productTopic;
 
     @Transactional
     public CreateDeliveryResponse createDelivery(CreateDeliveryRequest request) {
         if (!orderRepository.existsById(request.orderId())) {
+            String payload = JsonHelper.toJson(request);
+            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
+            String wrappedMessage = JsonHelper.toJson(wrapper);
+
+            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "ORDER_NOT_FOUND",
@@ -53,6 +68,12 @@ public class DeliveryService {
 
         // 해당 주문에 대한 배송이 존재할 경우 예외 처리
         if (deliveryRepository.existsByOrderId(request.orderId())) {
+            String payload = JsonHelper.toJson(request);
+            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
+            String wrappedMessage = JsonHelper.toJson(wrapper);
+
+            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "DELIVERY_ALREADY_EXISTS",
@@ -62,6 +83,12 @@ public class DeliveryService {
         }
 
         if (!sellerRepository.existsById(request.sellerId())) {
+            String payload = JsonHelper.toJson(request);
+            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
+            String wrappedMessage = JsonHelper.toJson(wrapper);
+
+            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "SELLER_NOT_FOUND",
@@ -71,6 +98,12 @@ public class DeliveryService {
         }
 
         if (!senderRepository.existsById(request.senderId())) {
+            String payload = JsonHelper.toJson(request);
+            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
+            String wrappedMessage = JsonHelper.toJson(wrapper);
+
+            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "SENDER_NOT_FOUND",
@@ -80,6 +113,12 @@ public class DeliveryService {
         }
 
         if (!addressRepository.existsById(request.addressId())) {
+            String payload = JsonHelper.toJson(request);
+            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
+            String wrappedMessage = JsonHelper.toJson(wrapper);
+
+            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "ADDRESS_NOT_FOUND",
