@@ -22,6 +22,7 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService blacklistService;
 
     /**
      * 회원가입
@@ -63,6 +64,12 @@ public class AuthService {
     /**
      * 로그아웃
      */
+    public String logout(String authorizationHeader) {
+        String token = jwtUtil.removePrefix(authorizationHeader);
+        long expiration = jwtUtil.extractExpiration(token).getTime();
+        blacklistService.blacklistToken(token, expiration);
+        return "로그아웃이 완료되었습니다.";
+    }
 
     private String createToken(Member member) {
         String token = jwtUtil.createToken(member.getId(), member.getAuthority());

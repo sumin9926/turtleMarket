@@ -4,10 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import turtleMart.member.dto.request.EmailLoginRequest;
 import turtleMart.member.dto.request.PhoneNumberLoginRequest;
 import turtleMart.member.dto.request.SignupRequest;
@@ -61,4 +58,11 @@ public class AuthController {
      * POST
      * 로그아웃
      */
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(
+            @RequestHeader("Authorization") String authorizationHeader
+    ) {
+        String logoutMessage = authService.logout(authorizationHeader);
+        return ResponseEntity.status(HttpStatus.OK).body(logoutMessage);
+    }
 }
