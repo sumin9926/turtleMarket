@@ -37,7 +37,7 @@ public class ReviewDataSync {
     private LocalDateTime lastSyncTime;
     private final String LAST_SYNC_CHECK_POINT = "lastSyncTime";
 
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 * * * * *")
     public void elsaDataSync() {
         Long lastCursor = 0L;
 
@@ -45,6 +45,9 @@ public class ReviewDataSync {
         lastSyncTime = redisValue == null ? LocalDateTime.now() : LocalDateTime.parse(redisValue);
 
         LocalDateTime startSyncTime = LocalDateTime.now();
+        stringRedisTemplate.opsForValue().set(LAST_SYNC_CHECK_POINT, startSyncTime.toString());
+
+        log.info("마지막 동기화 시점 : {}, 현재 동기화 시점:{}", lastSyncTime, startSyncTime);
 
         BulkRequest.Builder requestBuilder = new BulkRequest.Builder();
         Map<Long, ReviewDocument> reviewDocumentMap = new HashMap<>();
@@ -52,10 +55,13 @@ public class ReviewDataSync {
         CursorPageResponse<Review> reviewPage;
         do{
             reviewPage = reviewDslRepository.findAllPendingSync(lastSyncTime, startSyncTime, lastCursor);
+            log.info("맨 처음에 몇개 들어왔나요 : {}", reviewPage.content().size());
             createBulkRequest(requestBuilder, reviewPage.content(), reviewDocumentMap);
             lastCursor = reviewPage.lastCursor();
         }while (!reviewPage.isLastPage());
 
+        log.info("맵안에 몇개 들어갔나 : {}", reviewDocumentMap.size());
+        if(reviewDocumentMap.isEmpty()){return;}
 
         BulkResponse response;
         try {
@@ -73,7 +79,7 @@ public class ReviewDataSync {
         if(response.errors()){retryFailedSync(errorLogList);}
 
         reviewService.successDataStatusChange(response.items());
-        stringRedisTemplate.opsForValue().set(LAST_SYNC_CHECK_POINT, startSyncTime.toString());
+
     }
 
     private void createBulkRequest(BulkRequest.Builder bulkQueryCreator, List<Review> reviewList, Map<Long, ReviewDocument> reviewDocumentMap) {
