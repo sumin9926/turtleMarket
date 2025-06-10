@@ -29,7 +29,7 @@ public class RefundService {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Transactional
-    public RefundApplyResultResponse applyRefund(Long memberId, Long orderItemId) {
+    public RefundApplyResultResponse requestRefund(Long memberId, Long orderItemId) {
         if (!memberRepository.existsById(memberId)) {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
@@ -71,7 +71,6 @@ public class RefundService {
         if(!orderItemRepository.existsByIdAndProductOptionCombination_Product_SellerId(orderItemId, sellerId)){
             throw new ForbiddenException(ErrorCode.PRODUCT_NOT_BELONG_TO_SELLER);
         }
-
 
         kafkaTemplate.send("refund_approve_topic", orderItemId.toString());
         /* 결제 쪽:
