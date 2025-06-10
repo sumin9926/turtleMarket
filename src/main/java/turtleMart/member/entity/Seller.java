@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.global.common.BaseEntity;
 import turtleMart.member.dto.request.SellerRegisterRequest;
 import turtleMart.member.dto.request.UpdateSellerRequest;
 
@@ -11,7 +12,7 @@ import turtleMart.member.dto.request.UpdateSellerRequest;
 @Getter
 @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Seller {
+public class Seller extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
