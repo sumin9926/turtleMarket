@@ -53,7 +53,7 @@ public enum ErrorCode {
     DUPLICATE_ORDER_REQUEST(HttpStatus.BAD_REQUEST, "이미 처리 중인 주문 요청입니다."),
 
     //장바구니 관련
-    PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 삭제하려는 상품이 존재하지 않음"),
+    PRODUCT_NOT_IN_CART(HttpStatus.NOT_FOUND, "장바구니에 상품이 존재하지 않음"),
 
     //유저 관련
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),

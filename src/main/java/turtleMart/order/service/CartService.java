@@ -17,7 +17,6 @@ import turtleMart.product.entity.Product;
 import turtleMart.product.entity.ProductOptionCombination;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
 import turtleMart.product.repository.ProductOptionValueRepository;
-import turtleMart.product.repository.ProductRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.UUID;
 public class CartService {
 
     private final MemberRepository memberRepository;
-    private final ProductRepository productRepository;
     private final ProductOptionCombinationRepository combinationRepository;
     private final ProductOptionValueRepository productOptionValueRepository;
     private final RedisTemplate<String, String> redisTemplate;
@@ -113,14 +111,14 @@ public class CartService {
 
     public AddCartItemResponse updateCartItemQuantity(long memberId, CartItemQuantityRequest request, Long cartItemId) {
         if (!memberRepository.existsById(memberId)) {
-            throw new RuntimeException("존재하지 않는 회원입니다.");//TODO 커스텀 예외처리
+            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         String key = "cart:" + memberId;
 
         Object cartItemJson = redisTemplate.opsForHash().get(key, String.valueOf(cartItemId));
         if (null == cartItemJson) {
-            throw new RuntimeException("장바구니에 찾으려는 상품이 존재하지 않습니다."); // TODO 커스텀 예외로 변경하기
+            throw new NotFoundException(ErrorCode.PRODUCT_NOT_IN_CART);
         }
 
         try {
