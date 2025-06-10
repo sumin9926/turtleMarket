@@ -21,6 +21,7 @@ import turtleMart.review.repository.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional(readOnly = true)
@@ -93,10 +94,14 @@ public class ReviewReportService {
     }
 
     @Transactional
-    public ReviewReportResponse updateReviewReport(Long reviewReportId, UpdateReviewReportStatusRequest request){
+    public ReviewReportResponse updateReviewReport(Long memberId, Long reviewReportId, UpdateReviewReportStatusRequest request){
+        if(!memberRepository.existsById(memberId)){throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}
 
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_REPORT_NOT_FOUND));
+
+        Long writerId = reviewReport.getMember().getId();
+        if(writerId.equals(memberId)){throw new BadRequestException(ErrorCode.FORBIDDEN);}
 
         ReviewReportStatus reviewReportStatus = ReviewReportStatus.of(request.reviewReportStatus());
         reviewReport.updateReviewReportStatus(reviewReportStatus);
@@ -112,9 +117,14 @@ public class ReviewReportService {
     }
 
     @Transactional
-    public void cancelReviewReport(Long reviewReportId, CancelReviewReportRequest request) {
+    public void cancelReviewReport(Long memberId, Long reviewReportId, CancelReviewReportRequest request) {
+        if(!memberRepository.existsById(memberId)){throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}
+
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_REPORT_NOT_FOUND));
+
+        Long writerId = reviewReport.getMember().getId();
+        if(writerId.equals(memberId)){throw new BadRequestException(ErrorCode.FORBIDDEN);}
 
         reviewReport.cancel(request.cancelReason());
     }

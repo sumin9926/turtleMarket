@@ -8,7 +8,7 @@ import turtleMart.review.dto.request.CreateProductReviewTemplateRequest;
 import turtleMart.review.service.ProductReviewTemplateService;
 
 @RestController
-@RequiredArgsConstructor
+@RequiredArgsConstructor// 사장 전용
 public class ProductReviewTemplateController {
 
     private final ProductReviewTemplateService productReviewTemplateService;
@@ -18,7 +18,7 @@ public class ProductReviewTemplateController {
             @PathVariable(name = "productId") Long productId,
             @RequestBody CreateProductReviewTemplateRequest request
     ) {
-        productReviewTemplateService.createProductReviewTemplate( productId, request);
+        productReviewTemplateService.createProductReviewTemplate(productId, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

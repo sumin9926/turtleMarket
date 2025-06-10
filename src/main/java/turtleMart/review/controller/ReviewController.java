@@ -7,11 +7,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.review.dto.request.CreateReviewRequest;
 import turtleMart.review.dto.request.UpdateReviewRequest;
 import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.service.ReviewService;
+import turtleMart.security.AuthUser;
 
 import java.util.List;
 
@@ -23,11 +25,11 @@ public class ReviewController {
 
     @PostMapping("/products/{productId}/reviews")
     public ResponseEntity<ReviewResponse> createReview(
-            //@RequestAttribute("memberId") Long memberId,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable(name = "productId") Long productId,
             @RequestBody @Valid CreateReviewRequest request) {
 
-        ReviewResponse reviewResponse = reviewService.createReview(1L, productId, request);
+        ReviewResponse reviewResponse = reviewService.createReview(authUser.memberId(), productId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewResponse);
     }
 
@@ -40,12 +42,12 @@ public class ReviewController {
     }
 
     @GetMapping("/members/reviews")
-    public ResponseEntity<Page<ReviewResponse>> readByMemberId(//@RequestAttribute("memberId") Long memberId,
+    public ResponseEntity<Page<ReviewResponse>> readByMemberId(@AuthenticationPrincipal AuthUser authUser,
                                                                @RequestParam(name = "size", required = false, defaultValue = "10") int size,
                                                                @RequestParam(name = "page", required = false, defaultValue = "1" ) int page
     ) {
         Pageable pageable = PageRequest.of(page - 1 , size);
-        Page<ReviewResponse> reviewResponse = reviewService.readByMemberId(1L, pageable);
+        Page<ReviewResponse> reviewResponse = reviewService.readByMemberId(authUser.memberId(), pageable);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 
@@ -63,20 +65,20 @@ public class ReviewController {
 
     @PatchMapping("/reviews/{reviewId}")
     public ResponseEntity<ReviewResponse> updateReview(
-            //@RequestAttribute("memberId") Long memberId,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable(name = "reviewId") Long reviewId,
             @RequestBody UpdateReviewRequest request){
 
-        ReviewResponse reviewResponse = reviewService.updateReview(1L, reviewId, request);
+        ReviewResponse reviewResponse = reviewService.updateReview(authUser.memberId(), reviewId, request);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 
     @DeleteMapping("/reviews/{reviewId}")
     public ResponseEntity<Void> deleteReview(
-            //@RequestAttribute("memberId") Long memberId,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable(name = "reviewId") Long reviewId) {
 
-        reviewService.deleteReview(1L, reviewId);
+        reviewService.deleteReview(authUser.memberId(), reviewId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }
