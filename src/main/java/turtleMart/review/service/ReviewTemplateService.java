@@ -51,7 +51,7 @@ public class ReviewTemplateService {
         ReviewTemplate reviewTemplate = findByIdElseThrow(reviewTemplateId);
         if(reviewTemplate.isDeleted()){throw new BadRequestException(ErrorCode.ALREADY_DELETED_REVIEW_TEMPLATE);}
 
-        reviewTemplate.update(request.question(), request.satisfaction_low(), request.satisfaction_medium(), request.high());
+        reviewTemplate.update(request.question(), request.satisfaction_low(), request.satisfaction_medium(), request.satisfaction_high());
         return ReviewTemplateResponse.from(reviewTemplate);
     }
 
