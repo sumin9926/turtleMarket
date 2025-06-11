@@ -3,6 +3,8 @@ package turtleMart.payment.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.order.entity.Order;
@@ -25,12 +27,12 @@ public class PaymentService {
     private final OrderRepository orderRepository;
 
     @Transactional
-    public PaymentResponse createPayment(PaymentRequest request) {
+    public void createPayment(PaymentRequest request) {
         Member foundMember = memberRepository.findById(request.memberId()).orElseThrow(
-                () -> new RuntimeException("")
+                () -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND)
         );
         Order foundOrder = orderRepository.findById(request.orderId()).orElseThrow(
-                () -> new RuntimeException("")
+                () -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND)
         );
 
         Payment payment = Payment.of(
@@ -42,12 +44,12 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        return PaymentResponse.from(payment);
+        PaymentResponse.from(payment);
     }
 
     public List<PaymentResponse> getMyAllPayments(Long memberId) {
         List<Payment> payments = paymentRepository.findAllByMemberId(memberId).orElseThrow(
-                () -> new RuntimeException("")
+                () -> new NotFoundException(ErrorCode.MEMBER_HAS_NO_PAYMENT)
         );
 
         return payments.stream().map(PaymentResponse::from).toList();
@@ -64,8 +66,7 @@ public class PaymentService {
         List<Payment> payments;
         if (memberId != null) {
             payments = paymentRepository.findAllByMemberId(memberId).orElseThrow(
-                    () -> new RuntimeException("")
-            );
+                    () -> new NotFoundException(ErrorCode.MEMBER_HAS_NO_PAYMENT));
         } else {
             payments = paymentRepository.findAll();
         }
@@ -85,7 +86,7 @@ public class PaymentService {
 
     private Payment findPayment(Long paymentId) {
         return paymentRepository.findById(paymentId).orElseThrow(
-                () -> new RuntimeException("")
+                () -> new NotFoundException(ErrorCode.PAYMENT_NOT_FOUND)
         );
     }
 

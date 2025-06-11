@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.ui.Model;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.kafka.enums.OperationType;
 import turtleMart.global.utill.JsonHelper;
@@ -58,7 +60,7 @@ public class WidgetController {
     @GetMapping("/checkout")
     public String checkoutPage(@RequestParam Long orderId, Model model) throws Exception {
         Order order = orderRepository.findById(orderId).orElseThrow(
-                () -> new RuntimeException(""));
+                () -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND));
         PaymentInfoTransfer dto = PaymentInfoTransfer.from(order);
         model.addAttribute("order", dto);
         return "checkout";
@@ -150,10 +152,10 @@ public class WidgetController {
 
         CreateDeliveryRequest request = (CreateDeliveryRequest) session.getAttribute("delivery");
         String payload = JsonHelper.toJson(request);
-        String key = "";
-        String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.INVENTORY_DECREASE, payload));
+        String key = orderId;
+        String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_PAYMENT_INVENTORY_DECREASE, payload));
 
-        stringKafkaTemplate.send("order_make_topic", key, value);
+        stringKafkaTemplate.send("${kafka.topic.product}", key, value);
 
         return ResponseEntity.status(code).body(jsonObject);
     }
