@@ -7,8 +7,9 @@ public record UserNotification(
     String trackingNumber,
     String senderName,
     String courierName,
-    String trackingUrlTemplate
-
+    String trackingUrlTemplate,
+    String receiverName,
+    String receiverAddress
 ) {
     public static UserNotification from(Delivery delivery) {
         return new UserNotification(
@@ -16,7 +17,9 @@ public record UserNotification(
             delivery.getTrackingNumber(),
             delivery.getSender().getName(),
             delivery.getSender().getCourier().getName(),
-            delivery.getSender().getCourier().getTrackingUrlTemplate()
+            delivery.getSender().getCourier().getTrackingUrlTemplate(),
+            delivery.getReceiverName(),
+            delivery.getReceiverAddress()
         );
     }
 }

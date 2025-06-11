@@ -143,9 +143,9 @@ public class DeliveryService {
 
         delivery.updateTrackingNumber(request.trackingNumber());
 
-        // 카카오톡 알림 메시지 전송
+        // 카카오톡 출고 완료 알림 메시지 전송
         UserNotification userNotification = UserNotification.from(delivery);
-        kakaoMessageService.sendMessage(userNotification);
+        kakaoMessageService.sendShippedMessage(userNotification);
 
         return UpdateDeliveryResponse.from(delivery);
     }
@@ -182,9 +182,19 @@ public class DeliveryService {
 
         if (request.deliveryStatus() == DeliveryStatus.DELIVERED) {
             delivery.updateDelivered(request.deliveryStatus());
+
+            // 카카오톡 배송 완료 알림 메시지 전송
+            UserNotification userNotification = UserNotification.from(delivery);
+            kakaoMessageService.sendDeliveredMessage(userNotification);
         }
 
         delivery.updateDeliveryStatus(request.deliveryStatus());
+
+        // 카카오톡 배송 완료 알림 메시지 전송
+        if (request.deliveryStatus() == DeliveryStatus.IN_TRANSIT) {
+            UserNotification userNotification = UserNotification.from(delivery);
+            kakaoMessageService.sendInTransitMessage(userNotification);
+        }
 
         return UpdateDeliveryResponse.from(delivery);
     }
