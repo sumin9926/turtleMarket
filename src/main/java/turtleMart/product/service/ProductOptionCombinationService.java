@@ -200,7 +200,7 @@ public class ProductOptionCombinationService {
     }
 
     @Transactional
-    public void increaseProductOptionCombinationInventory(Long orderId) {
+    public void restoreProductOptionCombinationInventory(Long orderId) {
         List<OrderItem> orderItemList = orderItemRepository.findAllByOrderId(orderId);
 
         for (OrderItem orderItem : orderItemList) {

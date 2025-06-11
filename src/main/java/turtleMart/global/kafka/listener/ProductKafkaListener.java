@@ -63,7 +63,7 @@ public class ProductKafkaListener {
 
             switch (type) {
                 case ORDER_PAYMENT_INVENTORY_DECREASE -> routeInventoryDecreaseMessage(key, value);
-                case DELIVERY_FAIL_INVENTORY_RESTORE -> routeInventoryIncreaseMessage(key, value);
+                case DELIVERY_FAIL_INVENTORY_RESTORE -> routeInventoryRestoreMessage(key, value);
                 default -> log.error("❌ 지원하지 않는 메시지 타입 수신: {}", type);
             }
         } catch (ConflictException e) {
@@ -132,11 +132,11 @@ public class ProductKafkaListener {
         // log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", request);
     }
 
-    private void routeInventoryIncreaseMessage(String key, String value) {
+    private void routeInventoryRestoreMessage(String key, String value) {
         log.info("📥 Kafka 재고 복원 메시지 수신: key={}, value={}", key, value);
 
         // 재고 복원 로직 진행
         Long orderId = Long.valueOf(key);
-        productOptionCombinationService.increaseProductOptionCombinationInventory(orderId);
+        productOptionCombinationService.restoreProductOptionCombinationInventory(orderId);
     }
 }

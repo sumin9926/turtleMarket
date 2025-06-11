@@ -1,6 +1,7 @@
 package turtleMart.delivery.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ import turtleMart.order.repository.OrderRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -55,11 +57,7 @@ public class DeliveryService {
     @Transactional
     public CreateDeliveryResponse createDelivery(CreateDeliveryRequest request) {
         if (!orderRepository.existsById(request.orderId())) {
-            String payload = JsonHelper.toJson(request);
-            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
-            String wrappedMessage = JsonHelper.toJson(wrapper);
-
-            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+            sendInventoryRestoreMessage(request);
 
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -71,11 +69,7 @@ public class DeliveryService {
 
         // 해당 주문에 대한 배송이 존재할 경우 예외 처리
         if (deliveryRepository.existsByOrderId(request.orderId())) {
-            String payload = JsonHelper.toJson(request);
-            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
-            String wrappedMessage = JsonHelper.toJson(wrapper);
-
-            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+            sendInventoryRestoreMessage(request);
 
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -86,11 +80,7 @@ public class DeliveryService {
         }
 
         if (!sellerRepository.existsById(request.sellerId())) {
-            String payload = JsonHelper.toJson(request);
-            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
-            String wrappedMessage = JsonHelper.toJson(wrapper);
-
-            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+            sendInventoryRestoreMessage(request);
 
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -101,11 +91,7 @@ public class DeliveryService {
         }
 
         if (!senderRepository.existsById(request.senderId())) {
-            String payload = JsonHelper.toJson(request);
-            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
-            String wrappedMessage = JsonHelper.toJson(wrapper);
-
-            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+            sendInventoryRestoreMessage(request);
 
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -116,11 +102,7 @@ public class DeliveryService {
         }
 
         if (!addressRepository.existsById(request.addressId())) {
-            String payload = JsonHelper.toJson(request);
-            OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
-            String wrappedMessage = JsonHelper.toJson(wrapper);
-
-            kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+            sendInventoryRestoreMessage(request);
 
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
@@ -153,6 +135,7 @@ public class DeliveryService {
 
         return CreateDeliveryResponse.from(delivery);
     }
+
 
     @Transactional
     public UpdateDeliveryResponse updateTrackingNumber(Long deliveryId, UpdateDeliveryRequest request) {
@@ -209,5 +192,15 @@ public class DeliveryService {
     private Delivery getDelivery(Long deliveryId) {
         return deliveryRepository.findById(deliveryId)
             .orElseThrow(() -> new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND));
+    }
+
+    private void sendInventoryRestoreMessage(CreateDeliveryRequest request) {
+        String payload = JsonHelper.toJson(request);
+        OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
+        String wrappedMessage = JsonHelper.toJson(wrapper);
+
+        kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+
+        log.info("\uD83D\uDCE4 Kafka 재고 복원 메시지 전송: {}", wrappedMessage);
     }
 }
