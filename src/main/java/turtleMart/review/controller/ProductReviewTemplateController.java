@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.review.dto.request.CreateProductReviewTemplateRequest;
+import turtleMart.review.dto.request.UpdateProductReviewTemplateRequest;
 import turtleMart.review.dto.response.ProductReviewTemplateResponse;
 import turtleMart.review.service.ProductReviewTemplateService;
 import turtleMart.security.AuthUser;
@@ -26,11 +27,6 @@ public class ProductReviewTemplateController {
         List<ProductReviewTemplateResponse> productReviewTemplateResponseList = productReviewTemplateService.createProductReviewTemplate(productId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(productReviewTemplateResponseList);
     }
-
-//    @PatchMapping("/product-review-template/{productReviewTemplateId}")
-//    public ResponseEntity<ProductReviewTemplateResponse> updateProductReviewTemplate(@RequestBody CreateProductReviewTemplateRequest request){
-//
-//    }
 
     @DeleteMapping("/product-review-template/{productReviewTemplateId}")
     public ResponseEntity<Void> deleteProductReviewTemplate(

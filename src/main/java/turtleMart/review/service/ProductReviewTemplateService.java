@@ -33,7 +33,6 @@ public class ProductReviewTemplateService {
 
     @Transactional
     public List<ProductReviewTemplateResponse> createProductReviewTemplate(Long productId, CreateProductReviewTemplateRequest request){
-
         if(!sellerRepository.existsById(request.sellerId())){throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);}
         if(!productRepository.existsById(productId)){throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);}
 
@@ -58,19 +57,16 @@ public class ProductReviewTemplateService {
         return productReviewTemplateList.stream().map(ProductReviewTemplateResponse::from).toList();
     }
 
+
     @Transactional
     public void deleteProductReviewTemplate(Long memberId, Long productReviewTemplateId){
-        Seller seller = sellerRepository.findByMemberId(memberId)
-               .orElseThrow(() -> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
-
+        Seller seller = sellerRepository.findByMemberId(memberId).orElseThrow(() -> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
 
        ProductReviewTemplate productReviewTemplate = productReviewTemplateRepository.findById(productReviewTemplateId)
                        .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_REVIEW_TEMPLATE_NOT_FOUND));
 
        Long productSellerId = productReviewTemplate.getProduct().getSeller().getId();
-       if(!seller.getId().equals(productSellerId)){
-           throw new RoleMismatchException(ErrorCode.FORBIDDEN);
-       }
+       if(!seller.getId().equals(productSellerId)){throw new RoleMismatchException(ErrorCode.FORBIDDEN);}
         productReviewTemplateRepository.deleteById(productReviewTemplateId);
     }
 }
