@@ -12,10 +12,8 @@ public record PaymentInfoTransfer(
 ) {
     public static PaymentInfoTransfer from(Order order){
         String orderId = "order_" + order.getId();
-        String orderName = order.getOrderItems().get(0).getName();
-        if (order.getOrderItems().size() != 1) {
-            orderName += " 외 " + (order.getOrderItems().size() - 1) + "개 상품";
-        }
+        String orderName = order.getSummaryItemName();
+
         return new PaymentInfoTransfer(
                 orderId,
                 order.getTotalPrice(),

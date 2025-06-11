@@ -19,6 +19,7 @@ public enum ErrorCode {
 
     // 배송 관련
     DELIVERY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 배송입니다."),
+    DELIVERY_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 배송이 생성된 주문입니다."),
     INVALID_DELIVERY_STATUS(HttpStatus.BAD_REQUEST, "허용되지 않은 상태 변경입니다."),
 
     // 판매자 관련

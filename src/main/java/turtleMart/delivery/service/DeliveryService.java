@@ -1,6 +1,9 @@
 package turtleMart.delivery.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
@@ -15,9 +18,15 @@ import turtleMart.delivery.entity.Sender;
 import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.delivery.repository.SenderRepository;
 import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ConflictException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
+import turtleMart.global.kafka.dto.OperationWrapperDto;
+import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.kakao.KakaoMessageService;
+import turtleMart.global.kakao.dto.UserNotification;
 import turtleMart.global.slack.SlackNotifier;
+import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Address;
 import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.AddressRepository;
@@ -27,6 +36,7 @@ import turtleMart.order.repository.OrderRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -38,10 +48,17 @@ public class DeliveryService {
     private final SenderRepository senderRepository;
     private final AddressRepository addressRepository;
     private final SlackNotifier slackNotifier;
+    private final KakaoMessageService kakaoMessageService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Value("${kafka.topic.product}")
+    private String productTopic;
 
     @Transactional
     public CreateDeliveryResponse createDelivery(CreateDeliveryRequest request) {
         if (!orderRepository.existsById(request.orderId())) {
+            sendInventoryRestoreMessage(request);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "ORDER_NOT_FOUND",
@@ -49,7 +66,22 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.ORDER_NOT_FOUND);
         }
+
+        // 해당 주문에 대한 배송이 존재할 경우 예외 처리
+        if (deliveryRepository.existsByOrderId(request.orderId())) {
+            sendInventoryRestoreMessage(request);
+
+            slackNotifier.sendDeliveryCreateFailureAlert(
+                request.orderId(),
+                "DELIVERY_ALREADY_EXISTS",
+                "ID가 " + request.orderId() + "인 주문에 대한 배송이 이미 존재하여 배송 생성에 실패했습니다.");
+
+            throw new ConflictException(ErrorCode.DELIVERY_ALREADY_EXISTS);
+        }
+
         if (!sellerRepository.existsById(request.sellerId())) {
+            sendInventoryRestoreMessage(request);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "SELLER_NOT_FOUND",
@@ -57,7 +89,10 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
         }
+
         if (!senderRepository.existsById(request.senderId())) {
+            sendInventoryRestoreMessage(request);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "SENDER_NOT_FOUND",
@@ -65,7 +100,10 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.SENDER_NOT_FOUND);
         }
+
         if (!addressRepository.existsById(request.addressId())) {
+            sendInventoryRestoreMessage(request);
+
             slackNotifier.sendDeliveryCreateFailureAlert(
                 request.orderId(),
                 "ADDRESS_NOT_FOUND",
@@ -73,6 +111,7 @@ public class DeliveryService {
 
             throw new NotFoundException(ErrorCode.ADDRESS_NOT_FOUND);
         }
+
         Order order = orderRepository.getReferenceById(request.orderId());
         Seller seller = sellerRepository.getReferenceById(request.sellerId());
         Sender sender = senderRepository.getReferenceById(request.senderId());
@@ -84,6 +123,7 @@ public class DeliveryService {
 
         deliveryRepository.save(delivery);
 
+        // 슬랙 알림 메시지 전송
         slackNotifier.sendDeliveryCreateAlert(
             request.orderId(),
             delivery.getOrder().getMember().getName(),
@@ -96,11 +136,16 @@ public class DeliveryService {
         return CreateDeliveryResponse.from(delivery);
     }
 
+
     @Transactional
     public UpdateDeliveryResponse updateTrackingNumber(Long deliveryId, UpdateDeliveryRequest request) {
         Delivery delivery = getDelivery(deliveryId);
 
         delivery.updateTrackingNumber(request.trackingNumber());
+
+        // 카카오톡 출고 완료 알림 메시지 전송
+        UserNotification userNotification = UserNotification.from(delivery);
+        kakaoMessageService.sendShippedMessage(userNotification);
 
         return UpdateDeliveryResponse.from(delivery);
     }
@@ -137,9 +182,19 @@ public class DeliveryService {
 
         if (request.deliveryStatus() == DeliveryStatus.DELIVERED) {
             delivery.updateDelivered(request.deliveryStatus());
+
+            // 카카오톡 배송 완료 알림 메시지 전송
+            UserNotification userNotification = UserNotification.from(delivery);
+            kakaoMessageService.sendDeliveredMessage(userNotification);
         }
 
         delivery.updateDeliveryStatus(request.deliveryStatus());
+
+        // 카카오톡 배송 완료 알림 메시지 전송
+        if (request.deliveryStatus() == DeliveryStatus.IN_TRANSIT) {
+            UserNotification userNotification = UserNotification.from(delivery);
+            kakaoMessageService.sendInTransitMessage(userNotification);
+        }
 
         return UpdateDeliveryResponse.from(delivery);
     }
@@ -147,5 +202,15 @@ public class DeliveryService {
     private Delivery getDelivery(Long deliveryId) {
         return deliveryRepository.findById(deliveryId)
             .orElseThrow(() -> new NotFoundException(ErrorCode.DELIVERY_NOT_FOUND));
+    }
+
+    private void sendInventoryRestoreMessage(CreateDeliveryRequest request) {
+        String payload = JsonHelper.toJson(request);
+        OperationWrapperDto wrapper = OperationWrapperDto.from(OperationType.DELIVERY_FAIL_INVENTORY_RESTORE, payload);
+        String wrappedMessage = JsonHelper.toJson(wrapper);
+
+        kafkaTemplate.send(productTopic, request.orderId().toString(), wrappedMessage);
+
+        log.info("\uD83D\uDCE4 Kafka 재고 복원 메시지 전송: {}", wrappedMessage);
     }
 }
