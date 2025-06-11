@@ -18,10 +18,9 @@ import turtleMart.product.entity.ProductOptionCombination;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
 import turtleMart.product.repository.ProductOptionValueRepository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -75,38 +74,65 @@ public class CartService {
             throw new NotFoundException(ErrorCode. MEMBER_NOT_FOUND);
         }
 
-        String key = "cart:" + memberId;
-        List<Object> cartJsonList = redisTemplate.opsForHash().values(key); //key에 해당하는 모든 value 가져오기
+        // Redis의 장바구니 정보(JSON)를 역직렬화하여 장바구니 DTO 맵 구성
+        Map<Long, AddCartItemResponse> addCartItemResponseMap = getAddCartItemResponseMapFromRedis(memberId);
 
+        // 역직렬화한 항목에 가격, 상품명 등 상세 정보를 더해서 반환(최신정보를 DB에서 직접 조회하여 정합성 보장)
+        return buildCartItemResponseList(addCartItemResponseMap);
+    }
+
+    private List<CartItemResponse> buildCartItemResponseList(Map<Long, AddCartItemResponse> addCartItemResponseMap) {
+        List<Long> productOptionIdList = new ArrayList<>(addCartItemResponseMap.keySet());
+        List<ProductOptionCombination> productOptionCombinationList = combinationRepository.findAllByIdIn(productOptionIdList);
+        Map<Long, ProductOptionCombination> combinationMap = productOptionCombinationList.stream()
+                .collect(Collectors.toMap(ProductOptionCombination::getId, Function.identity()));
+        Map<String, String> uniqueKeyMap = buildOptionInfoMap(productOptionCombinationList);
         List<CartItemResponse> cartItemResponseList = new ArrayList<>();
 
-        for (Object cartJson : cartJsonList) { // JSON 에서 CartItemResponse 로 역직렬화
+        for(Long productOptionId: productOptionIdList){
+            ProductOptionCombination productOption = combinationMap.get(productOptionId);
+            if(null == productOption){
+                throw new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND);
+            }
+
+            Product product = productOption.getProduct();
+            if(null == product){
+                throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
+            }
+
+            String optionInfo = uniqueKeyMap.get(productOption.getUniqueKey());
+
+            AddCartItemResponse addCartItemResponse = addCartItemResponseMap.get(productOptionId);
+            CartItemResponse cartItemResponse = new CartItemResponse(
+                    addCartItemResponse.cartItemId(), product.getId(), productOption.getId(), product.getName(),
+                    optionInfo, productOption.getPrice(), addCartItemResponse.quantity(), addCartItemResponse.isChecked()
+            );
+            cartItemResponseList.add(cartItemResponse);
+        }
+        return cartItemResponseList;
+    }
+
+    private Map<String, String> buildOptionInfoMap(List<ProductOptionCombination> productOptionCombinationList) {
+        Set<String> uniqueKeySet = productOptionCombinationList.stream()
+                .map(ProductOptionCombination::getUniqueKey)
+                .collect(Collectors.toSet());
+        return OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
+    }
+
+    private Map<Long, AddCartItemResponse> getAddCartItemResponseMapFromRedis(long memberId) {
+        String key = "cart:" + memberId;
+        List<Object> cartJsonList = redisTemplate.opsForHash().values(key); //key에 해당하는 모든 value 가져오기
+        Map<Long, AddCartItemResponse> addCartItemResponseMap = new HashMap<>();
+
+        for (Object cartJson : cartJsonList) {
             try {
                 AddCartItemResponse addCartItemResponse = objectMapper.readValue(cartJson.toString(), AddCartItemResponse.class);
-
-                /*TODO 중복로직 수정 예정*/
-                ProductOptionCombination productOption = combinationRepository.findById(addCartItemResponse.productOptionId())
-                        .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)); //가격 데이터 정합성을 고려해서 DB 직접 조회(따로 캐싱 해두는게 나을 것 같다.)
-
-                Product product = productOption.getProduct();
-
-                if(null==product){
-                    throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
-                }
-
-                String optionInfo = OptionDisplayUtils.buildOptionDisplay(productOption.getUniqueKey(), productOptionValueRepository);
-
-                CartItemResponse cartItemResponse = new CartItemResponse(
-                        addCartItemResponse.cartItemId(), product.getId(), productOption.getId(), product.getName(),
-                        optionInfo, productOption.getPrice(), addCartItemResponse.quantity(), addCartItemResponse.isChecked()
-                );
-                cartItemResponseList.add(cartItemResponse);
+                addCartItemResponseMap.put(addCartItemResponse.productOptionId(), addCartItemResponse);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Redis 장바구니 불러오기 실패", e);
             }
         }
-
-        return cartItemResponseList;
+        return addCartItemResponseMap;
     }
 
     public AddCartItemResponse updateCartItemQuantity(long memberId, CartItemQuantityRequest request, Long cartItemId) {
