@@ -3,6 +3,7 @@ package turtleMart.global.kafka.listener;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -22,17 +23,21 @@ import java.util.List;
 @Slf4j
 public class ProductKafkaListener {
 
+    @Value("${kafka.topic.order.make}")
+    private String orderMakeTopic;
+
+    @Value("${kafka.topic.order.create}")
+    private String orderCreateTopic;
+
     private final RedisTemplate<String, Object> redisTemplate;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    //TODO 추후에 @Value + SpEL 표현식으로 변경하기 (ex) "${kafka.topics.order-make}")
-    private static final String KAFKA_ORDER_MAKE_TOPIC = "order_make_topic";
-    private static final String KAFKA_ORDER_CREATE_TOPIC = "order_create_topic";
+    //TODO 추후에 @Value + SpEL 표현식으로 변경하기
     private static final String KAFKA_PRICE_CHANGE_TOPIC = "_topic"; //TODO 가격 변경 토픽 이름 정해지면 넣어주세요.
     private static final Duration DURATION_MINUTES = Duration.ofMinutes(4);
     private static final long RETRY_DELAY_MS = 1000L;
 
-    @KafkaListener(topics = "order_make_topic", groupId = "order-group")
+    @KafkaListener(topics = "${kafka.topic.order.make}", groupId = "order-group")
     public void listen(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
         try {
             OperationWrapperDto wrapperDto = JsonHelper.fromJson(value, OperationWrapperDto.class);
@@ -68,8 +73,8 @@ public class ProductKafkaListener {
                 return;
             }
 
-            kafkaTemplate.send(KAFKA_ORDER_MAKE_TOPIC, key, value);
-            log.info("주문 생성 요청 토픽으로 kafka 메세지 재발행 성공! TopicName: {}", KAFKA_ORDER_MAKE_TOPIC);
+            kafkaTemplate.send(orderMakeTopic, key, value);
+            log.info("주문 생성 요청 토픽으로 kafka 메세지 재발행 성공! TopicName: {}", orderMakeTopic);
         } else {
             // 소프트락이 이미 존재하면 가격변동 처리용 새 토픽에 발행
             kafkaTemplate.send(KAFKA_PRICE_CHANGE_TOPIC, key, value);
@@ -84,14 +89,14 @@ public class ProductKafkaListener {
         for(Long combinationId : productOptionCombinationIdList){
             String lockKey = "softLock:priceChange:combination:" + combinationId.toString();
             if(Boolean.TRUE.equals(redisTemplate.opsForValue().get(lockKey))){ //가격 변동 처리 중 상태(Redis value=true) (*처리 완료되면 삭제됨, true는 처리 중을 의미)
-                kafkaTemplate.send(KAFKA_ORDER_MAKE_TOPIC, key, value); //재발행
-                log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", KAFKA_ORDER_MAKE_TOPIC);
+                kafkaTemplate.send(orderMakeTopic, key, value); //재발행
+                log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", orderMakeTopic);
                 return;
             }
         }
         // 가격 변동이 끝났다면 주문 생성 로직 실행, 주문 생성 토픽으로 넘기기
-        kafkaTemplate.send(KAFKA_ORDER_CREATE_TOPIC, key, value);
-        log.info("주문 생성 요청 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", KAFKA_ORDER_CREATE_TOPIC);
+        kafkaTemplate.send(orderCreateTopic, key, value);
+        log.info("주문 생성 요청 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", orderCreateTopic);
     }
 
     private void routeInventoryDecreaseMessage(String key, String value) {
