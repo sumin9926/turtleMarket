@@ -152,6 +152,65 @@ public class SlackFormatter {
         return JsonHelper.toJson(payload);
     }
 
+    // 배송 출고 완료 알림 메시지 생성
+    public String formatShippedCompleteMessage(Long orderId, String trackingNumber, String memberName, String phoneNumber, String receiver, String receiverPhone, String address, String detailAddress, LocalDateTime time) {
+        Map<String, Object> payload = getPayload();
+        List<Object> blocks = new ArrayList<>();
+
+        blocks.add(Map.of(
+            "type", "header",
+            "text", Map.of("type", "plain_text", "text", "✅ 상품 출고 완료 알림")
+        ));
+
+        blocks.add(Map.of(
+            "type", "section",
+            "text", markdownField("*주문 ID:*", orderId.toString())
+        ));
+
+        blocks.add(Map.of(
+            "type", "section",
+            "fields", List.of(
+                markdownField("*송장번호:*", trackingNumber))
+        ));
+
+        blocks.add(Map.of(
+            "type", "section",
+            "fields", List.of(
+                markdownField("*회원명:*", memberName),
+                markdownField("*연락처:*", phoneNumber)
+            )
+        ));
+
+        blocks.add(Map.of(
+            "type", "section",
+            "fields", List.of(
+                markdownField("*수령인:*", receiver),
+                markdownField("*수령인 연락처:*", receiverPhone),
+                markdownField("*주소:*", address),
+                markdownField("*상세주소:*", detailAddress)
+            )
+        ));
+
+        blocks.add(Map.of(
+            "type", "section",
+            "fields", List.of(
+                markdownField("*상태:*", "상품 출고 완료 ✅")
+            )
+        ));
+
+        blocks.add(Map.of(
+            "type", "context",
+            "elements", List.of(
+                Map.of("type", "mrkdwn", "text", "\uD83D\uDCE6 상품이 정상적으로 출고되었습니다.\n"),
+                Map.of("type", "mrkdwn", "text", "\uD83D\uDD52 *시간:* " + time.format(formatter))
+            )
+        ));
+
+        payload.put("blocks", blocks);
+
+        return JsonHelper.toJson(payload);
+    }
+
     private Map<String, Object> getPayload() {
         return new LinkedHashMap<>();
     }
