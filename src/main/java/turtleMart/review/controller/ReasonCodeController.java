@@ -24,7 +24,7 @@ public class ReasonCodeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(reasonCodeResponse);
     }
 
-    @PatchMapping("/reason-code/{reasonCodeId}")
+    @PatchMapping("/reason-code/{reasonCodeId}")// 관리자 전용
     public ResponseEntity<ReasonCodeResponse> updateReasonCode(
             @RequestBody @Valid UpdateReasonCodeRequest request,
             @PathVariable(name = "reasonCodeId") Long reasonCodeId) {
@@ -39,7 +39,7 @@ public class ReasonCodeController {
         return ResponseEntity.status(HttpStatus.OK).body(reasonCodeResponseList);
     }
 
-    @DeleteMapping("/reason-code/{reasonCodeId}")
+    @DeleteMapping("/reason-code/{reasonCodeId}")//관리자 전용
     public ResponseEntity<Void> deleteReasonCode(@PathVariable(name = "reasonCodeId") Long reasonCodeId) {
         reasonCodeService.delete(reasonCodeId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

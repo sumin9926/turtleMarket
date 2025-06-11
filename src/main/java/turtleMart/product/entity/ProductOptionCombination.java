@@ -29,6 +29,8 @@ public class ProductOptionCombination {
 
     private String uniqueKey;
 
+
+    @Enumerated(EnumType.STRING)
     private CombinationStatus combinationStatus;
 
     @OneToMany(mappedBy = "productOptionCombination", cascade = CascadeType.ALL, orphanRemoval = true)
