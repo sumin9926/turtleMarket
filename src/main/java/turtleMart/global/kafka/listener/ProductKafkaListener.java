@@ -3,12 +3,14 @@ package turtleMart.global.kafka.listener;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.global.exception.ConflictException;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
@@ -35,6 +37,8 @@ public class ProductKafkaListener {
     private static final Duration DURATION_MINUTES = Duration.ofMinutes(4);
     private static final long RETRY_DELAY_MS = 1000L;
 
+    @Value("${kafka.topic.delivery}")
+    private String deliveryTopic;
 
     @KafkaListener(topics = "order_make_topic", groupId = "order-group")
     public void listen(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
@@ -60,10 +64,11 @@ public class ProductKafkaListener {
         try {
             OperationWrapperDto wrapperDto = JsonHelper.fromJson(value, OperationWrapperDto.class);
             OperationType type = wrapperDto.operationType();
+            String payload = wrapperDto.payload();
 
             switch (type) {
-                case ORDER_PAYMENT_INVENTORY_DECREASE -> routeInventoryDecreaseMessage(key, value);
-                case DELIVERY_FAIL_INVENTORY_RESTORE -> routeInventoryRestoreMessage(key, value);
+                case ORDER_PAYMENT_INVENTORY_DECREASE -> routeInventoryDecreaseMessage(key, payload);
+                case DELIVERY_FAIL_INVENTORY_RESTORE -> routeInventoryRestoreMessage(key, payload);
                 default -> log.error("❌ 지원하지 않는 메시지 타입 수신: {}", type);
             }
         } catch (ConflictException e) {
@@ -120,16 +125,22 @@ public class ProductKafkaListener {
     }
 
     private void routeInventoryDecreaseMessage(String key, String value) {
-        // todo 결제 파트에서 전달되는 payload 구조 확인 후 DTO 정의
+        // 결제 파트에서 전달되는 value 확인 후 DTO 정의
         log.info("📥 Kafka 재고 감소 메시지 수신: key: {}, value: {}", key, value);
 
-        // 재고 감소 로직 진행
-        // productOptionCombinationService.decreaseProductOptionCombinationInventory(payload.orderId());
-        // log.info("👉 재고 감소 성공! 모든 상품의 재고 차감이 정상적으로 처리되었습니다.");
+        CreateDeliveryRequest request = JsonHelper.fromJson(value, CreateDeliveryRequest.class);
 
-        // todo 배송 생성 메시지 발행
-        // kafkaTemplate.send(deliveryTopic, request);
-        // log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", request);
+        // 재고 감소 로직 진행
+         productOptionCombinationService.decreaseProductOptionCombinationInventory(Long.valueOf(key));
+         log.info("👉 재고 감소 성공! 모든 상품의 재고 차감이 정상적으로 처리되었습니다.");
+
+        // 배송 생성 요청 메시지 발행
+        String payload = JsonHelper.toJson(request);
+        String message = JsonHelper.toJson(OperationWrapperDto.from(OperationType.DELIVERY_CREATE, payload));
+
+        kafkaTemplate.send(deliveryTopic, key, message);
+
+        log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", request);
     }
 
     private void routeInventoryRestoreMessage(String key, String value) {
