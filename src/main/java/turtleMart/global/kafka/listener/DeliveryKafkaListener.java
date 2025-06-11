@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.delivery.service.DeliveryService;
+import turtleMart.global.exception.ConflictException;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.utill.JsonHelper;
@@ -37,6 +38,10 @@ public class DeliveryKafkaListener {
             log.info("👉 배송 생성 성공! 배송 생성이 정상적으로 처리되었습니다.");
         } catch (NotFoundException e) {
             log.warn("⚠️ 필수 데이터 누락으로 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+        } catch (ConflictException e) {
+            log.warn("⚠️ 중복된 주문 ID로 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+        } catch (Exception e) {
+            log.warn("⚠️ 알 수 없는 예외 발생 - 클래스: {}", e.getClass().getName(), e);
         }
 
     }

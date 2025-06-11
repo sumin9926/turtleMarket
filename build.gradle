@@ -63,6 +63,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 	implementation 'co.elastic.clients:elasticsearch-java:8.15.1'
 
+	//JavaMailSender
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+
 	//webclient
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }

@@ -11,4 +11,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>, Deliv
 
     @Query("SELECT d FROM Delivery d JOIN FETCH d.order WHERE d.order.id=:orderId")
     List<Delivery> findAllWithOrderIds(@Param("orderIds") List<Long> orderIdList);
+
+    boolean existsByOrderId(Long orderId);
 }
