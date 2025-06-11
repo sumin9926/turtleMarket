@@ -62,6 +62,9 @@ dependencies {
 	//엘라스틱 서치
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 	implementation 'co.elastic.clients:elasticsearch-java:8.15.1'
+
+	//webclient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }
 
 def generated = file('build/generated/querydsl')
