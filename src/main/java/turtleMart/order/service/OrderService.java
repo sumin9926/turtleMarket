@@ -65,8 +65,12 @@ public class OrderService {
 
     @Value("${kafka.topic.payment}")
     private String paymentTopic;
-    private static final String KAFKA_ORDER_MAKE_TOPIC = "order_make_topic"; //TODO properties 로 이동 시키기
-    private static final String KAFKA_DELETE_CART_ITEM_TOPIC = "delete_cart_item_topic"; //TODO properties 로 이동 시키기
+
+    @Value("${kafka.topic.order.make}")
+    private String orderMakeTopic;
+
+    @Value("${kafka.topic.delete.cart-item}")
+    private String deleteCartItemTopic;
 
     @Transactional(readOnly = true)
     public List<OrderSheetResponse> getOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
@@ -77,6 +81,8 @@ public class OrderService {
 
         List<OrderSheetResponse> responseList = new ArrayList<>();
 
+
+        // TODO 조회 쿼리 한 번에 MAp에 담아서 처리하기(DB 조회 수 줄이기)
         for (CartOrderSheetRequest orderSheet : orderSheetList) {
             ProductOptionCombination option = productOptionCombinationRepository.findById(orderSheet.productOptionId()).orElseThrow(
                     () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
@@ -254,8 +260,8 @@ public class OrderService {
         String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
 
         try {
-            stringKafkaTemplate.send(KAFKA_ORDER_MAKE_TOPIC, key, value);
-            log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", KAFKA_ORDER_MAKE_TOPIC);
+            stringKafkaTemplate.send(orderMakeTopic, key, value); // TODO call-back 예외처리
+            log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", orderMakeTopic);
         } catch (Exception e) {
             log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
             throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
@@ -310,14 +316,14 @@ public class OrderService {
         order.calculateTotalPrice();
         orderRepository.save(order);
 
-        // Redis에 결과 발행
+        // TODO Redis에 결과 발행이 실패할 경우? 트랜젝션이 언제 끝나는지, 레디스가 보내졌는데 save가 실패할 수도 있고; after 커밋을 쓰면 커밋 이후 시점으로 넘길 수 있다. 오히려 관련이 없기 때문에 문제가 될 수도 있다.
         redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(wrapperRequest));
 
         // 주문 완료된 장바구니 상품 삭제
         removeCartItemFromRedisCart(orderRequestList, member);
 
         // 결제 수단이 토스가 아닌 경우에만 결제쪽으로 kafka 메세지 전송
-        if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) {
+        if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) { //TODO if 문도 sendPaymentRequest 로 넘기기
             sendPaymentRequest(wrapperRequest, order);
         }
     }
@@ -345,8 +351,8 @@ public class OrderService {
     private void sendCartItemDeleteRetryMessageToKafka(Long cartItemId, String key) {
         CartItemDeleteRetryMessage message = new CartItemDeleteRetryMessage(String.valueOf(cartItemId), key, 1);
         try {
-            objectKafkaTemplate.send(KAFKA_DELETE_CART_ITEM_TOPIC, message);
-            log.info("장바구니 삭제 재시도 kafka 토픽에 메세지 발행 성공! TopicName: {}", KAFKA_DELETE_CART_ITEM_TOPIC);
+            objectKafkaTemplate.send(deleteCartItemTopic, message); // TODO call-back 예외처리
+            log.info("장바구니 삭제 재시도 kafka 토픽에 메세지 발행 성공! TopicName: {}", deleteCartItemTopic);
         } catch (Exception e) {
             log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
             throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
@@ -379,7 +385,7 @@ public class OrderService {
         PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, wrapperRequest.delivery());
 
         try {
-            objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest);
+            objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest); // TODO call-back 예외처리
             log.info("결재 처리 kafka 토픽에 메세지 발행 성공! TopicName: {}", paymentTopic);
         } catch (Exception e) {
             log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
