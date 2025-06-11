@@ -10,7 +10,7 @@ import turtleMart.global.kakao.dto.UserNotification;
 @Component
 public class KakaoMessageBuilder {
 
-    public String buildTextTemplateObject(UserNotification userNotification) {
+    public String buildTextShippedTemplateObject(UserNotification userNotification) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
 

@@ -25,7 +25,7 @@ public class KakaoMessageService {
     private String url;
 
     public void sendShippedMessage(UserNotification userNotification) {
-        String templateObject = kakaoMessageBuilder.buildTextTemplateObject(userNotification);
+        String templateObject = kakaoMessageBuilder.buildTextShippedTemplateObject(userNotification);
 
         if (templateObject == null || templateObject.isBlank()) {
             log.warn("⚠️ 출고 완료 템플릿 생성 실패로 메시지 전송이 중단되었습니다.");
