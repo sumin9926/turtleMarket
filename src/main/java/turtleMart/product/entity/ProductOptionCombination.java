@@ -29,6 +29,8 @@ public class ProductOptionCombination {
 
     private String uniqueKey;
 
+
+    @Enumerated(EnumType.STRING)
     private CombinationStatus combinationStatus;
 
     @OneToMany(mappedBy = "productOptionCombination", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -56,5 +58,9 @@ public class ProductOptionCombination {
 
     public void decreaseInventory(Integer quantity) {
         this.inventory -= quantity;
+    }
+
+    public void increaseInventory(Integer quantity) {
+        this.inventory += quantity;
     }
 }
