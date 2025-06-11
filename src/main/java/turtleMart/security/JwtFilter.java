@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import turtleMart.member.entity.Authority;
+import turtleMart.member.service.TokenBlacklistService;
 
 import java.io.IOException;
 
@@ -24,6 +25,7 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtSecurityProperties jwtSecurityProperties;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService blacklistService;
 
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
@@ -45,6 +47,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String jwt = jwtUtil.substringToken(bearerJwt);
 
+        if (blacklistService.isBlacklisted(jwt)) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "이미 로그아웃된 토큰입니다.");
+            return;
+        }
+
         try {
             Claims claims = jwtUtil.extractClaims(jwt);
             if (claims == null) {
@@ -59,6 +66,8 @@ public class JwtFilter extends OncePerRequestFilter {
                     AuthUser.of(memberId, authority);
             JwtAuthenticationToken authenticationToken = new JwtAuthenticationToken(authUser);
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+            request.setAttribute("rawJwtToken", jwt);
 
             chain.doFilter(request, response);
 

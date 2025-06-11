@@ -66,4 +66,8 @@ public class JwtUtil {
 
         return prefix + jwtBuilder.compact();
     }
+
+    public Date extractExpiration(String token) {
+        return extractClaims(token).getExpiration();
+    }
 }
