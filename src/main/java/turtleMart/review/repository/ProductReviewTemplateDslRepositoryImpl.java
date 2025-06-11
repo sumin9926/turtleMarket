@@ -37,7 +37,7 @@ public class ProductReviewTemplateDslRepositoryImpl implements ProductReviewTemp
     }
 
     @Override
-    public boolean existsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList) {
+    public boolean notExistsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList) {// 하나의 상품의 대해 같은 리뷰템플릿 여러번 선택했는지 확인
         Long count = jpaQueryFactory.select(productReviewTemplate.count())
                 .from(productReviewTemplate)
                 .where(
@@ -45,9 +45,7 @@ public class ProductReviewTemplateDslRepositoryImpl implements ProductReviewTemp
                         productReviewTemplate.reviewTemplate.id.in(reviewTemplateIdList))
                 .fetchOne();
 
-        if (count == null) {
-            throw new RuntimeException("올바르지 않은 쿼리");
-        }
+        if (count == null) {throw new RuntimeException("올바르지 않은 쿼리");}
 
         return count == 0;
     }

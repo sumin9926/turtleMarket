@@ -13,5 +13,5 @@ public interface ProductReviewTemplateDslRepository {
 
     Optional<ProductReviewTemplate> findByIdWithReviewTemplate(Long productReviewTemplateId);
 
-    boolean existsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList);
+    boolean notExistsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList);
 }
