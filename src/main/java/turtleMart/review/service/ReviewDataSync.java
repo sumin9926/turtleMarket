@@ -3,8 +3,12 @@ package turtleMart.review.service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,6 +19,7 @@ import turtleMart.review.entity.Review;
 import turtleMart.review.entity.ReviewDocument;
 import turtleMart.review.repository.ReviewDslRepositoryImpl;
 import turtleMart.review.repository.ReviewElasticSearchQueryClient;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -31,18 +36,15 @@ public class ReviewDataSync {
     private final ElasticsearchClient client;
     private final ReviewElasticSearchQueryClient elasticSearchQueryClient;
     private final RedisTemplate<String, String> stringRedisTemplate;
-
-    private final RetryTemplate retryTemplate = new RetryTemplate();
-
-    private LocalDateTime lastSyncTime;
+    private final RetryTemplate retryTemplate;
     private final String LAST_SYNC_CHECK_POINT = "lastSyncTime";
 
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "${scheduler.cron.review-sync}")
     public void elsaDataSync() {
         Long lastCursor = 0L;
 
-        String redisValue = stringRedisTemplate.opsForValue().get(LAST_SYNC_CHECK_POINT);
-        lastSyncTime = redisValue == null ? LocalDateTime.now() : LocalDateTime.parse(redisValue);
+        String checkPoint = stringRedisTemplate.opsForValue().get(LAST_SYNC_CHECK_POINT);
+        LocalDateTime syncCheckPoint = checkPoint == null ? LocalDateTime.now() : LocalDateTime.parse(checkPoint);
 
         LocalDateTime startSyncTime = LocalDateTime.now();
         stringRedisTemplate.opsForValue().set(LAST_SYNC_CHECK_POINT, startSyncTime.toString());
@@ -51,14 +53,15 @@ public class ReviewDataSync {
         Map<Long, ReviewDocument> reviewDocumentMap = new HashMap<>();
 
         CursorPageResponse<Review> reviewPage;
-        do{
-            reviewPage = reviewDslRepository.findAllPendingSync(lastSyncTime, startSyncTime, lastCursor);
+        do {
+            reviewPage = reviewDslRepository.findAllPendingSync(syncCheckPoint, startSyncTime, lastCursor);
             createBulkRequest(requestBuilder, reviewPage.content(), reviewDocumentMap);
             lastCursor = reviewPage.lastCursor();
-        }while (!reviewPage.isLastPage());
+        } while (!reviewPage.isLastPage());
 
-        log.info("맵안에 몇개 들어갔나 : {}", reviewDocumentMap.size());
-        if(reviewDocumentMap.isEmpty()){return;}
+        if (reviewDocumentMap.isEmpty()) {
+            return;
+        }
 
         BulkResponse response;
         try {
@@ -73,8 +76,8 @@ public class ReviewDataSync {
                 .map(i -> reviewDocumentMap.get(Long.parseLong(i.id())))
                 .toList();
 
-        if(response.errors()){retryFailedSync(errorLogList);}
-        reviewService.successDataStatusChange(response.items());
+        if (response.errors()) {retryFailedSync(errorLogList);}
+        reviewService.markDataSyncSuccess(response.items());
     }
 
     private void createBulkRequest(BulkRequest.Builder bulkQueryCreator, List<Review> reviewList, Map<Long, ReviewDocument> reviewDocumentMap) {
@@ -109,5 +112,5 @@ public class ReviewDataSync {
                 return null;
             });
         }
-        }
     }
+}

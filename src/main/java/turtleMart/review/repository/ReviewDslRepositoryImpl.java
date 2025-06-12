@@ -1,9 +1,5 @@
 package turtleMart.review.repository;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.Predicate;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,7 +15,6 @@ import java.util.Optional;
 
 import static turtleMart.review.entity.QProductReviewTemplate.productReviewTemplate;
 import static turtleMart.review.entity.QReview.review;
-import static turtleMart.review.entity.QReviewReport.reviewReport;
 import static turtleMart.review.entity.QReviewTemplate.reviewTemplate;
 import static turtleMart.review.entity.QTemplateChoice.templateChoice;
 
@@ -32,8 +27,7 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
     @Override
     public Optional<Review> findByIdWithChoice(Long reviewId) {
         return Optional.ofNullable(
-                jpaQueryFactory.select(review).distinct()
-                        .from(review)
+                jpaQueryFactory.select(review).distinct().from(review)
                         .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
                         .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
                         .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
@@ -43,17 +37,19 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
 
     @Override
     public Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable) {
+
+        int offset = pageable.getPageSize() * pageable.getPageNumber();
+        int limit = pageable.getPageSize();
+
         List<Review> reviewList =
-                jpaQueryFactory.select(review)
-                        .distinct()
-                        .from(review)
+                jpaQueryFactory.select(review).distinct().from(review)
                         .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
                         .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
                         .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
                         .where(review.member.id.eq(memberId))
                         .orderBy(review.id.desc())
-                        .offset(pageable.getPageSize() * pageable.getPageNumber())
-                        .limit(pageable.getPageSize())
+                        .offset(offset)
+                        .limit(limit)
                         .fetch();
 
         Long count = jpaQueryFactory
@@ -65,55 +61,38 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
         return new PageImpl<>(reviewList, pageable, count != null ? count : 0);
     }
 
-    @Override // mysql fulltext사용
-    public List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating, Integer cursor) {
+    @Override
+    public List<Review> findByIdInWithPagination(List<Long> reviewIdList, int size) {
 
-        BooleanBuilder booleanBuilder = new BooleanBuilder();
 
-        booleanBuilder.and(review.product.id.eq(productId));
-
-        if (keyWord != null && !keyWord.isEmpty()) {booleanBuilder.and(fullTextQuery(keyWord));}
-        if (rating != null) {booleanBuilder.and(review.rating.eq(rating));}
-        if (cursor != null) {booleanBuilder.and(reviewReport.id.gt(cursor));}
-
-        return jpaQueryFactory.select(review)
-                .from(review)
+        List<Review> reviewList = jpaQueryFactory.select(review).distinct().from(review)
                 .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
-                .leftJoin(templateChoice.productReviewTemplate).fetchJoin()
+                .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
                 .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(booleanBuilder)
-                .limit(10)
+                .where(review.id.in(reviewIdList))
+                .limit(size + 1)
+                .orderBy(review.id.desc())
                 .fetch();
-    }
+
+        return reviewList;
+        }
 
     @Override
-    public List<Review> findByIdInWithPagination(List<Long> reviewIdList) {
-        return
-                jpaQueryFactory.select(review).distinct()
-                        .from(review)
-                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
-                        .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                        .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                        .where(review.id.in(reviewIdList))
-                        .fetch();
-    }
-
-    @Override
-    public CursorPageResponse<Review> findAllPendingSync(LocalDateTime lastSyncedAt, LocalDateTime startSyncTime,  Long lastCursor) {
-        List<Review> reviewList = jpaQueryFactory.select(review)
-                .from(review)
+    public CursorPageResponse<Review> findAllPendingSync(LocalDateTime lastSyncedAt, LocalDateTime startSyncTime, Long lastCursor) {
+        List<Review> reviewList = jpaQueryFactory.select(review).from(review)
                 .where(
                         review.updatedAt.between(lastSyncedAt, startSyncTime),
                         review.syncRequired.eq(true),
                         review.isDeleted.eq(false),
                         review.id.gt(lastCursor)
                 )
+                .orderBy(review.id.desc())
                 .limit(1000)
                 .fetch();
 
         Long cursor = reviewList.isEmpty() ? 0 : reviewList.get(reviewList.size() - 1).getId();
 
-        return CursorPageResponse.of(reviewList, cursor,  true);
+        return CursorPageResponse.of(reviewList, cursor, true);
     }
 
     @Override
@@ -124,10 +103,10 @@ public class ReviewDslRepositoryImpl implements ReviewDslRepository {
                 .execute();
     }
 
-    private Predicate fullTextQuery(String keyword) {
-        NumberTemplate<Double> score = Expressions.numberTemplate(
-                Double.class, "function('match',{0},{1},{2})", review.title, review.content, Expressions.constant(keyword));
-
-        return score.gt(0);
-    }
+//    private Predicate fullTextQuery(String keyword) {
+//        NumberTemplate<Double> score = Expressions.numberTemplate(
+//                Double.class, "function('match',{0},{1},{2})", review.title, review.content, Expressions.constant(keyword));
+//
+//        return score.gt(0);
+//    }
 }
