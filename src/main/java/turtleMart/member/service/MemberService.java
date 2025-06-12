@@ -3,6 +3,9 @@ package turtleMart.member.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.exception.BadRequestException;
+import turtleMart.global.exception.ErrorCode;
 import turtleMart.member.dto.request.MemberWithdrawRequest;
 import turtleMart.member.dto.request.updatePasswordRequest;
 import turtleMart.member.dto.request.updateProfileRequest;
@@ -16,22 +19,26 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional(readOnly = true)
     public MemberResponse getMyProfile(Long authId) {
         Member foundMember = getMember(authId);
         return MemberResponse.from(foundMember);
     }
 
+    @Transactional
     public MemberResponse updateProfile(Long authId, updateProfileRequest request) {
         Member foundMember = getMember(authId);
         verifyPassword(request.password(), foundMember);
         if (memberRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("이미 사용중인 이메일입니다.");
+//            throw new RuntimeException("이미 사용중인 이메일입니다.");
+            throw new BadRequestException(ErrorCode.EMAIL_ALREADY_EXIST);
         }
         foundMember.updateProfile(request);
         memberRepository.save(foundMember);
         return MemberResponse.from(foundMember);
     }
 
+    @Transactional
     public String updatePassword(Long authId, updatePasswordRequest request) {
         Member foundMember = getMember(authId);
         verifyPassword(request.oldPassword(), foundMember);
@@ -42,6 +49,7 @@ public class MemberService {
     }
 
     // Todo: 소프트딜리트로 바꿔야 할지...
+    @Transactional
     public String withdrawMember(Long authId, MemberWithdrawRequest request) {
         Member foundMember = getMember(authId);
         verifyPassword(request.password(), foundMember);
@@ -59,7 +67,8 @@ public class MemberService {
      */
     private void verifyPassword(String password, Member member) {
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+//            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+            throw new BadRequestException(ErrorCode.INVALID_PASSWORD);
         }
     }
 }
