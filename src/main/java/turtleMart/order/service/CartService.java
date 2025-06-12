@@ -55,7 +55,7 @@ public class CartService {
         }
 
         //장바구니에 존재하지 않는 상품은 새로 Id를 생성해서 장바구니에 담는다.
-        Long cartItemId = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
+        Long cartItemId = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE; // '&' 연산자를 통해 UUID의 부호비트를 양수로 고정
 
         AddCartItemResponse addCartItemResponse = new AddCartItemResponse(cartItemId, request.productOptionId(), request.quantity(), true);
 
