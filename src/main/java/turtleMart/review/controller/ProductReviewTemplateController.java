@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.review.dto.request.CreateProductReviewTemplateRequest;
-import turtleMart.review.dto.request.UpdateProductReviewTemplateRequest;
 import turtleMart.review.dto.response.ProductReviewTemplateResponse;
 import turtleMart.review.service.ProductReviewTemplateService;
 import turtleMart.security.AuthUser;
