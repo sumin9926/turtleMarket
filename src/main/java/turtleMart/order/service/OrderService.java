@@ -312,8 +312,14 @@ public class OrderService {
         order.calculateTotalPrice();
         orderRepository.save(order);
 
-        // TODO Redis에 결과 발행이 실패할 경우? 트랜젝션이 언제 끝나는지, 레디스가 보내졌는데 save가 실패할 수도 있고; after 커밋을 쓰면 커밋 이후 시점으로 넘길 수 있다. 오히려 관련이 없기 때문에 문제가 될 수도 있다.
-        redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(wrapperRequest));
+        /*Redis는 DeferredResult 응답 트리거이기 때문에 실패 시 이후 DeferredResult를 통해 처리되는 추가 로직에 영향을 줄 수 있음
+        * 따라서 Redis 실패 시 전체 흐름을 롤백하도록 처리함. (이후 더 좋은 방법이 있으면 리팩토링 예정)*/
+        try {
+            redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(wrapperRequest));
+        } catch (Exception e) {
+            log.error("Redis Pub/Sub 발행 실패. 트랜잭션 롤백", e);
+            throw new RuntimeException("응답용 Redis 발행 실패", e);
+        }
 
         // 주문 완료된 장바구니 상품 삭제
         removeCartItemFromRedisCart(orderRequestList, member);
