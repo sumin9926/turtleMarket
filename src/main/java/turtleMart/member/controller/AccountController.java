@@ -40,4 +40,11 @@ public class AccountController {
     /**
      * 계좌 삭제
      */
+    @DeleteMapping("/{accountId}")
+    public ResponseEntity<String> deleteMyAccount(
+            @PathVariable Long accountId
+    ) {
+        String resultMessage = accountService.deleteAccount(accountId);
+        return ResponseEntity.status(HttpStatus.OK).body(resultMessage);
+    }
 }

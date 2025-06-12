@@ -33,4 +33,10 @@ public class AccountService {
         return accountList.stream().map(AccountResponse::from).toList();
     }
 
+    public String deleteAccount(Long accountId) {
+        BankAccount bankAccount = accountRepository.findById(accountId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_REGISTER));
+        accountRepository.delete(bankAccount);
+        return "계좌가 삭제되었습니다.";
+    }
 }
