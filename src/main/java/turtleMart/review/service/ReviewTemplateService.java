@@ -12,6 +12,8 @@ import turtleMart.review.entity.ProductReviewTemplate;
 import turtleMart.review.entity.ReviewTemplate;
 import turtleMart.review.repository.ProductReviewTemplateRepository;
 import turtleMart.review.repository.ReviewTemplateRepository;
+import turtleMart.security.CheckRole;
+
 import java.util.List;
 
 @Service
@@ -23,6 +25,7 @@ public class ReviewTemplateService {
     private final ProductReviewTemplateRepository productReviewTemplateRepository;
 
 
+    @CheckRole("ADMIN")
     @Transactional
     public ReviewTemplateResponse createReviewTemplate(CreateReviewTemplateRequest request){
         ReviewTemplate reviewTemplate = ReviewTemplate.of(
@@ -35,6 +38,7 @@ public class ReviewTemplateService {
         return ReviewTemplateResponse.from(reviewTemplate);
     }
 
+    @CheckRole("SELLER")
     public List<ReviewTemplateResponse> readAllReviewTemplate(){
         return reviewTemplateRepository.findAllDeletedFalse().stream().map(ReviewTemplateResponse::from).toList();
     }
@@ -46,6 +50,7 @@ public class ReviewTemplateService {
                 .toList();
     }
 
+    @CheckRole("ADMIN")
     @Transactional
     public ReviewTemplateResponse updateReviewTemplate(UpdateReviewTemplateRequest request, Long reviewTemplateId){
         ReviewTemplate reviewTemplate = findByIdElseThrow(reviewTemplateId);
@@ -55,6 +60,7 @@ public class ReviewTemplateService {
         return ReviewTemplateResponse.from(reviewTemplate);
     }
 
+    @CheckRole("ADMIN")
     @Transactional
     public void deleteReviewTemplate(Long reviewTemplateId){
         ReviewTemplate reviewTemplate = findByIdElseThrow(reviewTemplateId);

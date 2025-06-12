@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.common.CursorPageResponse;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
-import turtleMart.global.common.CursorPageResponse;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
@@ -17,11 +17,13 @@ import turtleMart.review.dto.request.UpdateReviewReportStatusRequest;
 import turtleMart.review.dto.response.ReviewReportResponse;
 import turtleMart.review.dto.response.TemplateChoiceResponse;
 import turtleMart.review.entity.*;
-import turtleMart.review.repository.*;
+import turtleMart.review.repository.ReasonCodeRepository;
+import turtleMart.review.repository.ReviewDslRepositoryImpl;
+import turtleMart.review.repository.ReviewReportDslRepositoryImpl;
+import turtleMart.review.repository.ReviewReportRepository;
+import turtleMart.security.CheckRole;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @Transactional(readOnly = true)
@@ -59,6 +61,7 @@ public class ReviewReportService {
     }
 
 
+    @CheckRole("ADMIN")
     public ReviewReportResponse readById(Long reviewReportId) {
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_REPORT_NOT_FOUND));
@@ -69,6 +72,7 @@ public class ReviewReportService {
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
+    @CheckRole("ADMIN")
     public CursorPageResponse<ReviewReportResponse> readByCondition(String reviewReportStatus, String reasonCode, Integer size, Long cursor) {
         List<ReviewReport> reviewReportList = reviewReportDslRepository.findByReviewReportCondition(reviewReportStatus, reasonCode, cursor);
 
@@ -88,6 +92,7 @@ public class ReviewReportService {
         return CursorPageResponse.of(reportResponseList, lastCursor, hasNext);
     }
 
+    @CheckRole("ADMIN")
     @Transactional
     public ReviewReportResponse updateReviewReport(Long memberId, Long reviewReportId, UpdateReviewReportStatusRequest request){
         if(!memberRepository.existsById(memberId)){throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}

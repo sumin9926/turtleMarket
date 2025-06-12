@@ -18,6 +18,8 @@ import turtleMart.review.entity.ReviewTemplate;
 import turtleMart.review.repository.ProductReviewTemplateDslRepositoryImpl;
 import turtleMart.review.repository.ProductReviewTemplateRepository;
 import turtleMart.review.repository.ReviewTemplateRepository;
+import turtleMart.security.CheckRole;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +33,7 @@ public class ProductReviewTemplateService {
     private final ReviewTemplateRepository reviewTemplateRepository;
     private final ProductReviewTemplateDslRepositoryImpl productReviewTemplateDslRepository;
 
+    @CheckRole("SELLER")
     @Transactional
     public List<ProductReviewTemplateResponse> createProductReviewTemplate(Long productId, CreateProductReviewTemplateRequest request){
         if(!sellerRepository.existsById(request.sellerId())){throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);}
@@ -58,6 +61,7 @@ public class ProductReviewTemplateService {
     }
 
 
+    @CheckRole("SELLER")
     @Transactional
     public void deleteProductReviewTemplate(Long memberId, Long productReviewTemplateId){
         Seller seller = sellerRepository.findByMemberId(memberId).orElseThrow(() -> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
