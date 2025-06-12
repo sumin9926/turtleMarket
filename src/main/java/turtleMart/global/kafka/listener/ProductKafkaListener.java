@@ -16,6 +16,7 @@ import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.kafka.enums.OperationType;
 import turtleMart.global.utill.JsonHelper;
+import turtleMart.product.dto.ProductOptionCombinationPriceDto;
 import turtleMart.product.service.ProductOptionCombinationService;
 
 import java.time.Duration;
@@ -33,12 +34,14 @@ public class ProductKafkaListener {
     //TODO 추후에 @Value + SpEL 표현식으로 변경하기 (ex) "${kafka.topics.order-make}")
     private static final String KAFKA_ORDER_MAKE_TOPIC = "order_make_topic";
     private static final String KAFKA_ORDER_CREATE_TOPIC = "order_create_topic";
-    private static final String KAFKA_PRICE_CHANGE_TOPIC = "_topic"; //TODO 가격 변경 토픽 이름 정해지면 넣어주세요.
     private static final Duration DURATION_MINUTES = Duration.ofMinutes(4);
     private static final long RETRY_DELAY_MS = 1000L;
 
     @Value("${kafka.topic.delivery}")
     private String deliveryTopic;
+
+    @Value("${kafka.topic.price}")
+    private String priceTopic;
 
     @KafkaListener(topics = "order_make_topic", groupId = "order-group")
     public void listen(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
@@ -59,7 +62,7 @@ public class ProductKafkaListener {
     }
 
     // 재고 관련 Kafka Listener
-    @KafkaListener(topics = "${kafka.topic.product}", groupId = "${spring.kafka.consumer.product.inventory.group-id}")
+    @KafkaListener(topics = "${kafka.topic.product}", groupId = "${spring.kafka.consumer.product-combination.group-id}")
     public void listenInventory(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
         try {
             OperationWrapperDto wrapperDto = JsonHelper.fromJson(value, OperationWrapperDto.class);
@@ -72,13 +75,37 @@ public class ProductKafkaListener {
                 default -> log.error("❌ 지원하지 않는 메시지 타입 수신: {}", type);
             }
         } catch (ConflictException e) {
-            log.warn("⚠️ 재고 부족으로 메시지 처리 실패: {}", e.getMessage());
+            log.warn("⚠️ 재고 부족으로 재고 감소 메시지 처리 실패: {}", e.getMessage());
         } catch (NotFoundException e) {
-            log.warn("⚠️ 필수 데이터 누락으로 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+            log.warn("⚠️ 필수 데이터 누락으로 재고 감소 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
         } catch (NumberFormatException e) {
             log.warn("⚠️ 잘못된 orderId 형식입니다. key: {}, message: {}", key, e.getMessage());
         } catch (Exception e) {
-            log.error("❌ 예기치 못한 오류로 메시지 처리 실패: {}", e.getMessage());
+            log.error("❌ 예기치 못한 오류로 재고 감소 메시지 처리 실패: {}", e.getMessage());
+        }
+    }
+
+    // 가격 관련 Kafka Listener
+    @KafkaListener(topics = "${kafka.topic.price}", groupId = "${spring.kafka.consumer.product-combination.group-id}")
+    public void listenPriceChange(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
+        log.info("📥 가격변동 메시지 수신: key={}, value={}", key, value);
+
+        try {
+            OperationWrapperDto wrapperDto = JsonHelper.fromJson(value, OperationWrapperDto.class);
+
+            // PRICE_CHANGE 타입이 아닌 메시지가 잘못 들어왔을 경우 무시
+            if (!wrapperDto.operationType().equals(OperationType.PRICE_CHANGE)) {
+                log.info("⚠️ PRICE_CHANGE 타입이 아닌 메시지 수신: {}", wrapperDto.operationType());
+                return;
+            }
+
+            ProductOptionCombinationPriceDto priceDto = JsonHelper.fromJson(wrapperDto.payload(), ProductOptionCombinationPriceDto.class);
+
+            productOptionCombinationService.changePrice(priceDto, wrapperDto, key);
+        } catch (NotFoundException e) {
+            log.warn("⚠️ 필수 데이터 누락으로 가격 변경 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("❌ 예기치 못한 오류로 가격 변경 메시지 처리 실패: {}", e.getMessage());
         }
     }
 
@@ -101,8 +128,8 @@ public class ProductKafkaListener {
             log.info("주문 생성 요청 토픽으로 kafka 메세지 재발행 성공! TopicName: {}", KAFKA_ORDER_MAKE_TOPIC);
         } else {
             // 소프트락이 이미 존재하면 가격변동 처리용 새 토픽에 발행
-            kafkaTemplate.send(KAFKA_PRICE_CHANGE_TOPIC, key, value);
-            log.info("가격 변동 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", KAFKA_PRICE_CHANGE_TOPIC);
+            kafkaTemplate.send(priceTopic, key, value);
+            log.info("가격 변동 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", priceTopic);
         }
     }
 
