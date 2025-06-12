@@ -19,6 +19,4 @@ public record CardRegisterRequest(
         @Pattern(regexp = "\\d{2}", message = "비밀번호 앞 2자리는 2자리 숫자여야 합니다.")
         String cardPassword
 ) {
-        public String cardIssuer() {
-        }
 }
