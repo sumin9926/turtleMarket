@@ -5,22 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import turtleMart.global.common.OptionDisplayUtils;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.member.repository.MemberRepository;
+import turtleMart.order.common.ProductOptionResolver;
 import turtleMart.order.dto.request.AddCartItemRequest;
 import turtleMart.order.dto.request.CartItemQuantityRequest;
 import turtleMart.order.dto.response.AddCartItemResponse;
 import turtleMart.order.dto.response.CartItemResponse;
-import turtleMart.product.entity.Product;
-import turtleMart.product.entity.ProductOptionCombination;
+import turtleMart.order.dto.response.ResolvedProductOption;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
-import turtleMart.product.repository.ProductOptionValueRepository;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +24,7 @@ public class CartService {
 
     private final MemberRepository memberRepository;
     private final ProductOptionCombinationRepository combinationRepository;
-    private final ProductOptionValueRepository productOptionValueRepository;
+    private final ProductOptionResolver productOptionResolver;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -76,47 +72,16 @@ public class CartService {
 
         // Redis의 장바구니 정보(JSON)를 역직렬화하여 장바구니 DTO 맵 구성
         Map<Long, AddCartItemResponse> addCartItemResponseMap = getAddCartItemResponseMapFromRedis(memberId);
-
-        // 역직렬화한 항목에 가격, 상품명 등 상세 정보를 더해서 반환(최신정보를 DB에서 직접 조회하여 정합성 보장)
-        return buildCartItemResponseList(addCartItemResponseMap);
-    }
-
-    private List<CartItemResponse> buildCartItemResponseList(Map<Long, AddCartItemResponse> addCartItemResponseMap) {
         List<Long> productOptionIdList = new ArrayList<>(addCartItemResponseMap.keySet());
-        List<ProductOptionCombination> productOptionCombinationList = combinationRepository.findAllByIdIn(productOptionIdList);
-        Map<Long, ProductOptionCombination> combinationMap = productOptionCombinationList.stream()
-                .collect(Collectors.toMap(ProductOptionCombination::getId, Function.identity()));
-        Map<String, String> uniqueKeyMap = buildOptionInfoMap(productOptionCombinationList);
-        List<CartItemResponse> cartItemResponseList = new ArrayList<>();
+        Map<Long, ResolvedProductOption> resolvedProductOptionMap = productOptionResolver.resolveProductOptions(productOptionIdList);
 
-        for(Long productOptionId: productOptionIdList){
-            ProductOptionCombination productOption = combinationMap.get(productOptionId);
-            if(null == productOption){
-                throw new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND);
-            }
-
-            Product product = productOption.getProduct();
-            if(null == product){
-                throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
-            }
-
-            String optionInfo = uniqueKeyMap.get(productOption.getUniqueKey());
-
-            AddCartItemResponse addCartItemResponse = addCartItemResponseMap.get(productOptionId);
-            CartItemResponse cartItemResponse = new CartItemResponse(
-                    addCartItemResponse.cartItemId(), product.getId(), productOption.getId(), product.getName(),
-                    optionInfo, productOption.getPrice(), addCartItemResponse.quantity(), addCartItemResponse.isChecked()
-            );
-            cartItemResponseList.add(cartItemResponse);
-        }
-        return cartItemResponseList;
-    }
-
-    private Map<String, String> buildOptionInfoMap(List<ProductOptionCombination> productOptionCombinationList) {
-        Set<String> uniqueKeySet = productOptionCombinationList.stream()
-                .map(ProductOptionCombination::getUniqueKey)
-                .collect(Collectors.toSet());
-        return OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
+        return productOptionIdList.stream()
+                .map(id->{
+                    ResolvedProductOption resolved = resolvedProductOptionMap.get(id);
+                    AddCartItemResponse addCartItemResponse = addCartItemResponseMap.get(id);
+                    return CartItemResponse.from(addCartItemResponse, resolved.product(), resolved.productOption(), resolved.optionInfo());
+                })
+                .toList();
     }
 
     private Map<Long, AddCartItemResponse> getAddCartItemResponseMapFromRedis(long memberId) {

@@ -23,6 +23,7 @@ import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
+import turtleMart.order.common.ProductOptionResolver;
 import turtleMart.order.dto.request.*;
 import turtleMart.order.dto.response.*;
 import turtleMart.order.entity.Order;
@@ -33,7 +34,6 @@ import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.order.repository.OrderRepository;
 import turtleMart.payment.dto.request.PaymentRequest;
 import turtleMart.payment.entity.PaymentMethod;
-import turtleMart.product.entity.Product;
 import turtleMart.product.entity.ProductOptionCombination;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
 import turtleMart.product.repository.ProductOptionValueRepository;
@@ -59,6 +59,7 @@ public class OrderService {
     private final ProductOptionValueRepository productOptionValueRepository;
     private final OrderItemDslRepository orderItemDslRepository;
     private final CartService cartService;
+    private final ProductOptionResolver productOptionResolver;
     private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final KafkaTemplate<String, Object> objectKafkaTemplate;
     private final RedisTemplate<String, String> redisTemplate;
@@ -79,30 +80,17 @@ public class OrderService {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
-        List<OrderSheetResponse> responseList = new ArrayList<>();
+        Map<Long, Integer> quantityMap = orderSheetList.stream()
+                .collect(Collectors.toMap(CartOrderSheetRequest::productOptionId, CartOrderSheetRequest::quantity));
+        List<Long> productOptionIdList = new ArrayList<>(quantityMap.keySet());
+        Map<Long, ResolvedProductOption> resolvedProductOptionMap = productOptionResolver.resolveProductOptions(productOptionIdList);
 
-
-        // TODO 조회 쿼리 한 번에 MAp에 담아서 처리하기(DB 조회 수 줄이기)
-        for (CartOrderSheetRequest orderSheet : orderSheetList) {
-            ProductOptionCombination option = productOptionCombinationRepository.findById(orderSheet.productOptionId()).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
-            );
-
-            Product product = option.getProduct();
-
-            if (null == product) {
-                throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
-            }
-
-            String optionInfo = OptionDisplayUtils.buildOptionDisplay(option.getUniqueKey(), productOptionValueRepository);
-
-            OrderSheetResponse response = new OrderSheetResponse(orderSheet.productOptionId(), product.getId(),
-                    optionInfo, product.getName(), product.getPrice(), orderSheet.quantity());
-
-            responseList.add(response);
-        }
-
-        return responseList;
+        return productOptionIdList.stream()
+                .map(id -> {
+                    ResolvedProductOption resolved = resolvedProductOptionMap.get(id);
+                    return OrderSheetResponse.from(id, resolved.product(), resolved.optionInfo(), quantityMap.get(id));
+                })
+                .toList(); //스트림에서 만들어진 OrderSheetResponse 요소들을 리스트로 수집하여 반환
     }
 
     @Transactional
@@ -287,7 +275,7 @@ public class OrderService {
                 ));
 
         List<Long> productOptionIdList = orderSheetRequestList.stream().map(CartOrderSheetRequest::productOptionId).toList();
-        List<ProductOptionCombination> optionCombinationList = productOptionCombinationRepository.findAllById(productOptionIdList);
+        List<ProductOptionCombination> optionCombinationList = productOptionCombinationRepository.findAllByIdIn(productOptionIdList);
         Map<Long, ProductOptionCombination> optionMap = optionCombinationList.stream()
                 .collect(Collectors.toMap(
                         ProductOptionCombination::getId,
