@@ -30,7 +30,13 @@ public class Card {
 
     private String cardPassword;
 
-    public Card(String cardIssuer, String cardNumber, String expirationDate, String cvcNumber, String cardPassword) {
+    public Card(
+            String cardIssuer,
+            String cardNumber,
+            String expirationDate,
+            String cvcNumber,
+            String cardPassword
+    ) {
         this.cardIssuer = cardIssuer;
         this.cardNumber = cardNumber;
         this.expirationDate = expirationDate;
