@@ -19,6 +19,7 @@ import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.kafka.util.KafkaSendHelper;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
@@ -61,7 +62,7 @@ public class OrderService {
     private final OrderItemDslRepository orderItemDslRepository;
     private final CartService cartService;
     private final ProductOptionResolver productOptionResolver;
-    private final KafkaTemplate<String, String> stringKafkaTemplate;
+    private final KafkaSendHelper kafkaSendHelper;
     private final KafkaTemplate<String, Object> objectKafkaTemplate;
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -178,7 +179,7 @@ public class OrderService {
         }
 
         Set<String> uniqueKeySet = orderItemList.stream()
-                .map(o->o.getProductOptionCombination().getUniqueKey())
+                .map(o -> o.getProductOptionCombination().getUniqueKey())
                 .collect(Collectors.toSet());
         Map<String, String> uniqueKeyMap = OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
 
@@ -260,13 +261,7 @@ public class OrderService {
         String payload = JsonHelper.toJson(newWrapperRequest);
         String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
 
-        try {
-            stringKafkaTemplate.send(orderMakeTopic, key, value); // TODO call-back 예외처리
-            log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", orderMakeTopic);
-        } catch (Exception e) {
-            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
-            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
-        }
+        kafkaSendHelper.send(orderMakeTopic, key, value);
     }
 
     @Transactional
@@ -323,10 +318,7 @@ public class OrderService {
         // 주문 완료된 장바구니 상품 삭제
         removeCartItemFromRedisCart(orderRequestList, member);
 
-        // 결제 수단이 토스가 아닌 경우에만 결제쪽으로 kafka 메세지 전송
-        if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) { //TODO if 문도 sendPaymentRequest 로 넘기기
-            sendPaymentRequest(wrapperRequest, order);
-        }
+        sendPaymentRequest(wrapperRequest, order);
     }
 
     private void removeCartItemFromRedisCart(List<OrderRequest> orderRequestList, Member member) {
@@ -351,13 +343,7 @@ public class OrderService {
 
     private void sendCartItemDeleteRetryMessageToKafka(Long cartItemId, String key) {
         CartItemDeleteRetryMessage message = new CartItemDeleteRetryMessage(String.valueOf(cartItemId), key, 1);
-        try {
-            objectKafkaTemplate.send(deleteCartItemTopic, message); // TODO call-back 예외처리
-            log.info("장바구니 삭제 재시도 kafka 토픽에 메세지 발행 성공! TopicName: {}", deleteCartItemTopic);
-        } catch (Exception e) {
-            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
-            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
-        }
+        kafkaSendHelper.sendWithCallback(objectKafkaTemplate, deleteCartItemTopic, key, message);
     }
 
     private void validatePrice(Map<Long, CartOrderSheetRequest> orderSheetMap, Map<Long, OrderRequest> orderMap, Map<Long, ProductOptionCombination> optionMap) {
@@ -379,19 +365,15 @@ public class OrderService {
     }
 
     private void sendPaymentRequest(OrderWrapperRequest wrapperRequest, Order order) {
+        if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) {  // 결제 수단이 토스인 경우 kafka 메세지 전송 x
+            return;
+        }
         //주문 ID 담아주기
         PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment(), order.getId());
-
         // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
         PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, wrapperRequest.delivery());
 
-        try {
-            objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest); // TODO call-back 예외처리
-            log.info("결재 처리 kafka 토픽에 메세지 발행 성공! TopicName: {}", paymentTopic);
-        } catch (Exception e) {
-            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
-            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
-        }
+        kafkaSendHelper.sendWithCallback(objectKafkaTemplate, paymentTopic, String.valueOf(order.getId()), paymentWrapperRequest);
     }
 
 }

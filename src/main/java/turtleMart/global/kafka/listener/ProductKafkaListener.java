@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import turtleMart.global.exception.ConflictException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.kafka.util.KafkaSendHelper;
 import turtleMart.global.utill.JsonHelper;
 
 import java.time.Duration;
@@ -29,8 +30,8 @@ public class ProductKafkaListener {
     @Value("${kafka.topic.order.create}")
     private String orderCreateTopic;
 
+    private final KafkaSendHelper kafkaSendHelper;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final KafkaTemplate<String, String> kafkaTemplate;
 
     //TODO 추후에 @Value + SpEL 표현식으로 변경하기
     private static final String KAFKA_PRICE_CHANGE_TOPIC = "_topic"; //TODO 가격 변경 토픽 이름 정해지면 넣어주세요.
@@ -73,12 +74,10 @@ public class ProductKafkaListener {
                 return;
             }
 
-            kafkaTemplate.send(orderMakeTopic, key, value);
-            log.info("주문 생성 요청 토픽으로 kafka 메세지 재발행 성공! TopicName: {}", orderMakeTopic);
+            kafkaSendHelper.send(orderMakeTopic, key, value);
         } else {
             // 소프트락이 이미 존재하면 가격변동 처리용 새 토픽에 발행
-            kafkaTemplate.send(KAFKA_PRICE_CHANGE_TOPIC, key, value);
-            log.info("가격 변동 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", KAFKA_PRICE_CHANGE_TOPIC);
+            kafkaSendHelper.send(KAFKA_PRICE_CHANGE_TOPIC, key, value);
         }
     }
 
@@ -89,14 +88,12 @@ public class ProductKafkaListener {
         for(Long combinationId : productOptionCombinationIdList){
             String lockKey = "softLock:priceChange:combination:" + combinationId.toString();
             if(Boolean.TRUE.equals(redisTemplate.opsForValue().get(lockKey))){ //가격 변동 처리 중 상태(Redis value=true) (*처리 완료되면 삭제됨, true는 처리 중을 의미)
-                kafkaTemplate.send(orderMakeTopic, key, value); //재발행
-                log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", orderMakeTopic);
+                kafkaSendHelper.send(orderMakeTopic, key, value); //재발행
                 return;
             }
         }
         // 가격 변동이 끝났다면 주문 생성 로직 실행, 주문 생성 토픽으로 넘기기
-        kafkaTemplate.send(orderCreateTopic, key, value);
-        log.info("주문 생성 요청 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", orderCreateTopic);
+        kafkaSendHelper.send(orderCreateTopic, key, value);
     }
 
     private void routeInventoryDecreaseMessage(String key, String value) {

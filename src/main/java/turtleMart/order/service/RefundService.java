@@ -1,12 +1,14 @@
 package turtleMart.order.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.ForbiddenException;
 import turtleMart.global.exception.NotFoundException;
+import turtleMart.global.kafka.util.KafkaSendHelper;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.dto.response.RefundApplyResultResponse;
@@ -22,11 +24,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RefundService {
 
+    @Value("${kafka.topic.refund.approve}")
+    private String refundApproveTopic;
+
     private final MemberRepository memberRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemDslRepository orderItemDslRepository;
     private final SellerRepository sellerRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaSendHelper kafkaSendHelper;
 
     @Transactional
     public RefundApplyResultResponse requestRefund(Long memberId, Long orderItemId) {
@@ -72,7 +77,7 @@ public class RefundService {
             throw new ForbiddenException(ErrorCode.PRODUCT_NOT_BELONG_TO_SELLER);
         }
 
-        kafkaTemplate.send("refund_approve_topic", orderItemId.toString());
+        kafkaSendHelper.send(refundApproveTopic, orderItemId.toString(), orderItemId.toString());
         /* 결제 쪽:
          * 결제쪽에서 환불 완료 후 OrderItemStatus 상태를 Refunded 로 변경 해줘야한다.
          * 결제쪽에서 상태 변경 후 레디스 키("refund:status:" + orderItemId)도 true 로 변경해줘야한다 */
