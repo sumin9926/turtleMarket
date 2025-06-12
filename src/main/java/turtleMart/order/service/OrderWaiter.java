@@ -17,10 +17,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrderWaiter {
 
     private final Map<String, DeferredResult<ResponseEntity<OrderWrapperRequest>>> orderWaitMap = new ConcurrentHashMap<>();
+    private final static Long TIMEOUT_VALUE = 10_000L; // 10초 뒤 타임아웃
 
     public DeferredResult<ResponseEntity<OrderWrapperRequest>> createWaiter(String orderKey){
 
-        DeferredResult<ResponseEntity<OrderWrapperRequest>> deferredResult = new DeferredResult<>(10_000L); // 10초 뒤 타임아웃 TODO 시간 properties 로 뺴기
+        DeferredResult<ResponseEntity<OrderWrapperRequest>> deferredResult = new DeferredResult<>(TIMEOUT_VALUE);
 
         if(null != orderWaitMap.putIfAbsent(orderKey, deferredResult)){
             throw new BadRequestException(ErrorCode.DUPLICATE_ORDER_REQUEST);
