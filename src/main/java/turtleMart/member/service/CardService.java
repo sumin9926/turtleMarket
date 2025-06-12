@@ -32,4 +32,11 @@ public class CardService {
         }
         return cardList.stream().map(CardResponse::from).toList();
     }
+
+    public String deleteMyCard(Long cardId) {
+        Card foundCard = cardRepository.findById(cardId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.CARD_NOT_REGISTER));
+        cardRepository.delete(foundCard);
+        return "카드가 삭제되었습니다.";
+    }
 }

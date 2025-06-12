@@ -40,4 +40,11 @@ public class CardController {
     /**
      * 카드 삭제
      */
+    @DeleteMapping("/{cardId}")
+    public ResponseEntity<String> deleteCard(
+            @PathVariable Long cardId
+    ) {
+        String resultMessage = cardService.deleteMyCard(cardId);
+        return ResponseEntity.status(HttpStatus.OK).body(resultMessage);
+    }
 }
