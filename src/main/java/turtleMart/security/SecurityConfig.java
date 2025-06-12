@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .rememberMe(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(jwtSecurityProperties.secret().whiteList().toArray(new String[0])).permitAll()
+                        .requestMatchers("/auth/logout").authenticated()
                         .anyRequest().authenticated() // whitelist 이외의 url에는 권한 필요
                 )
                 .exceptionHandling(exception -> exception

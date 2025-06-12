@@ -56,4 +56,14 @@ public class Order {
                 .mapToInt(item -> item.getPrice() * item.getQuantity())
                 .sum();
     }
+
+    public String getSummaryItemName() {
+        String summaryName = orderItems.get(0).getName();
+
+        if (orderItems.size() > 1) {
+            summaryName += " 외" + (orderItems.size() - 1) + "개 상품";
+        }
+
+        return summaryName;
+    }
 }

@@ -25,7 +25,7 @@ public class ReviewTemplateController {
     }
 
     @GetMapping("/review-templates")
-    public ResponseEntity<List<ReviewTemplateResponse>> readAll() {// 일반 유저 불가
+    public ResponseEntity<List<ReviewTemplateResponse>> readAll() {// 셀러 권한
         List<ReviewTemplateResponse> reviewTemplateResponseList = reviewTemplateService.readAllReviewTemplate();
         return ResponseEntity.status(HttpStatus.OK).body(reviewTemplateResponseList);
     }

@@ -19,13 +19,16 @@ public enum ErrorCode {
 
     // 배송 관련
     DELIVERY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 배송입니다."),
+    DELIVERY_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 배송이 생성된 주문입니다."),
     INVALID_DELIVERY_STATUS(HttpStatus.BAD_REQUEST, "허용되지 않은 상태 변경입니다."),
 
     // 판매자 관련
     SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 판매자입니다."),
+    SELLER_NOT_REGISTER(HttpStatus.BAD_REQUEST, "판매자로 등록된 회원이 아닙니다."),
 
     // 주소 관련
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 주소입니다."),
+    ADDRESS_NOT_REGISTER(HttpStatus.NOT_FOUND, "등록된 주소가 없습니다."),
 
     //권한 관련
     FORBIDDEN(HttpStatus.FORBIDDEN,"접근권한이 없습니다."),
@@ -57,6 +60,10 @@ public enum ErrorCode {
 
     //유저 관련
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
+    EMAIL_ALREADY_EXIST(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다."),
+    EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "가입된 이메일이 아닙니다."),
+    PHONE_NUMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "가입된 휴대폰 번호가 아닙니다."),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 잘못되었습니다."),
 
     //여러가지 관련
     TIME_OUT(HttpStatus.INTERNAL_SERVER_ERROR, "응답 대기시간을 초과하였습니다."),
@@ -79,7 +86,11 @@ public enum ErrorCode {
     MINIO_INITIALIZATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "버킷 설정 중 문제 발생"),
     IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "이미지 업로드 중 문제가 발생하였습니다"),
     IMAGE_VIEW_FAILED(HttpStatus.BAD_GATEWAY, "이미지를 불러오는 도중 문제가 발생했습니다"),
-    SOFT_LOCK_CANT_ACCESS(HttpStatus.CONFLICT, "현재 다른요청을 처리중임으로 접근할수없습니다.");
+    SOFT_LOCK_CANT_ACCESS(HttpStatus.CONFLICT, "현재 다른요청을 처리중임으로 접근할수없습니다."),
+
+    //엘라스틱서치 관련
+    SEARCH_ERROR_RETRY_LATER(HttpStatus.INTERNAL_SERVER_ERROR, "검색 중 알수 없는 문제가 발생하였습니다. 잠시후 다시 시도해 주세요");
+
 
     private final HttpStatus httpStatus;
     private final String message;
