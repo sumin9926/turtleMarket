@@ -42,6 +42,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -146,35 +147,44 @@ public class OrderService {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
-        Order order = orderRepository.findById(orderId).orElseThrow(
+        Order order = orderRepository.findWithOrderItemsById(orderId).orElseThrow(
                 () -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND)
         );
 
         OrderItemStatus newStatus = OrderItemStatusRequest.checkOrderItemStatusIgnoreCase(request.orderItemStatus());
+        List<OrderItem> orderItemList = orderItemRepository.findAllByIdIn(orderItemIdList);
+        Map<Long, OrderItem> orderItemMap = orderItemList.stream()
+                .collect(Collectors.toMap(OrderItem::getId, Function.identity()));
+        Set<Long> orderItemIdSet = order.getOrderItems().stream()
+                .map(OrderItem::getId)
+                .collect(Collectors.toSet());
         List<OrderItem> updatedOrderItemList = new ArrayList<>();
+
         // orderItemList 를 for 문으로 하나씩 조회해서 업데이트 내역을 반영하고 List 형태로 저장
         for (Long orderItemId : orderItemIdList) {
-            OrderItem orderItem = orderItemRepository.findById(orderItemId).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND)
-            );
+            OrderItem orderItem = orderItemMap.get(orderItemId);
+            if (null == orderItem) {
+                throw new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND);
+            }
 
-            if (!order.getOrderItems().contains(orderItem)) {
+            if (!orderItemIdSet.contains(orderItemId)) {
                 throw new BadRequestException(ErrorCode.ORDER_ITEM_NOT_IN_ORDER);
             }
 
-            // 갱신 순서를 지켜야한다.
             OrderItemStatus currentStatus = orderItem.getOrderItemStatus();
             currentStatus.validateTransitionTo(newStatus);
             orderItem.updateStatus(newStatus);
             updatedOrderItemList.add(orderItem);
         }
 
+        Set<String> uniqueKeySet = orderItemList.stream()
+                .map(o->o.getProductOptionCombination().getUniqueKey())
+                .collect(Collectors.toSet());
+        Map<String, String> uniqueKeyMap = OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
+
         List<OrderItemResponse> orderItemResponseList = updatedOrderItemList.stream()
                 .map(orderItem -> {
-                    String optionInfo = OptionDisplayUtils.buildOptionDisplay(
-                            orderItem.getProductOptionCombination().getUniqueKey(),
-                            productOptionValueRepository
-                    );
+                    String optionInfo = uniqueKeyMap.get(orderItem.getProductOptionCombination().getUniqueKey());
                     return OrderItemResponse.from(orderItem, optionInfo);
                 })
                 .toList();
