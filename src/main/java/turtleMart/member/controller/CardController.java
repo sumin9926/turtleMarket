@@ -4,13 +4,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import turtleMart.member.dto.request.CardRegisterRequest;
 import turtleMart.member.dto.response.CardResponse;
 import turtleMart.member.service.CardService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/members/userProfile/cards")
@@ -32,6 +31,11 @@ public class CardController {
     /**
      * 카드 조회
      */
+    @GetMapping("/mycards")
+    public ResponseEntity<List<CardResponse>> myCardList() {
+        List<CardResponse> myCardList = cardService.findMyCardList();
+        return ResponseEntity.status(HttpStatus.OK).body(myCardList);
+    }
 
     /**
      * 카드 삭제

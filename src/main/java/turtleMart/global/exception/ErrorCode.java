@@ -30,6 +30,9 @@ public enum ErrorCode {
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 주소입니다."),
     ADDRESS_NOT_REGISTER(HttpStatus.NOT_FOUND, "등록된 주소가 없습니다."),
 
+    // 카드 관련
+    CARD_NOT_REGISTER(HttpStatus.NOT_FOUND, "등록된 카드가 없습니다."),
+
     //권한 관련
     FORBIDDEN(HttpStatus.FORBIDDEN,"접근권한이 없습니다."),
 
