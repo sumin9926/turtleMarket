@@ -19,10 +19,12 @@ import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.kafka.enums.OperationType;
+import turtleMart.global.kafka.util.KafkaSendHelper;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
+import turtleMart.order.common.ProductOptionResolver;
 import turtleMart.order.dto.request.*;
 import turtleMart.order.dto.response.*;
 import turtleMart.order.entity.Order;
@@ -33,7 +35,6 @@ import turtleMart.order.repository.OrderItemRepository;
 import turtleMart.order.repository.OrderRepository;
 import turtleMart.payment.dto.request.PaymentRequest;
 import turtleMart.payment.entity.PaymentMethod;
-import turtleMart.product.entity.Product;
 import turtleMart.product.entity.ProductOptionCombination;
 import turtleMart.product.repository.ProductOptionCombinationRepository;
 import turtleMart.product.repository.ProductOptionValueRepository;
@@ -42,6 +43,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -59,14 +61,19 @@ public class OrderService {
     private final ProductOptionValueRepository productOptionValueRepository;
     private final OrderItemDslRepository orderItemDslRepository;
     private final CartService cartService;
-    private final KafkaTemplate<String, String> stringKafkaTemplate;
+    private final ProductOptionResolver productOptionResolver;
+    private final KafkaSendHelper kafkaSendHelper;
     private final KafkaTemplate<String, Object> objectKafkaTemplate;
     private final RedisTemplate<String, String> redisTemplate;
 
     @Value("${kafka.topic.payment}")
     private String paymentTopic;
-    private static final String KAFKA_ORDER_MAKE_TOPIC = "order_make_topic"; //TODO properties 로 이동 시키기
-    private static final String KAFKA_DELETE_CART_ITEM_TOPIC = "delete_cart_item_topic"; //TODO properties 로 이동 시키기
+
+    @Value("${kafka.topic.order.make}")
+    private String orderMakeTopic;
+
+    @Value("${kafka.topic.delete.cart-item}")
+    private String deleteCartItemTopic;
 
     @Transactional(readOnly = true)
     public List<OrderSheetResponse> getOrderSheet(List<CartOrderSheetRequest> orderSheetList, Long memberId) {
@@ -75,28 +82,17 @@ public class OrderService {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
-        List<OrderSheetResponse> responseList = new ArrayList<>();
+        Map<Long, Integer> quantityMap = orderSheetList.stream()
+                .collect(Collectors.toMap(CartOrderSheetRequest::productOptionId, CartOrderSheetRequest::quantity));
+        List<Long> productOptionIdList = new ArrayList<>(quantityMap.keySet());
+        Map<Long, ResolvedProductOption> resolvedProductOptionMap = productOptionResolver.resolveProductOptions(productOptionIdList);
 
-        for (CartOrderSheetRequest orderSheet : orderSheetList) {
-            ProductOptionCombination option = productOptionCombinationRepository.findById(orderSheet.productOptionId()).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
-            );
-
-            Product product = option.getProduct();
-
-            if (null == product) {
-                throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
-            }
-
-            String optionInfo = OptionDisplayUtils.buildOptionDisplay(option.getUniqueKey(), productOptionValueRepository);
-
-            OrderSheetResponse response = new OrderSheetResponse(orderSheet.productOptionId(), product.getId(),
-                    optionInfo, product.getName(), product.getPrice(), orderSheet.quantity());
-
-            responseList.add(response);
-        }
-
-        return responseList;
+        return productOptionIdList.stream()
+                .map(id -> {
+                    ResolvedProductOption resolved = resolvedProductOptionMap.get(id);
+                    return OrderSheetResponse.from(id, resolved.product(), resolved.optionInfo(), quantityMap.get(id));
+                })
+                .toList(); //스트림에서 만들어진 OrderSheetResponse 요소들을 리스트로 수집하여 반환
     }
 
     @Transactional
@@ -152,35 +148,44 @@ public class OrderService {
             throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
-        Order order = orderRepository.findById(orderId).orElseThrow(
+        Order order = orderRepository.findWithOrderItemsById(orderId).orElseThrow(
                 () -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND)
         );
 
         OrderItemStatus newStatus = OrderItemStatusRequest.checkOrderItemStatusIgnoreCase(request.orderItemStatus());
+        List<OrderItem> orderItemList = orderItemRepository.findAllByIdIn(orderItemIdList);
+        Map<Long, OrderItem> orderItemMap = orderItemList.stream()
+                .collect(Collectors.toMap(OrderItem::getId, Function.identity()));
+        Set<Long> orderItemIdSet = order.getOrderItems().stream()
+                .map(OrderItem::getId)
+                .collect(Collectors.toSet());
         List<OrderItem> updatedOrderItemList = new ArrayList<>();
+
         // orderItemList 를 for 문으로 하나씩 조회해서 업데이트 내역을 반영하고 List 형태로 저장
         for (Long orderItemId : orderItemIdList) {
-            OrderItem orderItem = orderItemRepository.findById(orderItemId).orElseThrow(
-                    () -> new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND)
-            );
+            OrderItem orderItem = orderItemMap.get(orderItemId);
+            if (null == orderItem) {
+                throw new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND);
+            }
 
-            if (!order.getOrderItems().contains(orderItem)) {
+            if (!orderItemIdSet.contains(orderItemId)) {
                 throw new BadRequestException(ErrorCode.ORDER_ITEM_NOT_IN_ORDER);
             }
 
-            // 갱신 순서를 지켜야한다.
             OrderItemStatus currentStatus = orderItem.getOrderItemStatus();
             currentStatus.validateTransitionTo(newStatus);
             orderItem.updateStatus(newStatus);
             updatedOrderItemList.add(orderItem);
         }
 
+        Set<String> uniqueKeySet = orderItemList.stream()
+                .map(o -> o.getProductOptionCombination().getUniqueKey())
+                .collect(Collectors.toSet());
+        Map<String, String> uniqueKeyMap = OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
+
         List<OrderItemResponse> orderItemResponseList = updatedOrderItemList.stream()
                 .map(orderItem -> {
-                    String optionInfo = OptionDisplayUtils.buildOptionDisplay(
-                            orderItem.getProductOptionCombination().getUniqueKey(),
-                            productOptionValueRepository
-                    );
+                    String optionInfo = uniqueKeyMap.get(orderItem.getProductOptionCombination().getUniqueKey());
                     return OrderItemResponse.from(orderItem, optionInfo);
                 })
                 .toList();
@@ -196,10 +201,16 @@ public class OrderService {
 
         List<OrderSimpleResponse> simpleResponseList = new ArrayList<>();
 
-        List<Order> orderList = orderRepository.findWithOrderItemsByMemberId(memberId);
+        List<Order> orderList = orderRepository.findWithOrderItemsAndCombinationsByMemberId(memberId);
         List<Long> orderIdList = orderList.stream().map(Order::getId).toList();
         List<Delivery> deliveryList = deliveryRepository.findAllWithOrderIds(orderIdList);
         Map<Long, Delivery> deliveryMap = deliveryList.stream().collect(Collectors.toMap(d -> d.getOrder().getId(), d -> d));
+
+        Set<String> uniqueKeySet = orderList.stream()
+                .flatMap(order -> order.getOrderItems().stream())
+                .map(orderItem -> orderItem.getProductOptionCombination().getUniqueKey())
+                .collect(Collectors.toSet());
+        Map<String, String> optionInfoMap = OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
 
         for (Order order : orderList) {
             // orderId로 deliveryStatus 가져오기
@@ -210,10 +221,7 @@ public class OrderService {
 
             List<OrderItemResponse> orderItemResponses = order.getOrderItems().stream()
                     .map(orderItem -> {
-                        String optionInfo = OptionDisplayUtils.buildOptionDisplay(
-                                orderItem.getProductOptionCombination().getUniqueKey(),
-                                productOptionValueRepository
-                        );
+                        String optionInfo = optionInfoMap.get(orderItem.getProductOptionCombination().getUniqueKey());
                         return OrderItemResponse.from(orderItem, optionInfo);
                     })
                     .toList();
@@ -253,13 +261,7 @@ public class OrderService {
         String payload = JsonHelper.toJson(newWrapperRequest);
         String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
 
-        try {
-            stringKafkaTemplate.send(KAFKA_ORDER_MAKE_TOPIC, key, value);
-            log.info("주문 생성 요청 토픽에 kafka 메세지 재발행 성공! TopicName: {}", KAFKA_ORDER_MAKE_TOPIC);
-        } catch (Exception e) {
-            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
-            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
-        }
+        kafkaSendHelper.send(orderMakeTopic, key, value);
     }
 
     @Transactional
@@ -281,7 +283,7 @@ public class OrderService {
                 ));
 
         List<Long> productOptionIdList = orderSheetRequestList.stream().map(CartOrderSheetRequest::productOptionId).toList();
-        List<ProductOptionCombination> optionCombinationList = productOptionCombinationRepository.findAllById(productOptionIdList);
+        List<ProductOptionCombination> optionCombinationList = productOptionCombinationRepository.findAllByIdIn(productOptionIdList);
         Map<Long, ProductOptionCombination> optionMap = optionCombinationList.stream()
                 .collect(Collectors.toMap(
                         ProductOptionCombination::getId,
@@ -310,16 +312,19 @@ public class OrderService {
         order.calculateTotalPrice();
         orderRepository.save(order);
 
-        // Redis에 결과 발행
-        redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(wrapperRequest));
+        /*Redis는 DeferredResult 응답 트리거이기 때문에 실패 시 이후 DeferredResult를 통해 처리되는 추가 로직에 영향을 줄 수 있음
+        * 따라서 Redis 실패 시 전체 흐름을 롤백하도록 처리함. (이후 더 좋은 방법이 있으면 리팩토링 예정)*/
+        try {
+            redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(wrapperRequest));
+        } catch (Exception e) {
+            log.error("Redis Pub/Sub 발행 실패. 트랜잭션 롤백", e);
+            throw new RuntimeException("응답용 Redis 발행 실패", e);
+        }
 
         // 주문 완료된 장바구니 상품 삭제
         removeCartItemFromRedisCart(orderRequestList, member);
 
-        // 결제 수단이 토스가 아닌 경우에만 결제쪽으로 kafka 메세지 전송
-        if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) {
-            sendPaymentRequest(wrapperRequest, order);
-        }
+        sendPaymentRequest(wrapperRequest, order);
     }
 
     private void removeCartItemFromRedisCart(List<OrderRequest> orderRequestList, Member member) {
@@ -344,13 +349,7 @@ public class OrderService {
 
     private void sendCartItemDeleteRetryMessageToKafka(Long cartItemId, String key) {
         CartItemDeleteRetryMessage message = new CartItemDeleteRetryMessage(String.valueOf(cartItemId), key, 1);
-        try {
-            objectKafkaTemplate.send(KAFKA_DELETE_CART_ITEM_TOPIC, message);
-            log.info("장바구니 삭제 재시도 kafka 토픽에 메세지 발행 성공! TopicName: {}", KAFKA_DELETE_CART_ITEM_TOPIC);
-        } catch (Exception e) {
-            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
-            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
-        }
+        kafkaSendHelper.sendWithCallback(objectKafkaTemplate, deleteCartItemTopic, key, message);
     }
 
     private void validatePrice(Map<Long, CartOrderSheetRequest> orderSheetMap, Map<Long, OrderRequest> orderMap, Map<Long, ProductOptionCombination> optionMap) {
@@ -372,19 +371,15 @@ public class OrderService {
     }
 
     private void sendPaymentRequest(OrderWrapperRequest wrapperRequest, Order order) {
+        if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) {  // 결제 수단이 토스인 경우 kafka 메세지 전송 x
+            return;
+        }
         //주문 ID 담아주기
         PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment(), order.getId());
-
         // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
         PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, wrapperRequest.delivery());
 
-        try {
-            objectKafkaTemplate.send(paymentTopic, paymentWrapperRequest);
-            log.info("결재 처리 kafka 토픽에 메세지 발행 성공! TopicName: {}", paymentTopic);
-        } catch (Exception e) {
-            log.error("Kafka message 처리 중 알 수 없는 오류 발생", e);
-            throw new RuntimeException("Kafka message 처리 중 알 수 없는 오류 발생");
-        }
+        kafkaSendHelper.sendWithCallback(objectKafkaTemplate, paymentTopic, String.valueOf(order.getId()), paymentWrapperRequest);
     }
 
 }

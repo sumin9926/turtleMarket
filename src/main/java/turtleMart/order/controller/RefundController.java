@@ -3,12 +3,17 @@ package turtleMart.order.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import turtleMart.global.exception.ErrorCode;
+import turtleMart.global.exception.ForbiddenException;
+import turtleMart.member.entity.Authority;
 import turtleMart.order.dto.response.RefundApplyResultResponse;
 import turtleMart.order.dto.response.RefundResponse;
 import turtleMart.order.service.RefundService;
 import turtleMart.order.service.RefundWaiter;
+import turtleMart.security.AuthUser;
 
 import java.util.List;
 
@@ -21,32 +26,37 @@ public class RefundController {
     private final RefundWaiter refundWaiter;
 
     @PostMapping("/{orderItemId}")
-    public ResponseEntity<RefundApplyResultResponse> applyRefund(
-            @PathVariable Long orderItemId
-            /*TODO 토큰에서 회원 ID 가져오기*/
+    public ResponseEntity<RefundApplyResultResponse> requestRefund(
+            @PathVariable Long orderItemId,
+            @AuthenticationPrincipal AuthUser authUser
     ) {
-        RefundApplyResultResponse response = refundService.applyRefund(1L, orderItemId);
+        RefundApplyResultResponse response = refundService.requestRefund(authUser.memberId(), orderItemId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // TODO 판매자 권한 부여
     @GetMapping()
     public ResponseEntity<List<RefundResponse>> getRefundRequestList(
-            /*TODO 토큰에서 판매자 ID 가져오기*/
+            @AuthenticationPrincipal AuthUser authUser
     ) {
-        List<RefundResponse> responseList = refundService.getRefundRequestList(1L);
+        if(!authUser.hasAuthority(Authority.SELLER)){
+            throw new ForbiddenException(ErrorCode.FORBIDDEN);
+        }
+        List<RefundResponse> responseList = refundService.getRefundRequestList(authUser.memberId());
 
         return ResponseEntity.status(HttpStatus.OK).body(responseList);
     }
 
     @PatchMapping("/{orderItemId}")
     public DeferredResult<ResponseEntity<Void>> approveRefund(
-            @PathVariable Long orderItemId
-            /*TODO 토큰에서 판매자 ID 가져오기*/
+            @PathVariable Long orderItemId,
+            @AuthenticationPrincipal AuthUser authUser
     ){
+        if(!authUser.hasAuthority(Authority.SELLER)){
+            throw new ForbiddenException(ErrorCode.FORBIDDEN);
+        }
         DeferredResult<ResponseEntity<Void>> result = refundWaiter.createWaiter(orderItemId);
-        refundService.approveOrderItemRefund(orderItemId, 1L);
+        refundService.approveOrderItemRefund(orderItemId, authUser.memberId());
 
         return result;
     }
