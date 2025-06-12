@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import turtleMart.global.common.BaseEntity;
 import turtleMart.member.dto.request.AddressRegisterRequest;
 import turtleMart.member.dto.request.UpdateAddressRequest;
 
@@ -11,7 +12,7 @@ import turtleMart.member.dto.request.UpdateAddressRequest;
 @Getter
 @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Address {
+public class Address extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
