@@ -13,6 +13,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o JOIN FETCH o.orderItems WHERE o.id=:orderId")
     Optional<Order> findWithOrderItemsById(@Param("orderId") Long orderId);
 
-    @Query("SELECT o FROM Order o JOIN FETCH o.orderItems WHERE o.member.id=:memberId")
-    List<Order> findWithOrderItemsByMemberId(@Param("memberId") Long memberId);
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.orderItems oi JOIN FETCH oi.productOptionCombination WHERE o.member.id=:memberId")
+    List<Order> findWithOrderItemsAndCombinationsByMemberId(@Param("memberId") Long memberId);
 }

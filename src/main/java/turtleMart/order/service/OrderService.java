@@ -200,10 +200,16 @@ public class OrderService {
 
         List<OrderSimpleResponse> simpleResponseList = new ArrayList<>();
 
-        List<Order> orderList = orderRepository.findWithOrderItemsByMemberId(memberId);
+        List<Order> orderList = orderRepository.findWithOrderItemsAndCombinationsByMemberId(memberId);
         List<Long> orderIdList = orderList.stream().map(Order::getId).toList();
         List<Delivery> deliveryList = deliveryRepository.findAllWithOrderIds(orderIdList);
         Map<Long, Delivery> deliveryMap = deliveryList.stream().collect(Collectors.toMap(d -> d.getOrder().getId(), d -> d));
+
+        Set<String> uniqueKeySet = orderList.stream()
+                .flatMap(order -> order.getOrderItems().stream())
+                .map(orderItem -> orderItem.getProductOptionCombination().getUniqueKey())
+                .collect(Collectors.toSet());
+        Map<String, String> optionInfoMap = OptionDisplayUtils.buildOptionDisplayMap(uniqueKeySet, productOptionValueRepository);
 
         for (Order order : orderList) {
             // orderId로 deliveryStatus 가져오기
@@ -214,10 +220,7 @@ public class OrderService {
 
             List<OrderItemResponse> orderItemResponses = order.getOrderItems().stream()
                     .map(orderItem -> {
-                        String optionInfo = OptionDisplayUtils.buildOptionDisplay(
-                                orderItem.getProductOptionCombination().getUniqueKey(),
-                                productOptionValueRepository
-                        );
+                        String optionInfo = optionInfoMap.get(orderItem.getProductOptionCombination().getUniqueKey());
                         return OrderItemResponse.from(orderItem, optionInfo);
                     })
                     .toList();
