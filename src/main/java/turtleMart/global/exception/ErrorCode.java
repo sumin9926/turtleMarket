@@ -33,6 +33,9 @@ public enum ErrorCode {
     // 카드 관련
     CARD_NOT_REGISTER(HttpStatus.NOT_FOUND, "등록된 카드가 없습니다."),
 
+    // 계좌 관련
+    ACCOUNT_NOT_REGISTER(HttpStatus.NOT_FOUND, "등록된 계좌가 없습니다."),
+
     //권한 관련
     FORBIDDEN(HttpStatus.FORBIDDEN,"접근권한이 없습니다."),
 

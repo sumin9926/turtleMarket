@@ -4,13 +4,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import turtleMart.member.dto.request.AccountRegisterRequest;
 import turtleMart.member.dto.response.AccountResponse;
 import turtleMart.member.service.AccountService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/members/userProfile/accounts")
@@ -32,6 +31,11 @@ public class AccountController {
     /**
      * 계좌 조회
      */
+    @GetMapping("/myaccount")
+    public ResponseEntity<List<AccountResponse>> myAccountList() {
+        List<AccountResponse> myAccountList = accountService.findMyAccountList();
+        return ResponseEntity.status(HttpStatus.OK).body(myAccountList);
+    }
 
     /**
      * 계좌 삭제
