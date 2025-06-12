@@ -19,6 +19,8 @@ public class Card {
     @ManyToOne
     @JoinColumn
     private Member member;
+    
+    private String cardIssuer;
 
     private String cardNumber;
 
@@ -28,7 +30,8 @@ public class Card {
 
     private String cardPassword;
 
-    public Card(String cardNumber, String expirationDate, String cvcNumber, String cardPassword) {
+    public Card(String cardIssuer, String cardNumber, String expirationDate, String cvcNumber, String cardPassword) {
+        this.cardIssuer = cardIssuer;
         this.cardNumber = cardNumber;
         this.expirationDate = expirationDate;
         this.cvcNumber = cvcNumber;
@@ -37,6 +40,7 @@ public class Card {
 
     public static Card of(CardRegisterRequest request) {
         return new Card(
+                request.cardIssuer(),
                 request.cardNumber(),
                 request.expirationDate(),
                 request.cvcNumber(),
