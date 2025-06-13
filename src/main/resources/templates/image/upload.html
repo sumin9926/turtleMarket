@@ -1,3 +1,93 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Presigned URL Upload</title>-->
+<!--</head>-->
+<!--<body>-->
+
+<!--<h2>이미지 업로드</h2>-->
+<!--<input type="file" id="fileInput" />-->
+<!--<button id="uploadBtn">업로드</button>-->
+
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', () => {-->
+<!--        const uploadBtn = document.getElementById('uploadBtn');-->
+<!--        if (uploadBtn) {-->
+<!--            uploadBtn.addEventListener('click', async () => {-->
+<!--                const fileInput = document.getElementById('fileInput');-->
+<!--                const file = fileInput.files[0];-->
+
+<!--                const domainPrefix = "review";-->
+<!--                const filename = encodeURIComponent(file.name);-->
+
+<!--                console.log(filename)-->
+
+<!--                const allowedTypes = ['image/png', 'image/jpeg'];-->
+<!--                const MAX_SIZE_MB = 5;-->
+<!--                const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;-->
+
+<!--                if (file) {-->
+
+<!--                    if (!allowedTypes.includes(file.type)) {-->
+<!--                        alert("허용되지 않은 파일 형식입니다.");-->
+<!--                        return;-->
+<!--                    }-->
+
+<!--                    if (file && file.size > MAX_SIZE_BYTES) {-->
+<!--                        alert(`이미지 크기는 ${MAX_SIZE_MB}MB 이하만 업로드 가능합니다.`);-->
+<!--                        event.target.value = ""; // 선택한 파일 초기화-->
+<!--                    }-->
+
+<!--                    try {-->
+<!--                        // 프리사인드 URL 요청-->
+<!--                        const response = await fetch(`/images/upload/${domainPrefix}/${filename}`, {-->
+<!--                            method: 'GET',-->
+<!--                            headers: {-->
+<!--                                'Content-Type': 'application/json', // JSON 형식이지만 바디는 비어있음-->
+<!--                                // 'Authorization': token  // Authorization 헤더에 토큰 추가-->
+<!--                            }-->
+<!--                        });-->
+<!--                        const responseData = await response.json();-->
+<!--                        const presignedUrl = responseData.data;-->
+
+<!--                        console.log(presignedUrl)-->
+<!--                        // 프리사인드 URL을 사용하여 S3에 파일 업로드-->
+<!--                        const uploadResponse = await fetch(presignedUrl, {-->
+<!--                            method: 'PUT',-->
+<!--                            body: file,-->
+<!--                            headers: {-->
+<!--                                'Content-Type': file.type  // 파일의 MIME 타입 (예: image/jpeg, image/png 등)-->
+<!--                            }-->
+<!--                        });-->
+
+<!--                        if (uploadResponse.ok) {-->
+<!--                            alert('File uploaded successfully!');-->
+<!--                            const fileUrl = presignedUrl // 쿼리 파라미터 제거해서 순수 URL만 사용-->
+<!--                            console.log(fileUrl);-->
+<!--                            const message = {-->
+<!--                                imageUrl: fileUrl,-->
+<!--                                message: ""-->
+<!--                            };-->
+<!--                        } else {-->
+<!--                            alert('File upload failed!');-->
+<!--                        }-->
+<!--                    } catch (error) {-->
+<!--                        console.error('Error uploading file:', error);-->
+<!--                        alert('Error uploading file.');-->
+<!--                    }-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+<!--    });-->
+
+
+<!--</script>-->
+
+<!--</body>-->
+<!--</html>-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +109,7 @@
                 const fileInput = document.getElementById('fileInput');
                 const file = fileInput.files[0];
 
-                const domainPrefix = review;
+                const domainPrefix = "review";
                 const filename = encodeURIComponent(file.name);
 
                 console.log(filename)
@@ -50,7 +140,7 @@
                             }
                         });
                         const responseData = await response.json();
-                        const presignedUrl = responseData.data;
+                        const presignedUrl = responseData.url;
                         console.log(presignedUrl)
                         // 프리사인드 URL을 사용하여 S3에 파일 업로드
                         const uploadResponse = await fetch(presignedUrl, {

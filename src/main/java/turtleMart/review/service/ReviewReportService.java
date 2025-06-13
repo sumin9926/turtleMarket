@@ -100,9 +100,6 @@ public class ReviewReportService {
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_REPORT_NOT_FOUND));
 
-        Long writerId = reviewReport.getMember().getId();
-        if(writerId.equals(memberId)){throw new BadRequestException(ErrorCode.FORBIDDEN);}
-
         ReviewReportStatus reviewReportStatus = ReviewReportStatus.of(request.reviewReportStatus());
         reviewReport.updateReviewReportStatus(reviewReportStatus);
 
