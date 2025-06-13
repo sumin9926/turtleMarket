@@ -6,8 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import turtleMart.review.dto.request.CreateProductReviewTemplateRequest;
+import turtleMart.review.dto.response.ProductReviewTemplateResponse;
 import turtleMart.review.service.ProductReviewTemplateService;
 import turtleMart.security.AuthUser;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor// 사장 전용
@@ -16,12 +19,12 @@ public class ProductReviewTemplateController {
     private final ProductReviewTemplateService productReviewTemplateService;
 
     @PostMapping("/products/{productId}/product-review-template")
-    public ResponseEntity<Void> createProductReviewTemplate(
+    public ResponseEntity<List<ProductReviewTemplateResponse>> createProductReviewTemplate(
             @PathVariable(name = "productId") Long productId,
             @RequestBody CreateProductReviewTemplateRequest request
     ) {
-        productReviewTemplateService.createProductReviewTemplate(productId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        List<ProductReviewTemplateResponse> productReviewTemplateResponseList = productReviewTemplateService.createProductReviewTemplate(productId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(productReviewTemplateResponseList);
     }
 
     @DeleteMapping("/product-review-template/{productReviewTemplateId}")
