@@ -2,6 +2,7 @@ package turtleMart.review.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,14 +10,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import turtleMart.global.common.CursorPageResponse;
 import turtleMart.review.dto.request.CreateReviewRequest;
 import turtleMart.review.dto.request.UpdateReviewRequest;
 import turtleMart.review.dto.response.ReviewResponse;
 import turtleMart.review.service.ReviewService;
 import turtleMart.security.AuthUser;
 
-import java.util.List;
-
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class ReviewController {
@@ -44,22 +45,21 @@ public class ReviewController {
     @GetMapping("/members/reviews")
     public ResponseEntity<Page<ReviewResponse>> readByMemberId(@AuthenticationPrincipal AuthUser authUser,
                                                                @RequestParam(name = "size", required = false, defaultValue = "10") int size,
-                                                               @RequestParam(name = "page", required = false, defaultValue = "1" ) int page
+                                                               @RequestParam(name = "page", required = false, defaultValue = "1") int page
     ) {
-        Pageable pageable = PageRequest.of(page - 1 , size);
+        Pageable pageable = PageRequest.of(page - 1, size);
         Page<ReviewResponse> reviewResponse = reviewService.readByMemberId(authUser.memberId(), pageable);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 
     @GetMapping("/products/{productId}/reviews")
-    public ResponseEntity<List<ReviewResponse>> readByProductIdAndCondition(@PathVariable(name = "productId") Long productId,
-                                                                @RequestParam(name = "keyWord", required = false) String keyWord,
-                                                                @RequestParam(name = "rating", required = false) Integer rating,
-                                                                @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,
-                                                                @RequestParam(name = "size", required = false, defaultValue = "10") Integer size
-    ){
-        Pageable pageable = PageRequest.of(page - 1, size);
-        List<ReviewResponse> reviewResponse = reviewService.readByProductIdWithSearch(productId, keyWord, rating, pageable);
+    public ResponseEntity<CursorPageResponse<ReviewResponse>> readByProductIdAndCondition(@PathVariable(name = "productId") Long productId,
+                                                                            @RequestParam(name = "keyWord", required = false) String keyWord,
+                                                                            @RequestParam(name = "rating", required = false) Integer rating,
+                                                                            @RequestParam(name = "size", required = false, defaultValue = "10") Integer size,
+                                                                            @RequestParam(name = "cursor", required = false) Long cursor
+    ) {
+        CursorPageResponse<ReviewResponse> reviewResponse = reviewService.readByProductIdWithSearch(productId, keyWord, rating, size, cursor);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
     }
 
@@ -67,7 +67,7 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> updateReview(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable(name = "reviewId") Long reviewId,
-            @RequestBody UpdateReviewRequest request){
+            @RequestBody UpdateReviewRequest request) {
 
         ReviewResponse reviewResponse = reviewService.updateReview(authUser.memberId(), reviewId, request);
         return ResponseEntity.status(HttpStatus.OK).body(reviewResponse);
