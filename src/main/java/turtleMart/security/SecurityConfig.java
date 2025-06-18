@@ -43,7 +43,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(jwtSecurityProperties.secret().whiteList().toArray(new String[0])).permitAll()
                         .requestMatchers("/auth/logout").authenticated()
-//                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/orders/async").permitAll()
+                        .requestMatchers("/orders/refund/async/**").permitAll()
                         .anyRequest().authenticated() // whitelist 이외의 url에는 권한 필요
                 )
                 .exceptionHandling(exception -> exception
@@ -54,7 +55,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             log.error("인증 실패: {}", authException.getMessage());
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "인증되지 않은 사용자입니다.");
-                        }) //
+                        })
                 );
 
         return http.build();

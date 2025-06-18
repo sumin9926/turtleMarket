@@ -7,4 +7,13 @@ public record CreateDeliveryRequest(
     Long addressId,
     String deliveryRequest
 ) {
+    public static CreateDeliveryRequest updateOrderId(CreateDeliveryRequest deliveryRequest, Long orderId){
+        return new CreateDeliveryRequest(
+                orderId,
+                deliveryRequest.sellerId(),
+                deliveryRequest.senderId(),
+                deliveryRequest.addressId(),
+                deliveryRequest.deliveryRequest()
+        );
+    }
 }

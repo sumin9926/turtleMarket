@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.delivery.entity.Delivery;
 import turtleMart.delivery.repository.DeliveryRepository;
 import turtleMart.global.common.OptionDisplayUtils;
@@ -22,6 +23,7 @@ import turtleMart.global.kafka.enums.OperationType;
 import turtleMart.global.kafka.util.KafkaSendHelper;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
+import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.common.ProductOptionResolver;
@@ -235,12 +237,10 @@ public class OrderService {
     public TotalOrderedQuantityResponse getTotalOrderedQuantity(
             Long sellerId, Long productId, LocalDate startDate, LocalDate endDate
     ) {
-        if (!sellerRepository.existsById(sellerId)) {
-            throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
-        }
+        Seller seller = sellerRepository.findByMemberId(sellerId).orElseThrow(()-> new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
 
         Long totalOrderedQuantity = orderItemDslRepository.getTotalOrderedQuantity(
-                sellerId, productId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay(), OrderItemStatus.REFUNDED
+                seller.getId(), productId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay(), OrderItemStatus.REFUNDED
         );
 
         return TotalOrderedQuantityResponse.from(productId, totalOrderedQuantity);
@@ -258,10 +258,16 @@ public class OrderService {
                 .toList();
 
         String key = JsonHelper.toJson(productOptionCombinationIdList);
-        String payload = JsonHelper.toJson(newWrapperRequest);
-        String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
+        try {
+            String payload = JsonHelper.toJson(newWrapperRequest);
+            log.info("직렬화 성공: {}", payload);
+            String value = JsonHelper.toJson(OperationWrapperDto.from(OperationType.ORDER_CREATE, payload));
 
-        kafkaSendHelper.send(orderMakeTopic, key, value);
+            kafkaSendHelper.send(orderMakeTopic, key, value);
+        } catch (Exception e) {
+            log.error("직렬화 실패!", e);
+        }
+
     }
 
     @Transactional
@@ -310,12 +316,14 @@ public class OrderService {
         });
 
         order.calculateTotalPrice();
-        orderRepository.save(order);
+        Order newOrder = orderRepository.save(order);
+
+        OrderWrapperRequest newWrapperRequest = OrderWrapperRequest.updateOrderId(wrapperRequest, newOrder.getId());
 
         /*Redis는 DeferredResult 응답 트리거이기 때문에 실패 시 이후 DeferredResult를 통해 처리되는 추가 로직에 영향을 줄 수 있음
-        * 따라서 Redis 실패 시 전체 흐름을 롤백하도록 처리함. (이후 더 좋은 방법이 있으면 리팩토링 예정)*/
+         * 따라서 Redis 실패 시 전체 흐름을 롤백하도록 처리함. (이후 더 좋은 방법이 있으면 리팩토링 예정)*/
         try {
-            redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(wrapperRequest));
+            redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(newWrapperRequest));
         } catch (Exception e) {
             log.error("Redis Pub/Sub 발행 실패. 트랜잭션 롤백", e);
             throw new RuntimeException("응답용 Redis 발행 실패", e);
@@ -324,7 +332,7 @@ public class OrderService {
         // 주문 완료된 장바구니 상품 삭제
         removeCartItemFromRedisCart(orderRequestList, member);
 
-        sendPaymentRequest(wrapperRequest, order);
+        sendPaymentRequest(newWrapperRequest, newOrder);
     }
 
     private void removeCartItemFromRedisCart(List<OrderRequest> orderRequestList, Member member) {
@@ -371,15 +379,15 @@ public class OrderService {
     }
 
     private void sendPaymentRequest(OrderWrapperRequest wrapperRequest, Order order) {
+        //주문 ID 담아주기
+        PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment(), order.getId());
+        CreateDeliveryRequest newDeliveryRequest = CreateDeliveryRequest.updateOrderId(wrapperRequest.delivery(), order.getId());
+        // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
+        PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, newDeliveryRequest);
+
         if (PaymentMethod.TOSS.equals(wrapperRequest.payment().paymentMethod())) {  // 결제 수단이 토스인 경우 kafka 메세지 전송 x
             return;
         }
-        //주문 ID 담아주기
-        PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment(), order.getId());
-        // Kafka 로 결제 요청(배송정보도 함께 담아서 전송)
-        PaymentWrapperRequest paymentWrapperRequest = PaymentWrapperRequest.from(newPaymentRequest, wrapperRequest.delivery());
-
         kafkaSendHelper.sendWithCallback(objectKafkaTemplate, paymentTopic, String.valueOf(order.getId()), paymentWrapperRequest);
     }
-
 }

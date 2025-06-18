@@ -33,7 +33,7 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderWaiter orderWaiter;
 
-    @PostMapping()
+    @PostMapping("/async")
     public DeferredResult<ResponseEntity<OrderWrapperRequest>> createOrder(
             @RequestParam String items, //상품옵션Id1:수량,상품옵션Id2:수량 형식으로 입력
             @RequestBody OrderWrapperRequest request,
@@ -73,7 +73,7 @@ public class OrderController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<MemberOrderListResponse> getMyOrderList(
+    public ResponseEntity<MemberOrderListResponse> getMyOrderList( // 배송 테이블까지 생성되어야 정상적으로 실행 됨
             @AuthenticationPrincipal AuthUser authUser
     ){
         MemberOrderListResponse response = orderService.getOrderList(authUser.memberId());
