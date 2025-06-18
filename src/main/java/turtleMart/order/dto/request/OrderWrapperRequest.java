@@ -29,4 +29,17 @@ public record OrderWrapperRequest(
                         wrapperRequest.delivery()
                 );
         }
+        public static OrderWrapperRequest updateOrderId(
+                OrderWrapperRequest wrapperRequest, Long orderId
+        ){
+                PaymentRequest newPaymentRequest = PaymentRequest.updateOrderId(wrapperRequest.payment, orderId);
+                CreateDeliveryRequest newDeliveryRequest = CreateDeliveryRequest.updateOrderId(wrapperRequest.delivery, orderId);
+                return new OrderWrapperRequest(
+                        wrapperRequest.orderKey(),
+                        wrapperRequest.orderList(),
+                        wrapperRequest.itemList(),
+                        newPaymentRequest,
+                        newDeliveryRequest
+                );
+        }
 }
