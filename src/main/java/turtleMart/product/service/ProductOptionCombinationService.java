@@ -54,7 +54,7 @@ public class ProductOptionCombinationService {
     @Value("${server.id}")
     private String serverId;
 
-    @Value("${kafka.topic.order}")
+    @Value("${kafka.topic.order.make}")
     private String orderTopic;
 
     @Transactional
@@ -136,7 +136,7 @@ public class ProductOptionCombinationService {
         OperationWrapperDto wrapperDto = OperationWrapperDto.from(OperationType.PRICE_CHANGE, payload);
         String value = JsonHelper.toJson(wrapperDto);
 
-        kafkaTemplate.send("order_make_topic", productOptionCombinationId.toString(), value);
+        kafkaTemplate.send(orderTopic, productOptionCombinationId.toString(), value);
 
         return operationId;
     }
