@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 public class RefundKafkaListener {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, String> stringRedisTemplate;
 
     @KafkaListener(topics = "${kafka.topic.refund.approve}")
     public void onRefundApprove(String message) {
@@ -22,6 +23,6 @@ public class RefundKafkaListener {
 
         // 2. Redis 상태 true로 변경(=환불 처리 정상적으로 완료 됨)
         redisTemplate.opsForValue().set("refund:status:" + orderItemId, true, 1, TimeUnit.MINUTES);
-        redisTemplate.convertAndSend("refund:completed", Long.toString(orderItemId)); //채널에 메세지 발행(브로드케스팅)
+        stringRedisTemplate.convertAndSend("refund:completed", Long.toString(orderItemId)); //채널에 메세지 발행(브로드케스팅)
     }
 }
