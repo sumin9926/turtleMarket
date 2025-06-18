@@ -131,7 +131,7 @@ public class ProductKafkaListener {
             kafkaSendHelper.send(orderMakeTopic, key, value);
         } else {
             // 소프트락이 이미 존재하면 가격변동 처리용 새 토픽에 발행
-            kafkaTemplate.send(priceTopic, key, value);
+            kafkaSendHelper.send(priceTopic, key, value);
             log.info("가격 변동 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", priceTopic);
         }
     }
@@ -165,7 +165,7 @@ public class ProductKafkaListener {
         String payload = JsonHelper.toJson(request);
         String message = JsonHelper.toJson(OperationWrapperDto.from(OperationType.DELIVERY_CREATE, payload));
 
-        kafkaTemplate.send(deliveryTopic, key, message);
+        kafkaSendHelper.send(deliveryTopic, key, message);
 
         log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", request);
     }
