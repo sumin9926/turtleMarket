@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface DeliveryRepository extends JpaRepository<Delivery, Long>, DeliveryQueryRepository {
 
-    @Query("SELECT d FROM Delivery d JOIN FETCH d.order WHERE d.order.id=:orderId")
+    @Query("SELECT d FROM Delivery d JOIN FETCH d.order WHERE d.order.id IN :orderIds")
     List<Delivery> findAllWithOrderIds(@Param("orderIds") List<Long> orderIdList);
 
     boolean existsByOrderId(Long orderId);
