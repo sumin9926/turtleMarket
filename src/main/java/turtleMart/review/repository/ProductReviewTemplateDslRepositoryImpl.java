@@ -17,7 +17,6 @@ public class ProductReviewTemplateDslRepositoryImpl implements ProductReviewTemp
 
     private final JPAQueryFactory jpaQueryFactory;
 
-
     @Override
     public List<ProductReviewTemplate> findByIdInWithReviewTemplate(List<Long> productReviewTemplateIdList) {
         return jpaQueryFactory.selectDistinct(productReviewTemplate)
@@ -28,26 +27,15 @@ public class ProductReviewTemplateDslRepositoryImpl implements ProductReviewTemp
     }
 
     @Override
-    public Optional<ProductReviewTemplate> findByIdWithReviewTemplate(Long productReviewTemplateId) {
-        return Optional.ofNullable(jpaQueryFactory.selectDistinct(productReviewTemplate)
-                .from(productReviewTemplate)
-                .join(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(productReviewTemplate.id.eq(productReviewTemplateId))
-                .fetchOne());
-    }
-
-    @Override
-    public boolean existsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList) {
-        Long count = jpaQueryFactory.select(productReviewTemplate.count())
+    public boolean notExistsByProductIdAndReviewTemplateId(Long productId, List<Long> reviewTemplateIdList) {// 하나의 상품의 대해 같은 리뷰템플릿 여러번 선택했는지 확인
+        Long count = jpaQueryFactory.select(productReviewTemplate.count()).distinct()
                 .from(productReviewTemplate)
                 .where(
                         productReviewTemplate.product.id.eq(productId),
                         productReviewTemplate.reviewTemplate.id.in(reviewTemplateIdList))
                 .fetchOne();
 
-        if (count == null) {
-            throw new RuntimeException("올바르지 않은 쿼리");
-        }
+        if (count == null) {throw new RuntimeException("올바르지 않은 쿼리");}
 
         return count == 0;
     }

@@ -14,8 +14,6 @@ import turtleMart.review.dto.response.ReviewReportResponse;
 import turtleMart.review.service.ReviewReportService;
 import turtleMart.security.AuthUser;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 public class ReviewReportController {
@@ -41,9 +39,10 @@ public class ReviewReportController {
     @GetMapping("/review-reports")
     public ResponseEntity<CursorPageResponse<ReviewReportResponse>> readAll(@RequestParam(name = "reviewReportStatus", required = false) String reviewReportStatus,
                                                                             @RequestParam(name = "reasonCode", required = false) String reasonCode,
+                                                                            @RequestParam(name = "size", required = false, defaultValue = "10") Integer size,
                                                                             @RequestParam(name = "cursor", required = false) Long cursor) {
 
-        CursorPageResponse<ReviewReportResponse> reportResponseList = reviewReportService.readByCondition(reviewReportStatus, reasonCode, cursor);
+        CursorPageResponse<ReviewReportResponse> reportResponseList = reviewReportService.readByCondition(reviewReportStatus, reasonCode, size, cursor);
         return ResponseEntity.status(HttpStatus.OK).body(reportResponseList);
     }
 
