@@ -47,12 +47,12 @@ public class RefundController {
         return ResponseEntity.status(HttpStatus.OK).body(responseList);
     }
 
-    @PatchMapping("/{orderItemId}")
+    @PatchMapping("/async/{orderItemId}")
     public DeferredResult<ResponseEntity<Void>> approveRefund(
             @PathVariable Long orderItemId,
             @AuthenticationPrincipal AuthUser authUser
     ){
-        if(!authUser.hasAuthority(Authority.SELLER)){
+        if(authUser==null||!authUser.hasAuthority(Authority.SELLER)){
             throw new ForbiddenException(ErrorCode.FORBIDDEN);
         }
         DeferredResult<ResponseEntity<Void>> result = refundWaiter.createWaiter(orderItemId);
