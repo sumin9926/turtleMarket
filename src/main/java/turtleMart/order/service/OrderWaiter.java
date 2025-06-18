@@ -17,15 +17,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrderWaiter {
 
     private final Map<String, DeferredResult<ResponseEntity<OrderWrapperRequest>>> orderWaitMap = new ConcurrentHashMap<>();
+    private final static Long TIMEOUT_VALUE = 10_000L; // 10초 뒤 타임아웃
 
     public DeferredResult<ResponseEntity<OrderWrapperRequest>> createWaiter(String orderKey){
 
-        DeferredResult<ResponseEntity<OrderWrapperRequest>> deferredResult = new DeferredResult<>(10_000L); // 10초 뒤 타임아웃
+        DeferredResult<ResponseEntity<OrderWrapperRequest>> deferredResult = new DeferredResult<>(TIMEOUT_VALUE);
 
         if(null != orderWaitMap.putIfAbsent(orderKey, deferredResult)){
             throw new BadRequestException(ErrorCode.DUPLICATE_ORDER_REQUEST);
         }
-        orderWaitMap.put(orderKey, deferredResult);
 
         deferredResult.onTimeout(() -> { // 시간내 응답 없음: 타임 아웃 처리
             orderWaitMap.remove(orderKey);
@@ -34,7 +34,7 @@ public class OrderWaiter {
 
         return deferredResult;
     }
-
+   // 10초 뒤 타임아웃과 컴플릿 오더의 시간이 겹친다면?,,
     public void completeOrder(String key, OrderWrapperRequest response) {
         DeferredResult<ResponseEntity<OrderWrapperRequest>> result = orderWaitMap.remove(key);
         if (result != null) {

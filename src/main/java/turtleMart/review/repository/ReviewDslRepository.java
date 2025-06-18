@@ -16,9 +16,7 @@ public interface ReviewDslRepository {
 
     Page<Review> findByMemberIdWithPagination(Long memberId, Pageable pageable);
 
-    List<Review> findByProductWithSearch(Long productId, String keyWord, Integer rating, Integer cursor);
-
-    List<Review> findByIdInWithPagination(List<Long> reviewIdList);
+    List<Review> findByIdInWithPagination(List<Long> reviewIdList, int size);
 
     CursorPageResponse<Review> findAllPendingSync(LocalDateTime lastSyncedAt, LocalDateTime startSyncTime, Long lastCursor);
 

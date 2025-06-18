@@ -13,7 +13,7 @@ public class RefundKafkaListener {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @KafkaListener(topics = "refund_approve_topic")
+    @KafkaListener(topics = "${kafka.topic.refund.approve}")
     public void onRefundApprove(String message) {
         Long orderItemId = Long.parseLong(message);
 

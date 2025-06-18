@@ -11,6 +11,7 @@ import turtleMart.review.dto.request.UpdateReasonCodeRequest;
 import turtleMart.review.dto.response.ReasonCodeResponse;
 import turtleMart.review.entity.ReasonCode;
 import turtleMart.review.repository.ReasonCodeRepository;
+import turtleMart.security.CheckRole;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class ReasonCodeService {
 
     private final ReasonCodeRepository reasonCodeRepository;
 
+    @CheckRole("ADMIN")
     @Transactional
     public ReasonCodeResponse createReasonCode(CreateReasonCodeRequest request){
         ReasonCode reasonCode = reasonCodeRepository.save(ReasonCode.of(request.reason()));
@@ -31,6 +33,7 @@ public class ReasonCodeService {
         return reasonCodeRepository.findAllIsDeletedFalse().stream().map(ReasonCodeResponse::from).toList();
     }
 
+    @CheckRole("ADMIN")
     @Transactional
     public ReasonCodeResponse updateReasonCode(Long reasonCodeId, UpdateReasonCodeRequest request){
         ReasonCode reasonCode = reasonCodeRepository.findById(reasonCodeId)
@@ -42,6 +45,7 @@ public class ReasonCodeService {
         return ReasonCodeResponse.from(reasonCode);
     }
 
+    @CheckRole("ADMIN")
     @Transactional
     public void delete(Long reasonCodeId){
         ReasonCode reasonCode = reasonCodeRepository.findById(reasonCodeId)

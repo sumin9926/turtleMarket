@@ -1,5 +1,6 @@
 package turtleMart.order.repository;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,4 +16,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     @Query("SELECT o FROM OrderItem o LEFT JOIN FETCH o.productOptionCombination WHERE o.order.id = :orderId")
     List<OrderItem> findAllByOrderId(@Param("orderId")Long orderId);
+
+    @EntityGraph(attributePaths = "productOptionCombination")
+    List<OrderItem> findAllByIdIn(List<Long> orderItemIdList);
 }

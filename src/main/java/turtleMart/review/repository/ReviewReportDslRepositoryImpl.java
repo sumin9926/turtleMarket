@@ -10,12 +10,14 @@ import turtleMart.review.entity.ReviewReportStatus;
 
 import java.util.List;
 import java.util.Optional;
-;import static turtleMart.review.entity.QProductReviewTemplate.productReviewTemplate;
+
+import static turtleMart.review.entity.QProductReviewTemplate.productReviewTemplate;
 import static turtleMart.review.entity.QReasonCode.reasonCode;
 import static turtleMart.review.entity.QReview.review;
 import static turtleMart.review.entity.QReviewReport.reviewReport;
 import static turtleMart.review.entity.QReviewTemplate.reviewTemplate;
 import static turtleMart.review.entity.QTemplateChoice.templateChoice;
+
 
 @Slf4j
 @Repository
@@ -26,18 +28,19 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
 
     @Override
     public Optional<ReviewReport> findByIdWithReportCode(Long reviewReportId) {
-        Optional<ReviewReport> reviewReport1 = Optional.ofNullable(jpaQueryFactory.select(reviewReport)
-                .distinct()
-                .from(reviewReport)
-                .join(reviewReport.reasonCode, reasonCode).fetchJoin()
-                .join(reviewReport.review, review).fetchJoin()
-                .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
-                .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(reviewReport.id.eq(reviewReportId))
-                .fetchOne());
+        Optional<ReviewReport> optionalReviewReport = Optional.ofNullable(
+                jpaQueryFactory.select(reviewReport)
+                        .distinct()
+                        .from(reviewReport)
+                        .join(reviewReport.reasonCode, reasonCode).fetchJoin()
+                        .join(reviewReport.review, review).fetchJoin()
+                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                        .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                        .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .where(reviewReport.id.eq(reviewReportId))
+                        .fetchOne());
 
-        return reviewReport1;
+        return optionalReviewReport;
     }
 
     @Override
@@ -57,16 +60,16 @@ public class ReviewReportDslRepositoryImpl implements ReviewReportDslRepository 
             builder.and(reviewReport.id.gt(cursor));
         }
 
-        List<ReviewReport> reviewReportList = jpaQueryFactory.selectFrom(reviewReport)
-                .join(reviewReport.reasonCode, reasonCode).fetchJoin()
-                .join(reviewReport.review, review).fetchJoin()
-                .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
-                .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
-                .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
-                .where(builder)
-                .limit(10)
-                .fetch();
-
-        return reviewReportList;
+        return jpaQueryFactory.select(reviewReport)
+                        .from(reviewReport)
+                        .join(reviewReport.reasonCode, reasonCode).fetchJoin()
+                        .join(reviewReport.review, review).fetchJoin()
+                        .leftJoin(review.templateChoiceList, templateChoice).fetchJoin()
+                        .leftJoin(templateChoice.productReviewTemplate, productReviewTemplate).fetchJoin()
+                        .leftJoin(productReviewTemplate.reviewTemplate, reviewTemplate).fetchJoin()
+                        .where(builder)
+                        .limit(10)
+                        .orderBy(reviewReport.id.desc())
+                        .fetch();
     }
 }

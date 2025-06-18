@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -31,6 +32,9 @@ public class JsonHelper {
     }
 
     public static <T> List<T> fromJsonToList(String json, TypeReference<List<T>> typeReference) {
+
+        if(json == null || json.isEmpty()){return new ArrayList<>();}
+
         try{
             return objectMapper.readValue(json, typeReference);
         }catch (JsonProcessingException e){

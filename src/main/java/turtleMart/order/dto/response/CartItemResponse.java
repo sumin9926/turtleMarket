@@ -1,5 +1,8 @@
 package turtleMart.order.dto.response;
 
+import turtleMart.product.entity.Product;
+import turtleMart.product.entity.ProductOptionCombination;
+
 public record CartItemResponse(
         Long cartItemId,
         Long productId,
@@ -10,4 +13,19 @@ public record CartItemResponse(
         Integer quantity,
         Boolean isChecked
 ) {
+    public static CartItemResponse from(
+            AddCartItemResponse addCartItemResponse, Product product,
+            ProductOptionCombination optionCombination, String optionInfo
+    ) {
+        return new CartItemResponse(
+                addCartItemResponse.cartItemId(),
+                product.getId(),
+                optionCombination.getId(),
+                product.getName(),
+                optionInfo,
+                optionCombination.getPrice(),
+                addCartItemResponse.quantity(),
+                addCartItemResponse.isChecked()
+        );
+    }
 }

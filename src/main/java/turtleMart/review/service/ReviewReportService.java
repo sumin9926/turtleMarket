@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.common.CursorPageResponse;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
-import turtleMart.global.common.CursorPageResponse;
 import turtleMart.global.utill.JsonHelper;
 import turtleMart.member.entity.Member;
 import turtleMart.member.repository.MemberRepository;
@@ -17,11 +17,13 @@ import turtleMart.review.dto.request.UpdateReviewReportStatusRequest;
 import turtleMart.review.dto.response.ReviewReportResponse;
 import turtleMart.review.dto.response.TemplateChoiceResponse;
 import turtleMart.review.entity.*;
-import turtleMart.review.repository.*;
+import turtleMart.review.repository.ReasonCodeRepository;
+import turtleMart.review.repository.ReviewDslRepositoryImpl;
+import turtleMart.review.repository.ReviewReportDslRepositoryImpl;
+import turtleMart.review.repository.ReviewReportRepository;
+import turtleMart.security.CheckRole;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @Transactional(readOnly = true)
@@ -51,48 +53,46 @@ public class ReviewReportService {
             throw new BadRequestException(ErrorCode.DUPLICATE_REVIEW_REPORT);
         }
 
-
         ReviewReport reviewReport = reviewReportRepository.save(ReviewReport.of(review, member, reasonCode, request.ReasonDetail()));
 
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
-        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
 
+    @CheckRole("ADMIN")
     public ReviewReportResponse readById(Long reviewReportId) {
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_REPORT_NOT_FOUND));
 
         Review review = reviewReport.getReview();
-
-        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
     }
 
-    public CursorPageResponse<ReviewReportResponse> readByCondition(String reviewReportStatus, String reasonCode, Long cursor) {
+    @CheckRole("ADMIN")
+    public CursorPageResponse<ReviewReportResponse> readByCondition(String reviewReportStatus, String reasonCode, Integer size, Long cursor) {
         List<ReviewReport> reviewReportList = reviewReportDslRepository.findByReviewReportCondition(reviewReportStatus, reasonCode, cursor);
 
         List<ReviewReportResponse> reportResponseList = reviewReportList.stream().map(r -> {
             Review review = r.getReview();
-
-            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                    : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-
+            List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
             List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
-
             return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, r);
         }).toList();
 
-        Long lastCursor = reviewReportList.get(reportResponseList.size() - 1).getId();
+        if(reportResponseList.isEmpty()){return CursorPageResponse.of(reportResponseList, 0L, true);}
 
-        return CursorPageResponse.of(reportResponseList, lastCursor, true); //TODO
+        boolean hasNext = reportResponseList.size() <= size;
+        if(hasNext){reportResponseList.subList(0, reportResponseList.size() - 1);}
+        Long lastCursor = reportResponseList.get(reportResponseList.size() - 1).id();
+
+        return CursorPageResponse.of(reportResponseList, lastCursor, hasNext);
     }
 
+    @CheckRole("ADMIN")
     @Transactional
     public ReviewReportResponse updateReviewReport(Long memberId, Long reviewReportId, UpdateReviewReportStatusRequest request){
         if(!memberRepository.existsById(memberId)){throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}
@@ -100,17 +100,11 @@ public class ReviewReportService {
         ReviewReport reviewReport = reviewReportDslRepository.findByIdWithReportCode(reviewReportId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_REPORT_NOT_FOUND));
 
-        Long writerId = reviewReport.getMember().getId();
-        if(writerId.equals(memberId)){throw new BadRequestException(ErrorCode.FORBIDDEN);}
-
         ReviewReportStatus reviewReportStatus = ReviewReportStatus.of(request.reviewReportStatus());
         reviewReport.updateReviewReportStatus(reviewReportStatus);
 
         Review review = reviewReport.getReview();
-
-        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
         List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
         return ReviewReportResponse.of(review, imageUrlList, choiceResponseList, reviewReport);
 

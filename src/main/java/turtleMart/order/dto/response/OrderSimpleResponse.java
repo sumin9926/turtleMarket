@@ -10,7 +10,7 @@ import java.util.List;
 public record OrderSimpleResponse(
         Long orderId,
         DeliveryStatus deliveryStatus,
-        List<OrderItemResponse> orderItems,
+        List<OrderItemResponse> orderItemList,
         LocalDateTime orderedAt
 ) {
     public static OrderSimpleResponse from(Order order, Delivery delivery, List<OrderItemResponse> orderItems){

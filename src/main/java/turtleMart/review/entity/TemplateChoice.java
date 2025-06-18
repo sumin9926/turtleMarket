@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import turtleMart.review.dto.response.TemplateChoiceResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -45,6 +46,9 @@ public class TemplateChoice {
     public void update(TemplateChoiceGrade choseAnswer){this.choseAnswer = choseAnswer;}
 
     public static List<TemplateChoiceResponse> changeResponseByReview(Review review){
+
+        if(review.templateChoiceList.isEmpty()){return new ArrayList<>();}
+
         return review.getTemplateChoiceList().stream()
                 .map(t -> {
                     ReviewTemplate reviewTemplate = t.getProductReviewTemplate().getReviewTemplate();

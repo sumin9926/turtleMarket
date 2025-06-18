@@ -27,7 +27,7 @@ public class OrderKafkaListener {
         OrderWrapperRequest orderWrapperRequest = JsonHelper.fromJson(payload, OrderWrapperRequest.class);
 
         try {
-            orderService.createOrder(orderWrapperRequest);//익셉션 캐치해서 로그 찍기
+            orderService.createOrder(orderWrapperRequest);
         } catch (NotFoundException e) {
             log.error("잘못된 주문 요청 - 필수 데이터 없음(재처리 x). key={}, message={}", key, e.getMessage());
             // 필수 정보 누락으로 인한 예외라 재처리 무의미, 타임아웃 될 예정

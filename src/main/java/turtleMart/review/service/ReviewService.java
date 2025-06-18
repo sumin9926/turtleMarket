@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import turtleMart.global.common.CursorPageResponse;
 import turtleMart.global.exception.BadRequestException;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.NotFoundException;
@@ -44,40 +45,36 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductReviewTemplateDslRepositoryImpl productReviewTemplateDslRepositoryImpl;
     private final ReviewDslRepositoryImpl reviewDslRepositoryImpl;
-    private final ReviewElasticSearchRepository reviewElsaRepository;
     private final ReviewElasticSearchQueryClient elasticSearchQueryClient;
 
     @Transactional
     public ReviewResponse createReview(Long memberId, Long productId, CreateReviewRequest request) {
 
-        if (!memberRepository.existsById(memberId)) {
-            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
-        }
-        if (!productRepository.existsById(productId)) {
-            throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
-        }
-        if (!orderItemRepository.existsById(request.orderItemId())) {
-            throw new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND);
-        }
+        if (!memberRepository.existsById(memberId)) {throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}
+        if (!productRepository.existsById(productId)) {throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);}
+        if (!orderItemRepository.existsById(request.orderItemId())) {throw new NotFoundException(ErrorCode.ORDER_ITEM_NOT_FOUND);}
 
         Product product = productRepository.getReferenceById(productId);
         Member member = memberRepository.getReferenceById(memberId);
         OrderItem orderItem = orderItemRepository.getReferenceById(request.orderItemId());
 
-        if (orderItem.getOrderItemStatus() != OrderItemStatus.CONFIRMED) {
-            throw new BadRequestException(ErrorCode.REVIEW_NOT_ALLOWED_BEFORE_CONFIRMATION);
-        }
-
-        if (reviewRepository.existsByOrderItemIdAndIsDeletedFalse(orderItem.getId())) {
-            throw new BadRequestException(ErrorCode.REVIEW_ALREADY_EXISTS);
-        }
+        if (orderItem.getOrderItemStatus() != OrderItemStatus.CONFIRMED) {throw new BadRequestException(ErrorCode.REVIEW_NOT_ALLOWED_BEFORE_CONFIRMATION);}
+        if (reviewRepository.existsByOrderItemId(orderItem.getId())) {throw new BadRequestException(ErrorCode.REVIEW_ALREADY_EXISTS);}
 
         String dbImageList = JsonHelper.toJson(request.imageUrlList());
         Review review = Review.of(member, product, orderItem, request.title(), request.content(), request.rating(), dbImageList);
+        reviewRepository.save(review);
 
-        if(request.templateChoiceList() != null){
-            List<ProductReviewTemplate> productReviewTemplateList = productReviewTemplateDslRepositoryImpl.findByIdInWithReviewTemplate(
-                    request.templateChoiceList().stream().map(CreateTemplateChoiceRequest::productReviewTemplateId).toList());
+        if (request.templateChoiceList() != null) {
+            List<Long> productReviewTemplateIdList = request.templateChoiceList().stream()
+                    .map(CreateTemplateChoiceRequest::productReviewTemplateId).toList();
+
+            List<ProductReviewTemplate> productReviewTemplateList =
+                    productReviewTemplateDslRepositoryImpl.findByIdInWithReviewTemplate(productReviewTemplateIdList);
+
+            if (request.templateChoiceList().size() != productReviewTemplateList.size()) {
+                throw new BadRequestException(ErrorCode.REVIEW_TEMPLATE_CHOICE_CONFLICT);
+            }
 
             request.templateChoiceList().forEach(c -> {
                 Long targetId = c.productReviewTemplateId();
@@ -91,64 +88,60 @@ public class ReviewService {
             });
         }
 
-        reviewRepository.save(review);
-        elasticSearchQueryClient.createReviewDocument(review);
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
 
-        List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList() != null ? new ArrayList<>() : TemplateChoice.changeResponseByReview(review);
-        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>() : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-        return ReviewResponse.of(review, imageUrlList , choiceResponseList);
+        elasticSearchQueryClient.createReviewDocument(review);
+        return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
 
     public ReviewResponse readReview(Long reviewId) {
 
         Review review = findByIdElseThrow(reviewId);
-
-        List<TemplateChoiceResponse> choiceResponseList = review.getTemplateChoiceList() != null ? new ArrayList<>() : TemplateChoice.changeResponseByReview(review);
-        List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>() : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {});
-
-
+        List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
+        List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
         return ReviewResponse.of(review, imageUrlList, choiceResponseList);
     }
 
     public Page<ReviewResponse> readByMemberId(Long memberId, Pageable pageable) {
+
         Page<Review> reviewPage = reviewDslRepositoryImpl.findByMemberIdWithPagination(memberId, pageable);
 
-        return reviewPage.map(review -> {
-            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                    : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
-            });
-
+        Page<ReviewResponse> reviewResponsePage = reviewPage.map(review -> {
+            List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
             List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
-
             return ReviewResponse.of(review, imageUrlList, choiceResponseList);
         });
+
+        return reviewResponsePage;
     }
 
-    public List<ReviewResponse> readByProductIdWithSearch(Long productId, String keyWord, Integer rating, Pageable pageable) {
+    public CursorPageResponse<ReviewResponse> readByProductIdWithSearch(Long productId, String keyWord, Integer rating, Integer size, Long cursor) {
+        List<Long> searchResultIdList = elasticSearchQueryClient.searchByCondition(keyWord, productId, rating, size, cursor);
+        List<ReviewResponse> cursorList = reviewDslRepositoryImpl.findByIdInWithPagination(searchResultIdList, size).stream()
+                .map(review -> {
+                    List<String> imageUrlList = JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>(){});
+                    List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
+                    return ReviewResponse.of(review, imageUrlList, choiceResponseList);
+                }).toList();
 
-        List<Long> resultList = elasticSearchQueryClient.searchByCondition(keyWord, productId, rating, pageable);
+        if(cursorList.isEmpty()){return CursorPageResponse.of(cursorList, 0L, true);}
 
-        List<ReviewResponse> reviewList = reviewDslRepositoryImpl.findByIdInWithPagination(resultList).stream().map(review -> {
-            List<String> imageUrlList = review.getImageUrl().isEmpty() ? new ArrayList<>()
-                    : JsonHelper.fromJsonToList(review.getImageUrl(), new TypeReference<>() {
-            });
+        boolean hasNext = cursorList.size() <= size;
+        if(hasNext){cursorList.subList(0, cursorList.size() - 1);}
+        Long lastCursor = cursorList.get(cursorList.size() - 1).id();
 
-            List<TemplateChoiceResponse> choiceResponseList = TemplateChoice.changeResponseByReview(review);
-
-            return ReviewResponse.of(review, imageUrlList, choiceResponseList);
-        }).toList();
-
-        return reviewList;
+        return CursorPageResponse.of(cursorList, lastCursor, hasNext);
     }
 
 
     @Transactional
     public ReviewResponse updateReview(Long memberId, Long reviewId, UpdateReviewRequest request) {
 
-        Member member = memberRepository
-                .findById(memberId).orElseThrow(() -> new NotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+        if(!memberRepository.existsById(memberId)){throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}
 
         Review review = findByIdElseThrow(reviewId);
+        Member member = memberRepository.getReferenceById(memberId);
 
         if (!member.getId().equals(review.getMember().getId())) {throw new BadRequestException(ErrorCode.FORBIDDEN);}
 
@@ -173,33 +166,27 @@ public class ReviewService {
     @Transactional
     public void deleteReview(Long memberId, Long reviewId) {
 
-        if (!memberRepository.existsById(memberId)) {
-            throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);
-        }
-        Member member = memberRepository.getReferenceById(memberId);
+        if (!memberRepository.existsById(memberId)) {throw new NotFoundException(ErrorCode.MEMBER_NOT_FOUND);}
+        if (!reviewRepository.existsById(reviewId)) {throw new NotFoundException(ErrorCode.REVIEW_NOT_FOUND);}
 
-        if (!reviewRepository.existsById(reviewId)) {
-            throw new NotFoundException(ErrorCode.REVIEW_NOT_FOUND);
-        }
+        Member member = memberRepository.getReferenceById(memberId);
         Review review = reviewRepository.getReferenceById(reviewId);
 
-        if (!member.getId().equals(review.getMember().getId())) {
-            throw new RoleMismatchException(ErrorCode.FORBIDDEN);
-        }
+        if (!member.getId().equals(review.getMember().getId())) {throw new RoleMismatchException(ErrorCode.FORBIDDEN);}
 
         review.delete();
         elasticSearchQueryClient.deleteReviewDocument(reviewId);
     }
 
     @Transactional
-    public void successDataStatusChange(List<BulkResponseItem> responseItemList){
+    public void markDataSyncSuccess(List<BulkResponseItem> responseItemList) {
+
         List<Long> successIdList = new ArrayList<>(
                 responseItemList.stream()
                         .filter(r -> r.error() == null)
-                        .map(i ->Long.parseLong(i.id()))
+                        .map(i -> Long.parseLong(i.id()))
                         .toList()
         );
-
         reviewDslRepositoryImpl.updateSyncStatus(successIdList);
     }
 
@@ -207,5 +194,4 @@ public class ReviewService {
         return reviewDslRepositoryImpl.findByIdWithChoice(reviewId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.REVIEW_NOT_FOUND));
     }
-
 }
