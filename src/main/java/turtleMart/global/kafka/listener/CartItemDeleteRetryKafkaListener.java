@@ -29,7 +29,7 @@ public class CartItemDeleteRetryKafkaListener {
     private static final Integer DELAY_TIME = 5000;
     private static final Integer MAXIMUM_ATTEMPT_NUM = 2; //최대 재시도 횟수
 
-    @KafkaListener(topics = "${kafka.topic.delete.cart-item}", groupId = "cart-retry")
+    @KafkaListener(topics = "${kafka.topic.delete.cart-item}", groupId = "cart-retry", containerFactory = "cartRetryKafkaListenerContainerFactory")
     public void cartItemDeleteRetry(CartItemDeleteRetryMessage message) throws InterruptedException {
 
         Thread.sleep(DELAY_TIME); // 5초 뒤에 재시도 토픽으로 전송
@@ -37,7 +37,7 @@ public class CartItemDeleteRetryKafkaListener {
         kafkaSendHelper.sendWithCallback(objectKafkaTemplate, deleteCartItemWithDelayTopic, message.key(),message);
     }
 
-    @KafkaListener(topics = "${kafka.topic.delete.cart-item.with.delay}", groupId = "cart-retry")
+    @KafkaListener(topics = "${kafka.topic.delete.cart-item.with.delay}", groupId = "cart-retry", containerFactory = "cartRetryKafkaListenerContainerFactory")
     public void cartItemDeleteRetryWithDelay(CartItemDeleteRetryMessage message) {
         String key = message.key();
         String cartItemId = message.cartItemId();
