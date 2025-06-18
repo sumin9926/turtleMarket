@@ -1,6 +1,7 @@
 package turtleMart.order.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RefundWaiter {
@@ -38,6 +40,10 @@ public class RefundWaiter {
         DeferredResult<ResponseEntity<Void>> deferredResult = waitMap.remove(orderItemId); //처리 완료된 deferred 객체 삭제
         if (deferredResult != null) { // 정상적으로 삭제 되었다면 200 응답
             deferredResult.setResult(ResponseEntity.ok().build());
+            log.info("completeRefund: 환불 완료 응답 전송 성공 - orderItemId={}", orderItemId);
+        } else {
+            log.warn("completeRefund: 해당 orderItemId={} 에 대한 대기 객체가 없습니다.", orderItemId);
+            throw new RuntimeException("환불 처리 실패");
         }
     }
 
