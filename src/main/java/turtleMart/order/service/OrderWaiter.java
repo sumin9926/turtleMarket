@@ -1,6 +1,7 @@
 package turtleMart.order.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import turtleMart.order.dto.request.OrderWrapperRequest;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderWaiter {
@@ -28,16 +30,18 @@ public class OrderWaiter {
         }
 
         deferredResult.onTimeout(() -> { // 시간내 응답 없음: 타임 아웃 처리
+            log.error("타임아웃 발생");
             orderWaitMap.remove(orderKey);
             deferredResult.setErrorResult(ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).build());
         });
 
         return deferredResult;
     }
-   // 10초 뒤 타임아웃과 컴플릿 오더의 시간이 겹친다면?,,
+    // 10초 뒤 타임아웃과 컴플릿 오더의 시간이 겹친다면?,,
     public void completeOrder(String key, OrderWrapperRequest response) {
         DeferredResult<ResponseEntity<OrderWrapperRequest>> result = orderWaitMap.remove(key);
         if (result != null) {
+            log.info("결과 전송 성공 {}", response);
             result.setResult(ResponseEntity.status(HttpStatus.CREATED).body(response));
         }
     }
