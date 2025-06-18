@@ -1,14 +1,15 @@
 package turtleMart.order.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import turtleMart.global.exception.ErrorCode;
 import turtleMart.global.exception.ForbiddenException;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.util.KafkaSendHelper;
+import turtleMart.member.entity.Seller;
 import turtleMart.member.repository.MemberRepository;
 import turtleMart.member.repository.SellerRepository;
 import turtleMart.order.dto.response.RefundApplyResultResponse;
@@ -20,6 +21,7 @@ import turtleMart.order.repository.OrderItemRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefundService {
@@ -54,11 +56,9 @@ public class RefundService {
     }
 
     public List<RefundResponse> getRefundRequestList(Long sellerId) {
-        if (!sellerRepository.existsById(sellerId)) {
-            throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
-        }
+        Seller seller = sellerRepository.findByMemberId(sellerId).orElseThrow(()->new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
 
-        List<RefundResponse> responseList = orderItemDslRepository.findAllOrderItemBySellerIdAndStatusRefunding(sellerId, OrderItemStatus.REFUNDING);
+        List<RefundResponse> responseList = orderItemDslRepository.findAllOrderItemBySellerIdAndStatusRefunding(seller.getId(), OrderItemStatus.REFUNDING);
 
         if (responseList.isEmpty()) {
             throw new NotFoundException(ErrorCode.NO_REFUNDING_ORDER_ITEM_FOUND);
@@ -68,12 +68,10 @@ public class RefundService {
     }
 
     public void approveOrderItemRefund(Long orderItemId, Long sellerId) {
-        if (!sellerRepository.existsById(sellerId)) {
-            throw new NotFoundException(ErrorCode.SELLER_NOT_FOUND);
-        }
+        Seller seller = sellerRepository.findByMemberId(sellerId).orElseThrow(()->new NotFoundException(ErrorCode.SELLER_NOT_FOUND));
 
         // 해당 상품의 판매자가 환불을 승인하려는 판매자와 동일인물인지 체크
-        if(!orderItemRepository.existsByIdAndProductOptionCombination_Product_SellerId(orderItemId, sellerId)){
+        if(!orderItemRepository.existsByIdAndProductOptionCombination_Product_SellerId(orderItemId, seller.getId())){
             throw new ForbiddenException(ErrorCode.PRODUCT_NOT_BELONG_TO_SELLER);
         }
 
