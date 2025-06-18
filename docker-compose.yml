@@ -68,6 +68,7 @@ services:
       - http.cors.allow-origin="*"
       - http.cors.allow-methods=OPTIONS,HEAD,GET,POST,PUT,DELETE
       - http.cors.allow-headers=X-Requested-With,Content-Type,Content-Length,Authorization
+      - network.host=0.0.0.0
     ports:
       - "9200:9200"
       - "9300:9300"

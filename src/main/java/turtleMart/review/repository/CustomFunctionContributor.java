@@ -16,7 +16,5 @@ public class CustomFunctionContributor implements FunctionContributor {
                 .getFunctionRegistry()
                 .registerPattern("match", "match(?1, ?2) against (?3 in boolean mode)",
                         functionContributions.getTypeConfiguration().getBasicTypeRegistry().resolve(BOOLEAN));
-
-        log.info("매치 쿼리 생성");
     }
 }
