@@ -9,12 +9,14 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import turtleMart.delivery.dto.reqeust.CreateDeliveryRequest;
 import turtleMart.global.exception.ConflictException;
 import turtleMart.global.exception.NotFoundException;
 import turtleMart.global.kafka.dto.OperationWrapperDto;
 import turtleMart.global.kafka.enums.OperationType;
 import turtleMart.global.kafka.util.KafkaSendHelper;
 import turtleMart.global.utill.JsonHelper;
+import turtleMart.product.dto.ProductOptionCombinationPriceDto;
 import turtleMart.product.service.ProductOptionCombinationService;
 
 import java.time.Duration;
@@ -30,13 +32,18 @@ public class ProductKafkaListener {
 
     @Value("${kafka.topic.order.create}")
     private String orderCreateTopic;
+  
+    @Value("${kafka.topic.delivery}")
+    private String deliveryTopic;
+  
+    @Value("${kafka.topic.price}")
+    private String priceTopic;
 
     private final KafkaSendHelper kafkaSendHelper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ProductOptionCombinationService productOptionCombinationService;
-
+  
     //TODO 추후에 @Value + SpEL 표현식으로 변경하기
-    private static final String KAFKA_PRICE_CHANGE_TOPIC = "_topic"; //TODO 가격 변경 토픽 이름 정해지면 넣어주세요.
     private static final Duration DURATION_MINUTES = Duration.ofMinutes(4);
     private static final long RETRY_DELAY_MS = 1000L;
 
@@ -59,25 +66,50 @@ public class ProductKafkaListener {
     }
 
     // 재고 관련 Kafka Listener
-    @KafkaListener(topics = "${kafka.topic.product}", groupId = "${spring.kafka.consumer.product.inventory.group-id}")
+    @KafkaListener(topics = "${kafka.topic.product}", groupId = "${spring.kafka.consumer.product-combination.group-id}")
     public void listenInventory(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
         try {
             OperationWrapperDto wrapperDto = JsonHelper.fromJson(value, OperationWrapperDto.class);
             OperationType type = wrapperDto.operationType();
+            String payload = wrapperDto.payload();
 
             switch (type) {
-                case ORDER_PAYMENT_INVENTORY_DECREASE -> routeInventoryDecreaseMessage(key, value);
-                case DELIVERY_FAIL_INVENTORY_RESTORE -> routeInventoryRestoreMessage(key, value);
+                case ORDER_PAYMENT_INVENTORY_DECREASE -> routeInventoryDecreaseMessage(key, payload);
+                case DELIVERY_FAIL_INVENTORY_RESTORE -> routeInventoryRestoreMessage(key, payload);
                 default -> log.error("❌ 지원하지 않는 메시지 타입 수신: {}", type);
             }
         } catch (ConflictException e) {
-            log.warn("⚠️ 재고 부족으로 메시지 처리 실패: {}", e.getMessage());
+            log.warn("⚠️ 재고 부족으로 재고 감소 메시지 처리 실패: {}", e.getMessage());
         } catch (NotFoundException e) {
-            log.warn("⚠️ 필수 데이터 누락으로 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+            log.warn("⚠️ 필수 데이터 누락으로 재고 감소 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
         } catch (NumberFormatException e) {
             log.warn("⚠️ 잘못된 orderId 형식입니다. key: {}, message: {}", key, e.getMessage());
         } catch (Exception e) {
-            log.error("❌ 예기치 못한 오류로 메시지 처리 실패: {}", e.getMessage());
+            log.error("❌ 예기치 못한 오류로 재고 감소 메시지 처리 실패: {}", e.getMessage());
+        }
+    }
+
+    // 가격 관련 Kafka Listener
+    @KafkaListener(topics = "${kafka.topic.price}", groupId = "${spring.kafka.consumer.product-combination.group-id}")
+    public void listenPriceChange(@Header(KafkaHeaders.RECEIVED_KEY) String key, String value) {
+        log.info("📥 가격변동 메시지 수신: key={}, value={}", key, value);
+
+        try {
+            OperationWrapperDto wrapperDto = JsonHelper.fromJson(value, OperationWrapperDto.class);
+
+            // PRICE_CHANGE 타입이 아닌 메시지가 잘못 들어왔을 경우 무시
+            if (!wrapperDto.operationType().equals(OperationType.PRICE_CHANGE)) {
+                log.info("⚠️ PRICE_CHANGE 타입이 아닌 메시지 수신: {}", wrapperDto.operationType());
+                return;
+            }
+
+            ProductOptionCombinationPriceDto priceDto = JsonHelper.fromJson(wrapperDto.payload(), ProductOptionCombinationPriceDto.class);
+
+            productOptionCombinationService.changePrice(priceDto, wrapperDto, key);
+        } catch (NotFoundException e) {
+            log.warn("⚠️ 필수 데이터 누락으로 가격 변경 메시지 처리 실패 ({}): {}", e.getErrorCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("❌ 예기치 못한 오류로 가격 변경 메시지 처리 실패: {}", e.getMessage());
         }
     }
 
@@ -99,7 +131,8 @@ public class ProductKafkaListener {
             kafkaSendHelper.send(orderMakeTopic, key, value);
         } else {
             // 소프트락이 이미 존재하면 가격변동 처리용 새 토픽에 발행
-            kafkaSendHelper.send(KAFKA_PRICE_CHANGE_TOPIC, key, value);
+            kafkaTemplate.send(priceTopic, key, value);
+            log.info("가격 변동 처리 토픽으로 kafka 메세지 전송 성공! TopicName: {}", priceTopic);
         }
     }
 
@@ -119,16 +152,22 @@ public class ProductKafkaListener {
     }
 
     private void routeInventoryDecreaseMessage(String key, String value) {
-        // todo 결제 파트에서 전달되는 payload 구조 확인 후 DTO 정의
+        // 결제 파트에서 전달되는 value 확인 후 DTO 정의
         log.info("📥 Kafka 재고 감소 메시지 수신: key: {}, value: {}", key, value);
 
-        // 재고 감소 로직 진행
-        // productOptionCombinationService.decreaseProductOptionCombinationInventory(payload.orderId());
-        // log.info("👉 재고 감소 성공! 모든 상품의 재고 차감이 정상적으로 처리되었습니다.");
+        CreateDeliveryRequest request = JsonHelper.fromJson(value, CreateDeliveryRequest.class);
 
-        // todo 배송 생성 메시지 발행
-        // kafkaTemplate.send(deliveryTopic, request);
-        // log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", request);
+        // 재고 감소 로직 진행
+         productOptionCombinationService.decreaseProductOptionCombinationInventory(Long.valueOf(key));
+         log.info("👉 재고 감소 성공! 모든 상품의 재고 차감이 정상적으로 처리되었습니다.");
+
+        // 배송 생성 요청 메시지 발행
+        String payload = JsonHelper.toJson(request);
+        String message = JsonHelper.toJson(OperationWrapperDto.from(OperationType.DELIVERY_CREATE, payload));
+
+        kafkaTemplate.send(deliveryTopic, key, message);
+
+        log.info("\uD83D\uDCE4 Kafka 배송 생성 메시지 전송: {}", request);
     }
 
     private void routeInventoryRestoreMessage(String key, String value) {
