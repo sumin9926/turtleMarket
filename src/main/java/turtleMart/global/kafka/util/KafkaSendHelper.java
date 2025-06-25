@@ -17,6 +17,7 @@ public class KafkaSendHelper {
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
                         log.error("Kafka 전송 실패 - topic={}, key={}", topic, key, ex);
+                        // TODO kafka 전송 실패 시 롤백 방법
                     } else {
                         log.info("Kafka 전송 성공 - topic={}, key={}, offset={}",
                                 topic, key, result.getRecordMetadata().offset());

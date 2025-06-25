@@ -42,8 +42,7 @@ public class ProductKafkaListener {
     private final KafkaSendHelper kafkaSendHelper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ProductOptionCombinationService productOptionCombinationService;
-  
-    //TODO 추후에 @Value + SpEL 표현식으로 변경하기
+
     private static final Duration DURATION_MINUTES = Duration.ofMinutes(4);
     private static final long RETRY_DELAY_MS = 1000L;
 
