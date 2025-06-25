@@ -8,6 +8,10 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ErrorCode {
 
+    // 결제 관련
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제내역입니다."),
+    MEMBER_HAS_NO_PAYMENT(HttpStatus.NOT_FOUND, "해당 사용자의 결제 이력이 없습니다."),
+
     // 출고지(물류센터) 관련
     SENDER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 출고지(물류센터)입니다."),
     SENDER_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 출고지(물류센터)입니다."),
