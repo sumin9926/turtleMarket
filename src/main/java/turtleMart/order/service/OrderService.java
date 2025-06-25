@@ -320,13 +320,17 @@ public class OrderService {
 
         OrderWrapperRequest newWrapperRequest = OrderWrapperRequest.updateOrderId(wrapperRequest, newOrder.getId());
 
-        /*Redis는 DeferredResult 응답 트리거이기 때문에 실패 시 이후 DeferredResult를 통해 처리되는 추가 로직에 영향을 줄 수 있음
-         * 따라서 Redis 실패 시 전체 흐름을 롤백하도록 처리함. (이후 더 좋은 방법이 있으면 리팩토링 예정)*/
+        Long receivers;
         try {
-            redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(newWrapperRequest));
+            receivers = redisTemplate.convertAndSend("order:create:result", JsonHelper.toJson(newWrapperRequest));
         } catch (Exception e) {
             log.error("Redis Pub/Sub 발행 실패. 트랜잭션 롤백", e);
             throw new RuntimeException("응답용 Redis 발행 실패", e);
+        }
+
+        if(receivers==0){
+            log.warn("Redis Pub/Sub 구독자 없음. 이벤트 유실 발생!");
+            throw new IllegalStateException("Redis Pub/Sub 구독자 없음. 이벤트 유실 발생!");
         }
 
         // 주문 완료된 장바구니 상품 삭제
