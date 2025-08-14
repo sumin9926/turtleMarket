@@ -81,8 +81,8 @@ public class OrderItemDslRepositoryImpl implements OrderItemDslRepository{
     public Long getTotalOrderedQuantity(
             Long sellerId, Long productId, LocalDateTime startDateTime, LocalDateTime endDateTime, OrderItemStatus status
     ) {
-       Long total = queryFactory
-                .select(orderItem.quantity.sum().longValue())
+       return queryFactory
+                .select(orderItem.quantity.sumLong().coalesce(0L))
                 .from(orderItem)
                 .join(orderItem.productOptionCombination, combination)
                 .join(combination.product, product)
@@ -95,7 +95,5 @@ public class OrderItemDslRepositoryImpl implements OrderItemDslRepository{
                         orderItem.orderItemStatus.ne(status)
                 )
                 .fetchOne();
-
-       return total != null ? total : 0L; //coalesce() 를 사용할까 했지만, 타입 캐스팅 때문에 오히려 복잡해져서 그냥 상항연산자 사용하는 것으로 했습니다.
     }
 }
