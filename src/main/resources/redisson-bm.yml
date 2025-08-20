@@ -1,0 +1,10 @@
+singleServerConfig:
+  address: "redis://localhost:6379"   # TLS면 rediss://
+  # password: "yourpass"
+  database: 0
+  connectionMinimumIdleSize: 10
+  connectionPoolSize: 64
+threads: 8
+nettyThreads: 8
+# lockWatchdogTimeout: 30000   # 필요 시 조정(ms)
+codec: !!org.redisson.codec.JsonJacksonCodec {}
