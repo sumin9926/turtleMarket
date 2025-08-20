@@ -35,7 +35,7 @@ public class BmController {
             @RequestParam List<Long> pocIdList,
             @RequestParam int quantity
     ) {
-        serviceBaseline.createOrder(pocIdList, quantity);
+        serviceBaseline.createOrderList(pocIdList, quantity);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 

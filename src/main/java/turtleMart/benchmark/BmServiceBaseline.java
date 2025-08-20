@@ -29,7 +29,7 @@ public class BmServiceBaseline {
     }
 
     @Transactional
-    public void createOrder(List<Long> pocIdList, int quantity) {
+    public void createOrderList(List<Long> pocIdList, int quantity) {
         if (quantity <= 0) throw new IllegalArgumentException("quantity <= 0");
         if (pocIdList == null || pocIdList.isEmpty()) {
             throw new IllegalArgumentException("pocIdList is empty");
@@ -42,5 +42,16 @@ public class BmServiceBaseline {
         for(ProductOptionCombination poc:pocList){
             poc.decreaseInventory(quantity);
         }
+    }
+
+    @Transactional
+    public void createOrder(long pocId, int quantity) {
+        if (quantity <= 0) throw new IllegalArgumentException("quantity <= 0");
+
+        ProductOptionCombination poc = optionCombinationRepository.findByIdWithPessimisticLock(pocId).orElseThrow(
+                () -> new NotFoundException(ErrorCode.PRODUCT_OPTION_COMBINATION_NOT_FOUND)
+        );
+
+        poc.decreaseInventory(quantity);
     }
 }

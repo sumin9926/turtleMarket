@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/logout").authenticated()
                         .requestMatchers("/orders/async").permitAll()
                         .requestMatchers("/orders/refund/async/**").permitAll()
+                        .requestMatchers("/bm/**").permitAll()
                         .anyRequest().authenticated() // whitelist 이외의 url에는 권한 필요
                 )
                 .exceptionHandling(exception -> exception

@@ -10,11 +10,14 @@ import java.util.List;
 @Profile({"benchmark","improved"})
 @RequiredArgsConstructor
 public class BmServiceImproved {
-    public void changePrice(long pocId, int newPrice) {
 
+    private final BmDispatcher dispatcher;
+
+    public void changePrice(long pocId, int newPrice) {
+        dispatcher.changePrice(pocId, newPrice);
     }
 
     public void createOrder(List<Long> pocIdList, int quantity) {
-
+        dispatcher.createOrder(pocIdList, quantity);
     }
 }
