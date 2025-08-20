@@ -19,6 +19,7 @@ public interface ProductOptionCombinationRepository extends JpaRepository<Produc
     @Query("SELECT p FROM ProductOptionCombination p WHERE p.id = :productOptionCombinationId")
     Optional<ProductOptionCombination> findByIdWithPessimisticLock(Long productOptionCombinationId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = "product")
     List<ProductOptionCombination> findAllByIdIn(List<Long> idList);
 }
